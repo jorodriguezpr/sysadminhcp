@@ -1,0 +1,9 @@
+{
+  "name": "sysadminhcp-runtime",
+  "version": "8.0.190",
+  "private": true,
+  "license": "UNLICENSED",
+  "dependencies": {
+    "node-pty": "^1.0.0"
+  }
+}

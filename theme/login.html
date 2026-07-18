@@ -1,0 +1,555 @@
+﻿<!--
+  SysAdminHCP - System Administration Hosting Control Panel
+  Copyright (c) 2025-2026 Jose Rodriguez <jrpcone@gmail.com>
+  All Rights Reserved.
+
+  PROPRIETARY AND CONFIDENTIAL
+
+  This source file is the confidential and proprietary property of the
+  copyright holder. Unauthorized copying, distribution, modification,
+  decompilation, or use of this file, via any medium, is strictly
+  prohibited without express prior written consent.
+
+  SysAdminHCP is licensed, not sold. Use of the compiled application is
+  governed exclusively by the End User License Agreement (EULA)
+  accompanying the distributed binary, not by this source header.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SysAdminHCP - Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ── Animated background ── */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #0a0a1a;
+        }
+
+        .bg-slideshow {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .bg-slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .bg-slide.active {
+            opacity: 1;
+        }
+
+        /* Gradient overlays for each "scene" */
+        .bg-slide.scene-1 {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 40%, #24243e 100%);
+        }
+        .bg-slide.scene-2 {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #533483 100%);
+        }
+        .bg-slide.scene-3 {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 30%, #2d4059 60%, #ea5455 100%);
+        }
+        .bg-slide.scene-4 {
+            background: linear-gradient(135deg, #141e30 0%, #243b55 40%, #4a6fa5 70%, #7ec8e3 100%);
+        }
+        .bg-slide.scene-5 {
+            background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 30%, #2e1065 60%, #6c3483 100%);
+        }
+        .bg-slide.scene-6 {
+            background: linear-gradient(135deg, #0a192f 0%, #112240 30%, #233554 60%, #64ffda 100%);
+        }
+        .bg-slide.scene-7 {
+            background: linear-gradient(135deg, #1d1d2c 0%, #2d2d44 30%, #4a3f69 60%, #ff6b6b 100%);
+        }
+        .bg-slide.scene-8 {
+            background: linear-gradient(135deg, #0b0b1e 0%, #1e1e3f 30%, #3a0ca3 60%, #4cc9f0 100%);
+        }
+
+        /* Floating orbs */
+        .orbs {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb:nth-child(1) {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #4cc9f0, transparent 70%);
+            top: -10%; left: -5%;
+            animation-duration: 25s;
+        }
+        .orb:nth-child(2) {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, #7b2ff7, transparent 70%);
+            top: 50%; right: -8%;
+            animation-duration: 30s;
+            animation-delay: -5s;
+        }
+        .orb:nth-child(3) {
+            width: 350px; height: 350px;
+            background: radial-gradient(circle, #f72585, transparent 70%);
+            bottom: -5%; left: 30%;
+            animation-duration: 22s;
+            animation-delay: -10s;
+        }
+        .orb:nth-child(4) {
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, #4361ee, transparent 70%);
+            top: 20%; left: 50%;
+            animation-duration: 28s;
+            animation-delay: -15s;
+        }
+        .orb:nth-child(5) {
+            width: 250px; height: 250px;
+            background: radial-gradient(circle, #64ffda, transparent 70%);
+            bottom: 30%; left: 10%;
+            animation-duration: 24s;
+            animation-delay: -8s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -80px) scale(1.1); }
+            50% { transform: translate(-30px, 60px) scale(0.95); }
+            75% { transform: translate(70px, 30px) scale(1.05); }
+        }
+
+        /* Particle stars */
+        .stars {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 4s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.5); }
+        }
+
+        /* ── Login card ── */
+        .login-container {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.37),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 48px 40px;
+            width: 420px;
+            max-width: 92vw;
+            animation: cardAppear 0.8s ease-out;
+        }
+
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .login-logo .logo-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #4cc9f0, #4361ee, #7b2ff7);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 20px rgba(67, 97, 238, 0.4);
+            animation: logoGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes logoGlow {
+            0%, 100% { box-shadow: 0 4px 20px rgba(67, 97, 238, 0.4); }
+            50% { box-shadow: 0 4px 30px rgba(76, 201, 240, 0.6); }
+        }
+
+        .login-logo h1 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .login-logo p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: rgba(76, 201, 240, 0.6);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4361ee, #7b2ff7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #4cc9f0, #4361ee);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-btn:hover::before {
+            opacity: 1;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.45);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .login-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .error-msg {
+            color: #ff6b6b;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 16px;
+            display: none;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+
+        .version {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 12px;
+            margin-top: 28px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Time & date display */
+        .clock {
+            position: fixed;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .clock-time {
+            font-size: 72px;
+            font-weight: 200;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: -2px;
+            line-height: 1;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .clock-date {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.55);
+            margin-top: 6px;
+            font-weight: 400;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-container { padding: 32px 24px; }
+            .clock-time { font-size: 48px; }
+            .orb { filter: blur(60px); opacity: 0.25; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background slideshow -->
+    <div class="bg-slideshow">
+        <div class="bg-slide scene-1 active"></div>
+        <div class="bg-slide scene-2"></div>
+        <div class="bg-slide scene-3"></div>
+        <div class="bg-slide scene-4"></div>
+        <div class="bg-slide scene-5"></div>
+        <div class="bg-slide scene-6"></div>
+        <div class="bg-slide scene-7"></div>
+        <div class="bg-slide scene-8"></div>
+    </div>
+
+    <!-- Floating orbs -->
+    <div class="orbs">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <!-- Twinkling stars -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Clock display -->
+    <div class="clock">
+        <div class="clock-time" id="clockTime"></div>
+        <div class="clock-date" id="clockDate"></div>
+    </div>
+
+    <!-- Login card -->
+    <div class="login-container">
+        <div class="login-logo">
+            <div class="logo-icon">🖥️</div>
+            <h1>SysAdminHCP</h1>
+            <p>Hosting Control Panel</p>
+        </div>
+        <div id="error" class="error-msg"></div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" autocomplete="username" placeholder="Enter your username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="login-btn"><span>Sign In</span></button>
+        </form>
+        <form id="mfaForm" style="display:none">
+            <div class="form-group">
+                <label for="mfaCode">Two-Factor Code</label>
+                <input type="text" id="mfaCode" name="mfaCode" autocomplete="one-time-code" placeholder="6-digit code or backup code" required autofocus>
+            </div>
+            <button type="submit" class="login-btn"><span>Verify</span></button>
+        </form>
+        <div class="version" id="panelVersion">SysAdminHCP</div>
+    </div>
+
+    <script>
+        // ── Panel Version ──
+        fetch('/health').then(r=>r.json()).then(d=>{if(d.version){document.getElementById('panelVersion').textContent='SysAdminHCP v'+d.version;}}).catch(()=>{});
+
+        // ── Background Slideshow ──
+        const slides = document.querySelectorAll('.bg-slide');
+        let currentSlide = 0;
+        setInterval(() => {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }, 8000);
+
+        // ── Twinkling Stars ──
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 80; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = (Math.random() * 4) + 's';
+            star.style.animationDuration = (3 + Math.random() * 3) + 's';
+            const size = Math.random() * 2 + 1;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            starsContainer.appendChild(star);
+        }
+
+        // ── Clock ──
+        function updateClock() {
+            const now = new Date();
+            const timeEl = document.getElementById('clockTime');
+            const dateEl = document.getElementById('clockDate');
+            if (timeEl) {
+                timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            if (dateEl) {
+                dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+            }
+        }
+        updateClock();
+        setInterval(updateClock, 10000);
+
+        // ── Login Form ──
+        const errorDiv = document.getElementById('error');
+        const form = document.getElementById('loginForm');
+        const mfaForm = document.getElementById('mfaForm');
+        let pendingMfaToken = null;
+
+        function completeLogin(data) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            // Redirect based on login type
+            const loginType = data.user?.loginType || 'customer';
+            if (loginType === 'superadmin' || loginType === 'admin' || loginType === 'master') {
+                window.location.href = '/display';
+            } else {
+                window.location.href = '/display/client';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorDiv.style.display = 'none';
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.mfaRequired) {
+                    pendingMfaToken = data.mfaToken;
+                    form.style.display = 'none';
+                    mfaForm.style.display = 'block';
+                    document.getElementById('mfaCode').focus();
+                } else if (response.ok && data.success) {
+                    completeLogin(data);
+                } else {
+                    errorDiv.textContent = data.error || 'Login failed';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Connection error. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        mfaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorDiv.style.display = 'none';
+
+            const code = document.getElementById('mfaCode').value;
+
+            try {
+                const response = await fetch('/api/auth/verify-2fa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mfaToken: pendingMfaToken, code })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    completeLogin(data);
+                } else {
+                    errorDiv.textContent = data.error || 'Verification failed';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Connection error. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

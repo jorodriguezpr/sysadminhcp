@@ -1,0 +1,16 @@
+# SysAdminHCP Log Rotation Configuration
+# Install to: /etc/logrotate.d/sysadminhcp
+
+/var/log/sysadminhcp/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 0640 sysadminhcp sysadminhcp
+    sharedscripts
+    postrotate
+        systemctl reload sysadminhcp > /dev/null 2>&1 || true
+    endscript
+}

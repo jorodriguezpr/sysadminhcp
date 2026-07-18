@@ -1,0 +1,43 @@
+# SysAdminHCP systemd service file
+# This is the WSL-compatible version (no ProtectSystem/ReadWritePaths).
+# The installer (install-almalinux9.sh) generates the correct version
+# based on whether WSL or bare metal is detected.
+#
+# For bare metal AlmaLinux 9, use the installer which adds:
+#   ProtectSystem=yes
+#   ReadWritePaths=/usr/local/sysadminhcp/data ...
+
+[Unit]
+Description=SysAdminHCP Control Panel (Node.js)
+After=network.target mariadb.service httpd.service named.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=sysadminhcp
+Group=sysadminhcp
+WorkingDirectory=/usr/local/sysadminhcp/httpdocs
+ExecStart=/usr/local/sysadminhcp/httpdocs/sysadminhcp
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sysadminhcp
+
+# Security hardening (WSL-compatible)
+# Note: ReadWritePaths and ProtectHome conflict in WSL, so we use minimal restrictions
+# NoNewPrivileges must be false because SysAdminHCP uses sudo for system operations
+NoNewPrivileges=false
+PrivateTmp=true
+
+# Environment
+Environment=NODE_ENV=production
+Environment=NODE_PATH=/usr/local/sysadminhcp/httpdocs/node_modules
+EnvironmentFile=-/usr/local/sysadminhcp/etc/sysadminhcp.env
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
