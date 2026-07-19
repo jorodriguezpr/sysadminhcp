@@ -47,9 +47,17 @@ replacing them, so you keep full control of the underlying system.
 - **Client Management** — multi-client hosting accounts with resource plans
 - **Web Statistics** — GoAccess-powered traffic stats per domain
 - **Cron Jobs** — scheduled task management per client
-- **AI Agent** *(Pro)* — AI-assisted SSH terminal and system administration from the browser
+- **AI Agent** *(Pro)* — AI-assisted SSH terminal and system administration from the browser, plus **Autonomous Mode**: continuous background monitoring of system health, support tickets, security activity, and backups, with specific actions (restart a service, reply to a ticket, retry a failed backup, etc.) available for delegation — every action stays off until explicitly enabled, each with its own confirmation
 - **AI Spam Filter** *(Pro)* — AI-powered email spam filtering (OpenAI, Claude, Gemini, Ollama, or GitHub Copilot providers)
 - **Migration Tools** *(Pro)* — import hosting accounts from cPanel, KloxoNG, or another SysAdminHCP server
+- **DNS Import & Multi-Server Sync** *(Pro)* — import zones from any remote BIND server (including split/`include`-based configs) and keep DNS in sync across a multi-server cluster
+
+## Recent Highlights (v8.0.19x)
+
+- **Autonomous Mode expanded** — AI Agent monitoring now covers backups (overdue/failed detection, disk usage) and system resources (memory, disk), alongside the existing tickets/services/security scopes, each with its own opt-in delegated action.
+- **Scheduled backups fixed end-to-end** — the backup schedule feature now actually runs on cron, on both traditional and single-binary installs, with correct retention pruning and a real timeout that can't leave a runaway process behind.
+- **DNS Import fixed for split-config servers** — importing zones from panels that split `named.conf` across multiple included files (e.g. KloxoNG) now correctly discovers and imports them.
+- **General CLI reliability fix** — command-line invocations (used by cron for backups, quota collection, etc.) now exit cleanly on completion instead of hanging.
 
 ## Free vs. Pro
 
@@ -58,9 +66,11 @@ replacing them, so you keep full control of the underlying system.
 | Price | $0 — lifetime | $24 / year |
 | License scope | Unlimited installs (self-registered) | 1 host/IP per license |
 | Hosting menu (Domains, Web Servers, DNS, Mail, FTP, Databases, phpMyAdmin, Webmail, Email Stats) | ✅ | ✅ |
-| AI Agent | ❌ | ✅ |
+| Backups (manual + scheduled, cPanel/KloxoNG import) | ✅ | ✅ |
+| AI Agent (chat + Autonomous Mode monitoring/delegation) | ❌ | ✅ |
 | AI Spam Filter | ❌ | ✅ |
-| Migration Tools | ❌ | ✅ |
+| Migration Tools (cPanel / KloxoNG / SysAdminHCP) | ❌ | ✅ |
+| DNS Import & Multi-Server Sync | ❌ | ✅ |
 
 A license (Free or Pro) is required to unlock the Hosting menu — new installs get a
 5-day grace period to register before it locks. Manage your license and upgrade to
