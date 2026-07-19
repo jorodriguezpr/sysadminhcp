@@ -52,6 +52,13 @@ replacing them, so you keep full control of the underlying system.
 - **Migration Tools** *(Pro)* — import hosting accounts from cPanel, KloxoNG, or another SysAdminHCP server
 - **DNS Import & Multi-Server Sync** *(Pro)* — import zones from any remote BIND server (including split/`include`-based configs) and keep DNS in sync across a multi-server cluster
 
+> **AI features require your own account with a compatible AI provider** (Ollama
+> Cloud, OpenAI, Anthropic/Claude, Google Gemini, or GitHub Copilot) — you supply
+> the API key, and usage is billed by that provider, not SysAdminHCP. **Ollama
+> Cloud is recommended**: it's inexpensive, supports the tool-calling AI Agent and
+> Autonomous Mode needs, and an API key is quick to generate at
+> [ollama.com/settings/keys](https://ollama.com/settings/keys).
+
 ## Recent Highlights (v8.0.19x)
 
 - **Autonomous Mode expanded** — AI Agent monitoring now covers backups (overdue/failed detection, disk usage) and system resources (memory, disk), alongside the existing tickets/services/security scopes, each with its own opt-in delegated action.
