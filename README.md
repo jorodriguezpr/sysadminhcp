@@ -57,7 +57,8 @@ replacing them, so you keep full control of the underlying system.
 > the API key, and usage is billed by that provider, not SysAdminHCP. **Ollama
 > Cloud is recommended**: it's inexpensive, supports the tool-calling AI Agent and
 > Autonomous Mode needs, and an API key is quick to generate at
-> [ollama.com/settings/keys](https://ollama.com/settings/keys).
+> [ollama.com/settings/keys](https://ollama.com/settings/keys) — the `glm-5.2:cloud`
+> model is a strong default choice.
 
 ## Recent Highlights (v8.0.19x)
 
