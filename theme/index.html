@@ -544,6 +544,112 @@ The simplest of the three — just the KloxoNG server's hostname/IP and root SSH
 
 <div class="help-warn"><strong>Credentials are never persisted.</strong> SSH passwords and API keys you enter in the wizard are used for that session only — they're not saved anywhere, including in Migration History. If you need to resync later, you'll re-enter them (or load a saved server from Remote Servers &amp; Cluster, which stores them for reuse only if you explicitly add it there).</div>
 `},
+spamfilter:{title:'📖 Help — AI Spam Filter',html:`
+<p>AI-powered spam detection for your mail server. Instead of (or alongside) traditional rule-based filtering, every incoming message is classified by an AI model, which is generally far better at catching sophisticated spam/phishing that slips past keyword filters, while explaining <em>why</em> it flagged something.</p>
+<div class="help-example"><strong>Uses the same AI provider system as the AI Agent.</strong> You need your own account with a compatible provider — Ollama Cloud is the default and recommended (inexpensive, and you can generate a key at <code>ollama.com/settings/keys</code>); OpenAI, Anthropic Claude, and Google Gemini are also supported.</div>
+
+<h3>Getting started</h3>
+<ol>
+<li>If not installed yet, click <strong>Install AI Spam Filter</strong> under the Settings tab.</li>
+<li>Pick your <strong>Active Provider</strong> and enter its API key, set a <strong>Spam Confidence Threshold</strong> (0.0–1.0 — higher means the AI has to be more certain before something is marked spam; 0.7 is a reasonable starting point), then <strong>Save Configuration</strong>.</li>
+<li>Click <strong>Test AI Provider</strong> to confirm the connection actually works before relying on it.</li>
+<li>Tick <strong>Globally Enable Filter</strong> to turn it on server-wide — this can be overridden per-domain or per-mailbox afterward (see Domains/Accounts tabs) if you only want it active for specific clients.</li>
+</ol>
+
+<h3>What each tab does</h3>
+<table><tr><th>Tab</th><th>Purpose</th></tr>
+<tr><td>Settings</td><td>Provider/API key, confidence threshold, global on/off, install status.</td></tr>
+<tr><td>Domains</td><td>Override the global on/off setting for a specific domain.</td></tr>
+<tr><td>Accounts</td><td>Override the setting for one specific mailbox, finer-grained than the domain level.</td></tr>
+<tr><td>Stats</td><td>Spam/ham counts and rate over the last 30 days, broken down by spam type and by domain — useful for spotting which domains are getting targeted hardest.</td></tr>
+<tr><td>Tokens</td><td>AI token usage (and rough cost) specifically from spam filtering, separate from the AI Agent's own usage tracking.</td></tr>
+<tr><td>Whitelist</td><td>Senders/domains that skip AI analysis entirely and are always delivered.</td></tr>
+<tr><td>Blacklist</td><td>Senders/domains that are instantly marked spam without spending AI tokens analyzing them.</td></tr>
+</table>
+
+<h3>Worked example: whitelisting a sender that keeps getting flagged</h3>
+<div class="help-example">
+Go to <strong>Whitelist</strong> → choose scope (<code>Global</code> to apply everywhere, <code>Domain</code> for one domain, or <code>User</code> for a single mailbox), choose entry type (a single email address, or an entire sending domain with "domain (all @)"), enter the value, and <strong>+ Add</strong>. From then on that sender bypasses AI analysis entirely and is always delivered.
+</div>
+<h3>Worked example: a client's quarantined email includes a one-click "not spam" link</h3>
+<div class="help-example">
+Under Whitelist tab's <strong>Panel URL for Approve Links</strong>, set this to your panel's real external URL (e.g. <code>https://your-server-ip:7777</code>). Quarantine notification emails then include a link the recipient can click to whitelist that sender themselves, without needing you to do it manually here.
+</div>
+
+<div class="help-warn">If every message is showing 0% confidence regardless of content, the AI provider connection or mail-delivery wiring may be broken — use <strong>Fix / Verify Delivery</strong> on the Settings tab, which repairs the most common cause (the filter's config file becoming unreadable by the mail delivery user).</div>
+`},
+tickets:{title:'📖 Help — Support Tickets',html:`
+<p>A self-contained help desk for <em>your</em> hosting clients — separate from your own SysAdminHCP vendor support channel. Clients open tickets from their client portal; you manage and reply to them here.</p>
+
+<h3>Departments</h3>
+<p>Organize tickets by department (e.g. Billing, Technical, Sales) via <strong>Manage Departments</strong>. Clients pick a department when opening a ticket, which you can then filter by here. A department can be hidden from clients if it's for internal use only.</p>
+
+<h3>Working a ticket</h3>
+<ol>
+<li>Click any row in the ticket list to open its full conversation thread.</li>
+<li>Set <strong>Status</strong> (Open / Client Replied / Answered / Closed), <strong>Priority</strong> (Low/Medium/High/Urgent), and optionally <strong>Assigned To</strong> — all update immediately, no separate save button.</li>
+<li>Type your reply and click <strong>Send Reply</strong> — the client sees it in their portal (and typically gets an email notification, depending on your Event Notifications settings).</li>
+</ol>
+
+<h3>Worked example: triaging a busy queue</h3>
+<div class="help-example">
+Use the filter dropdowns at the top (Status/Priority/Department) to narrow the list — e.g. filter to <code>Open</code> + <code>Urgent</code> first thing each day to make sure nothing time-sensitive is waiting. Once handled, set status to <code>Answered</code>; if the client replies again, it automatically shows as <code>Client Replied</code> so you know it's back in your court.
+</div>
+
+<p>Want the AI Agent to handle some of this automatically? See <strong>AI Agent → Autonomous Mode</strong>'s Help — a <code>tickets</code> delegation can auto-reply and/or auto-update ticket status without you touching this page, while you stay in full control of exactly which of those two actions is enabled.</p>
+`},
+notifications:{title:'📖 Help — Event Notifications',html:`
+<p>Automatic alerts for the things that quietly cause outages if nobody notices in time: expiring SSL certificates, expiring domain registrations, disk/bandwidth quota limits, and services going down. Delivered by email, with an optional webhook, plus a live notification bell in the client portal.</p>
+
+<h3>Built-in rule types</h3>
+<table><tr><th>Rule</th><th>What it catches</th></tr>
+<tr><td>SSL Certificate Expiring</td><td>A domain's SSL cert is approaching its expiry date.</td></tr>
+<tr><td>Domain Registration Expiring</td><td>A domain's registration itself (not just its SSL) is approaching expiry.</td></tr>
+<tr><td>Disk Quota</td><td>A client is approaching or over their resource plan's disk limit.</td></tr>
+<tr><td>Bandwidth Quota</td><td>A client is approaching or over their monthly bandwidth allowance.</td></tr>
+<tr><td>Service Down</td><td>An installed service (web/mail/database/etc.) that should be running isn't.</td></tr>
+</table>
+
+<h3>Using this page</h3>
+<ul>
+<li>Each rule under <strong>Notification Rules</strong> has its own threshold/severity — adjust these to match how much lead time you want before an alert fires.</li>
+<li><strong>Run Checks Now</strong> forces an immediate check instead of waiting for the next scheduled cycle — useful right after you change a threshold, to confirm it behaves as expected.</li>
+<li><strong>Recent Notifications</strong> is the actual alert history — color-coded by severity (info/warning/critical). <strong>Mark All Read</strong> clears the unread badge without deleting the history.</li>
+</ul>
+
+<div class="help-example"><strong>Example:</strong> if you keep getting caught out by SSL certs expiring on domains you'd forgotten about, this is the fix — once configured, you'll get an email well before it lapses instead of finding out from a client (or a browser warning) after the fact.</div>
+`},
+appinstaller:{title:'📖 Help — App Installer',html:`
+<p>One-click installs for WordPress, Joomla, Drupal, and Nextcloud onto any domain — downloads the official release, provisions a MySQL database, extracts it into the domain's docroot, and configures it automatically wherever a CLI installer is available.</p>
+
+<h3>How it finishes the install</h3>
+<table><tr><th>App</th><th>Finishes unattended if...</th><th>Otherwise</th></tr>
+<tr><td>WordPress</td><td><code>wp-cli</code> is available on the server</td><td>Standard web setup wizard</td></tr>
+<tr><td>Nextcloud</td><td><code>occ</code> is available</td><td>Standard web setup wizard</td></tr>
+<tr><td>Drupal</td><td><code>drush</code> is available</td><td>Standard web setup wizard</td></tr>
+<tr><td>Joomla</td><td colspan="2" style="text-align:center">Always requires the short web installer — no official CLI installer exists</td></tr>
+</table>
+
+<h3>Worked example: installing WordPress for a client</h3>
+<div class="help-example">
+<strong>+ New Install</strong> → pick <code>WordPress</code>, pick the client's domain, optionally set an <strong>Install Path</strong> (leave blank to install at the domain root, or e.g. <code>blog</code> to install into <code>domain.com/blog</code>), then <strong>Start Install</strong>. Watch the row's status in the table (auto-refreshes every 5 seconds while installing); once complete, click it for the site URL and, if a database was created, the DB name and user.
+</div>
+
+<h3>Removing an install</h3>
+<p>Click <strong>Delete</strong> on any row. You'll be asked separately whether to also drop its database — keep it if you might want the data later, drop it if you're sure it's not needed.</p>
+`},
+emailmigration:{title:'📖 Help — Email Migration (IMAP Import)',html:`
+<p>Pulls an existing mailbox over from another mail provider via IMAP, straight into a local Maildir on this server — independent of the cPanel/KloxoNG/SysAdminHCP account migration tools, and usable any time you just need one mailbox's messages moved without migrating a whole hosting account.</p>
+
+<h3>Worked example</h3>
+<div class="help-example">
+<strong>+ New Import</strong> → under <strong>Source Mailbox</strong>, enter the old provider's IMAP host/port (993 with TLS is the common default), plus the source email and its password. Under <strong>Destination Mailbox</strong>, pick the domain and destination email on this server — if that mailbox doesn't exist yet, it's created automatically (leave the password blank to auto-generate one, or set it yourself). Click <strong>Start Import</strong> and watch progress in the table — it shows messages imported so far, the total once known, and which folder is currently being copied.
+</div>
+
+<div class="help-warn">The source password is used only for the duration of that one import and is <strong>never stored</strong> — if you need to re-run or resync later, you'll re-enter it.</div>
+
+<p>Click any row for a detail view showing exactly how many messages were imported vs. skipped (skips are usually duplicates or malformed messages, not data loss). Delete a completed or failed import row to clear it from the list — this doesn't touch the mailbox itself, only the import record.</p>
+`},
 };
 MODULE_HELP.migoverview=MODULE_HELP.migration;
 MODULE_HELP.migsource=MODULE_HELP.migration;
@@ -1257,7 +1363,7 @@ async function renderTickets(el){
       <select id="tk_fStatus" onchange="tkApplyFilters()"><option value="">All Statuses</option><option value="open">Open</option><option value="client-reply">Client Replied</option><option value="answered">Answered</option><option value="closed">Closed</option></select>
       <select id="tk_fPriority" onchange="tkApplyFilters()"><option value="">All Priorities</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option></select>
       <select id="tk_fDept" onchange="tkApplyFilters()"><option value="">All Departments</option></select>
-    </div><div class="toolbar-right"><button class="btn btn-secondary" onclick="tkManageDepartments()">Manage Departments</button></div></div>
+    </div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('tickets')">❓ Help</button> <button class="btn btn-secondary" onclick="tkManageDepartments()">Manage Departments</button></div></div>
     <div class="card"><table class="data-table"><thead><tr><th>#</th><th>Subject</th><th>Client</th><th>Department</th><th>Priority</th><th>Status</th><th>Last Activity</th></tr></thead><tbody id="tk_table"><tr><td colspan="7">Loading...</td></tr></tbody></table></div>`;
   const depts=await api('/tickets/departments').catch(()=>({departments:[]}));
   const dsel=document.getElementById('tk_fDept');
@@ -1338,7 +1444,7 @@ async function tkDeleteDept(id){
 const _ntfRuleLabels={'ssl-expiry':'SSL Certificate Expiring','domain-expiry':'Domain Registration Expiring','disk-quota':'Disk Quota','bandwidth-quota':'Bandwidth Quota','service-down':'Service Down'};
 const _ntfSeverityColor={info:'#0984e3',warning:'#e17055',critical:'#d63031'};
 async function renderNotifications(el){
-  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Notification Rules</span><button class="btn btn-secondary btn-sm" onclick="ntfRunChecksNow()">Run Checks Now</button></div><div id="ntf_rules"><span style="color:#a7a9be;font-size:13px">Loading...</span></div></div>
+  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Notification Rules</span><span><button class="btn btn-sm btn-help" onclick="showModuleHelp('notifications')">❓ Help</button> <button class="btn btn-secondary btn-sm" onclick="ntfRunChecksNow()">Run Checks Now</button></span></div><div id="ntf_rules"><span style="color:#a7a9be;font-size:13px">Loading...</span></div></div>
     <div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Recent Notifications</span><button class="btn btn-secondary btn-sm" onclick="ntfMarkAllRead()">Mark All Read</button></div><div id="ntf_list"><span style="color:#a7a9be;font-size:13px">Loading...</span></div></div>`;
   ntfLoadRules();
   ntfLoadList();
@@ -1374,7 +1480,7 @@ async function ntfMarkAllRead(){try{await api('/notifications/read-all',{method:
 // ═══ App Installer (Pro feature) ═════════════════════════════════════════════
 const _aiStatusColor={pending:'off',installing:'off',completed:'on',failed:'off'};
 async function renderAppInstaller(el){
-  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">App Installer</h3></div><div class="toolbar-right"><button class="btn btn-primary" onclick="aiShowNewInstall()">+ New Install</button></div></div>
+  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">App Installer</h3></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('appinstaller')">❓ Help</button> <button class="btn btn-primary" onclick="aiShowNewInstall()">+ New Install</button></div></div>
     <div class="card"><table class="data-table"><thead><tr><th>App</th><th>Domain</th><th>Client</th><th>Status</th><th>Started</th><th>Actions</th></tr></thead><tbody id="ai_table"><tr><td colspan="6">Loading...</td></tr></tbody></table></div>`;
   aiLoadTable();
 }
@@ -1438,7 +1544,7 @@ async function aiDelete(id){
 // ═══ Email Migration / IMAP Import (Pro feature) ═════════════════════════════
 const _emStatusColor={pending:'off',running:'off',completed:'on',failed:'off'};
 async function renderEmailMigration(el){
-  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">Email Migration (IMAP Import)</h3></div><div class="toolbar-right"><button class="btn btn-primary" onclick="emShowNewMigration()">+ New Import</button></div></div>
+  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">Email Migration (IMAP Import)</h3></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('emailmigration')">❓ Help</button> <button class="btn btn-primary" onclick="emShowNewMigration()">+ New Import</button></div></div>
     <div class="card"><table class="data-table"><thead><tr><th>Source</th><th>Destination</th><th>Client</th><th>Status</th><th>Progress</th><th>Started</th><th>Actions</th></tr></thead><tbody id="em_table"><tr><td colspan="7">Loading...</td></tr></tbody></table></div>`;
   emLoadTable();
 }
@@ -2344,7 +2450,7 @@ const typeRows=(stats.byType||[]).map(t=>`<tr><td>${escHtml(t.type)}</td><td>${t
 const domainRows=(stats.byDomain||[]).slice(0,20).map(d=>`<tr><td>${escHtml(d.domain)}</td><td>${d.total}</td><td style="color:#e17055">${d.spam}</td><td style="color:#00b894">${d.ham}</td><td>${d.total>0?Math.round(d.spam/d.total*100):0}%</td></tr>`).join('');
 const statsHtml=`<div class="card"><div class="card-title">Spam Type Breakdown</div><div style="padding:12px">${typeRows?`<table class="data-table"><thead><tr><th>Type</th><th>Count</th></tr></thead><tbody>${typeRows}</tbody></table>`:'<p style="color:#888">No spam detected yet.</p>'}</div></div><div class="card"><div class="card-title">Per-Domain Stats (Top 20, last 30 days)</div><div style="padding:12px">${domainRows?`<table class="data-table"><thead><tr><th>Domain</th><th>Total</th><th>Spam</th><th>Ham</th><th>Spam%</th></tr></thead><tbody>${domainRows}</tbody></table>`:'<p style="color:#888">No data yet.</p>'}</div></div><div class="card"><div class="card-title">Recent Filter Log</div><div id="sf_recentLog" style="padding:12px"><button class="btn btn-sm btn-secondary" onclick="sfLoadRecentLog()">Load Recent Entries</button></div></div>`;
 
-el.innerHTML=`${statsBanner}<div class="card" style="padding:0"><div style="display:flex;border-bottom:1px solid #e9ecef;padding:0 12px">${tabHtml}</div><div id="sf_tabContent" style="padding:0"></div></div>`;
+el.innerHTML=`${statsBanner}<div class="card" style="padding:0"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e9ecef;padding:0 12px"><div style="display:flex">${tabHtml}</div><button class="btn btn-sm btn-help" onclick="showModuleHelp('spamfilter')">❓ Help</button></div><div id="sf_tabContent" style="padding:0"></div></div>`;
 const tokenUsageHtml=`<div id="sf_tokenContent" style="padding:12px"><div style="color:#888;padding:20px;text-align:center">Loading token usage...</div></div>`;
 const whitelistHtml=`<div class="card"><div class="card-title">Sender Whitelist <span style="font-size:12px;font-weight:400;color:#888">— whitelisted senders bypass AI analysis entirely</span></div><div style="padding:12px"><div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><select id="sf_wlScope" onchange="sfWlScopeChange()" style="width:130px"><option value="global">Global</option><option value="domain">Domain</option><option value="user">User (mailbox)</option></select><select id="sf_wlEntryType" style="width:120px"><option value="email">Email address</option><option value="domain">Domain (all @)</option></select><input id="sf_wlValue" placeholder="sender@example.com or example.com" style="flex:1;min-width:180px"><div id="sf_wlTargetWrap" style="display:none"><input id="sf_wlTarget" placeholder="Scope target" style="width:200px"></div><button class="btn btn-success" onclick="sfAddWhitelist()">+ Add</button></div><div style="font-size:12px;color:#888;margin-bottom:12px" id="sf_wlHint">Global: applies to all domains on this server. Domain: applies to all mailboxes of a domain. User: applies to a single mailbox.</div><div id="sf_wlTable"><div style="color:#888;text-align:center;padding:20px">Loading...</div></div></div></div><div class="card"><div class="card-title">Panel URL for Approve Links</div><div style="padding:12px"><p style="font-size:13px;color:#888;margin:0 0 8px">Set this to your panel's external URL (e.g. <code>https://85.239.245.216:7777</code>). Quarantined email notifications will include a link to whitelist the sender.</p><div style="display:flex;gap:8px"><input id="sf_panelUrl" value="${escHtml(cfg.panelUrl||'')}" placeholder="https://your-server-ip:7777" style="flex:1"><button class="btn btn-primary" onclick="sfSavePanelUrl()">Save</button></div></div></div>`;
 const blacklistHtml=`<div class="card"><div class="card-title">Sender Blacklist <span style="font-size:12px;font-weight:400;color:#888">— blacklisted senders are instantly marked as spam, skipping AI analysis to save tokens</span></div><div style="padding:12px"><div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><select id="sf_blScope" onchange="sfBlScopeChange()" style="width:130px"><option value="global">Global</option><option value="domain">Domain</option><option value="user">User (mailbox)</option></select><select id="sf_blEntryType" style="width:120px"><option value="email">Email address</option><option value="domain">Domain (all @)</option></select><input id="sf_blValue" placeholder="spammer@example.com or spam.com" style="flex:1;min-width:180px"><div id="sf_blTargetWrap" style="display:none"><input id="sf_blTarget" placeholder="Scope target" style="width:200px"></div><button class="btn btn-danger" onclick="sfAddBlacklist()">+ Add</button></div><div style="font-size:12px;color:#888;margin-bottom:12px" id="sf_blHint">Global: blocks this sender for all domains on this server. Domain: blocks for all mailboxes of one domain. User: blocks for one mailbox only.</div><div id="sf_blTable"><div style="color:#888;text-align:center;padding:20px">Loading...</div></div></div></div>`;
