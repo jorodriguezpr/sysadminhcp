@@ -85,6 +85,21 @@
         .modal{background:var(--card-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--card-border);border-radius:var(--radius-modal);padding:var(--pad-modal);width:620px;max-width:92vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
         .modal h2{margin-bottom:14px;color:var(--text-primary);font-weight:700;font-size:var(--fs-lg)}
         .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+        .help-content{color:var(--text-primary);font-size:13.5px;line-height:1.65}
+        .help-content h3{font-size:16px;font-weight:700;margin:22px 0 8px;color:var(--accent,#0984e3)}
+        .help-content h3:first-child{margin-top:0}
+        .help-content h4{font-size:13.5px;font-weight:700;margin:14px 0 6px;color:var(--text-primary)}
+        .help-content p{margin:0 0 10px}
+        .help-content ul,.help-content ol{margin:0 0 10px;padding-left:22px}
+        .help-content li{margin-bottom:5px}
+        .help-content code{background:rgba(127,127,127,0.15);padding:1px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px}
+        .help-content .help-example{background:rgba(9,132,227,0.07);border-left:3px solid #0984e3;border-radius:6px;padding:10px 14px;margin:0 0 12px}
+        .help-content .help-example strong{color:#0984e3}
+        .help-content .help-warn{background:rgba(231,76,60,0.08);border-left:3px solid #e74c3c;border-radius:6px;padding:10px 14px;margin:0 0 12px}
+        .help-content table{width:100%;border-collapse:collapse;margin:0 0 12px;font-size:12.5px}
+        .help-content table th,.help-content table td{text-align:left;padding:6px 10px;border-bottom:1px solid rgba(127,127,127,0.15)}
+        .help-content table th{color:var(--text-secondary,#888);font-weight:600}
+        .btn-help{background:transparent;border:1px solid var(--card-border);color:var(--text-primary)}
         .del-item{padding:5px 0;font-size:var(--fs-sm);border-bottom:1px solid rgba(0,0,0,0.06);color:var(--text-primary)}
         .alert{padding:10px 14px;border-radius:var(--radius-input);margin-bottom:12px;font-size:var(--fs-sm);border:1px solid transparent}
         .alert-success{background:rgba(46,204,113,0.1);color:#155724;border-color:rgba(46,204,113,0.2)}
@@ -387,6 +402,154 @@ async function checkHostingBanner(){const ha=await getHostingAccessStatus();upda
 setTimeout(checkHostingBanner,1000);
 function showModal(title,body,actions=[]){const c=document.getElementById('modalContainer');const ah=actions.map(a=>`<button class="btn ${a.cls||'btn-primary'}" onclick="${a.onclick}">${a.label}</button>`).join('')+`<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>`;c.innerHTML=`<div class="modal-overlay" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()"><h2>${title}</h2><div>${body}</div><div class="modal-actions">${ah}</div></div></div>`;c.classList.remove('hidden');const phpSelectW=document.getElementById('m_wV');if(phpSelectW){loadManagedPhpVersionOptions('m_wV',phpSelectW.value||'8.3');}const phpSelectD=document.getElementById('m_dPV');if(phpSelectD){loadManagedPhpVersionOptions('m_dPV',phpSelectD.value||'8.3');}}
 function closeModal(){document.getElementById('modalContainer').classList.add('hidden');}
+function showModuleHelp(key){
+  const h=MODULE_HELP[key];
+  if(!h){showAlert('No help available for this page yet','info');return;}
+  const c=document.getElementById('modalContainer');
+  c.innerHTML=`<div class="modal-overlay" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="width:840px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px"><h2 style="margin:0">${h.title}</h2><button class="btn btn-secondary btn-sm" onclick="closeModal()" style="flex-shrink:0">✕ Close</button></div><div class="help-content">${h.html}</div></div></div>`;
+  c.classList.remove('hidden');
+}
+const MODULE_HELP={
+aiagent:{title:'📖 Help — AI Agent Overview',html:`
+<p>The <strong>AI Agent</strong> is a separate background service (<code>aiagentassistant</code>, its own systemd unit on port 3000) that connects an AI model to your SysAdminHCP panel through a defined set of tools — it can check system status, read tickets, look at security activity, restart services, reply to tickets, and more, either when you ask it directly (chat) or continuously in the background (Autonomous Mode, see below).</p>
+
+<h3>Before you start: you need an AI provider account</h3>
+<p>The AI Agent doesn't include its own AI model — it connects to a provider of your choice using your own API key, and usage is billed by that provider directly, not through SysAdminHCP.</p>
+<div class="help-example"><strong>Recommended: Ollama Cloud.</strong> It's inexpensive, supports the tool-calling the AI Agent needs to actually take actions (not just chat), and a key takes under a minute to generate at <code>ollama.com/settings/keys</code>. The <code>glm-5.2:cloud</code> model is a strong default choice. OpenAI, Anthropic (Claude), Google Gemini, and GitHub Copilot are also supported if you already have one of those accounts.</div>
+<p>Set your provider and API key under <strong>AI Settings</strong> in this menu before anything else here will work.</p>
+
+<h3>Getting started</h3>
+<ol>
+<li>If the banner above says "not installed," click <strong>Install AI Agent</strong> — this clones the service, builds it, and starts it as a systemd service. Takes a few minutes.</li>
+<li>Toggle <strong>Enabled</strong> (top-right of this page) — this unlocks the rest of the AI Agent menu.</li>
+<li>Go to <strong>AI Settings</strong> and enter your provider + API key (see above).</li>
+<li>Try <strong>AI Chat</strong> first with something simple, e.g. <em>"what's my disk usage?"</em> or <em>"list open tickets"</em> — this confirms the connection works before you rely on it for anything else.</li>
+<li>When you're ready for continuous background monitoring instead of just chat, see <strong>Autonomous Mode</strong> below.</li>
+</ol>
+
+<h3>What each page in this menu does</h3>
+<table><tr><th>Page</th><th>What it's for</th></tr>
+<tr><td>AI Chat</td><td>Talk to the agent directly — ask questions, request one-off actions ("restart Apache", "show me the last 10 failed logins"). Nothing happens without you asking.</td></tr>
+<tr><td>NL Scripts</td><td>Write a task in plain English and let the agent turn it into an executable script, which you review before running.</td></tr>
+<tr><td>Playbooks</td><td>Save a recurring routine (a sequence of steps/prompts) once, then re-run it on demand or on a schedule instead of re-typing it every time.</td></tr>
+<tr><td>Private KB</td><td>Give the agent background knowledge about your specific environment (naming conventions, which domains matter, non-standard setups) so its answers and actions are better informed.</td></tr>
+<tr><td>Scheduled Tasks</td><td>Run a playbook or prompt automatically on a cron-style schedule, independent of Autonomous Mode's own 5-minute monitoring cycle.</td></tr>
+<tr><td>Email Accounts</td><td>Let the agent read/send from a specific mailbox on your server, if you want it handling email-related tasks.</td></tr>
+<tr><td>Credentials</td><td>Securely store credentials the agent may need for specific tasks, kept separate from chat history/logs.</td></tr>
+<tr><td>Token Usage</td><td>Track how many tokens (and roughly how much cost) the agent has used, broken down over time.</td></tr>
+<tr><td>AI Settings</td><td>Provider, API key, and model selection — the first thing to configure.</td></tr>
+<tr><td>AI Logs</td><td>Raw activity log of everything the agent has done — useful when troubleshooting an unexpected response or action.</td></tr>
+<tr><td>Autonomous Mode</td><td>Continuous background monitoring with optional, individually-delegated automatic actions. See below.</td></tr>
+</table>
+
+<h3>Autonomous Mode</h3>
+<p>Continuous background monitoring — checks system health, tickets, security, and backups every 5 minutes and optionally takes specific, individually-delegated actions. This is the closest thing to a real sysadmin assistant in the panel. <strong>Click the ❓ Help button on the Autonomous Mode page itself for the full guide with examples</strong> — it's substantial enough to deserve its own write-up.</p>
+`},
+aiautonomous:{title:'📖 Help — Autonomous Mode: your AI sysadmin assistant',html:`
+<h3>What Autonomous Mode actually does</h3>
+<p><strong>Monitoring is always on and always safe.</strong> Every 5 minutes, the agent checks: system health (memory, disk usage), open support tickets, security/intrusion activity, and backup status (overdue/failed backups, backup disk usage). It records everything it finds as an <strong>observation</strong> in the Consciousness Stream below. This alone is genuinely useful on its own — it's a standing health check running in the background that you don't have to remember to do yourself, and it works with zero configuration.</p>
+<div class="help-warn"><strong>Observation can never act on your panel.</strong> Reading system state and taking action are deliberately separate. Nothing below can restart a service, touch a client, or reply to a ticket unless you explicitly turn that specific action on for a specific scope — see Delegations below. Until you do, Autonomous Mode is purely a read-only health check.</div>
+
+<h3>Turning observation into action: Delegations</h3>
+<p>A <strong>Delegation</strong> grants the agent permission to act within one scope (services, tickets, clients, security, or backup). Creating one is a deliberate two-step process so nothing turns on by accident:</p>
+<ol>
+<li>Click <strong>+ New Delegation</strong>, pick a scope, and write a short description of what you're delegating and why (e.g. "auto-restart web/mail services after hours").</li>
+<li>The delegation is created with <strong>every action switched off</strong>. It appears in the Delegations list below — find it and tick the specific action(s) you actually want enabled. Each toggle asks for a separate confirmation before it takes effect.</li>
+<li>From that point on, whenever a check cycle observes a matching problem, the agent takes that action automatically and records it in the Action Log with a success/failure result.</li>
+</ol>
+
+<h3>The five scopes and what each one can do</h3>
+<table><tr><th>Scope</th><th>What it watches</th><th>Delegated action available</th></tr>
+<tr><td><strong>services</strong></td><td>Installed services that should be running but aren't (Apache, MySQL, qmail, Dovecot, etc.)</td><td><strong>Auto-restart down services</strong></td></tr>
+<tr><td><strong>tickets</strong></td><td>Open support tickets from your hosting clients</td><td><strong>Auto-reply to tickets</strong>, <strong>Auto-update ticket status</strong></td></tr>
+<tr><td><strong>clients</strong></td><td>Client account issues (e.g. over their resource quota)</td><td><strong>Auto-suspend/unsuspend clients</strong></td></tr>
+<tr><td><strong>security</strong></td><td>Intrusion attempts, currently-blocked IPs</td><td>Observation only for now — no delegated action yet, informational</td></tr>
+<tr><td><strong>backup</strong></td><td>Overdue or failed scheduled backups, backup disk usage</td><td><strong>Auto-retry failed/overdue backups</strong> (rate-limited to once every 6 hours)</td></tr>
+</table>
+
+<h3>Worked examples</h3>
+<h4>Example 1 — "restart Apache automatically if it goes down overnight, so I don't wake up to a dead site"</h4>
+<div class="help-example">
+<strong>1.</strong> Autonomous Mode → <strong>+ New Delegation</strong> → scope <code>services</code>, description "auto-restart down services".<br>
+<strong>2.</strong> In the new delegation card, tick <strong>Auto-restart down services</strong> and confirm the prompt.<br>
+<strong>3.</strong> That's it. Within 5 minutes of Apache (or any installed service) going down, the agent restarts it and logs the attempt — check the Action Log for a ✓ or ✗ result. If a service keeps flapping, you'll see repeated attempts in the log, which is itself a useful signal that something deeper is wrong.
+</div>
+<h4>Example 2 — "let the agent handle routine support tickets, but I still want to personally review anything unusual"</h4>
+<div class="help-example">
+Create a <code>tickets</code> delegation and enable only <strong>Auto-update ticket status</strong> (e.g. auto-closing a ticket once a client marks it resolved), while leaving <strong>Auto-reply to tickets</strong> off. This automates the bookkeeping side without letting the agent send anything client-facing on your behalf.
+</div>
+<h4>Example 3 — "make sure a failed backup actually gets retried without me having to notice and click retry myself"</h4>
+<div class="help-example">
+Create a <code>backup</code> delegation and enable <strong>Auto-retry failed/overdue backups</strong>. If a scheduled backup fails or goes overdue, the agent kicks off a fresh full backup automatically — but at most once every 6 hours, even if it keeps failing, so a structurally broken backup (e.g. a full disk) doesn't retry-storm every single check cycle. You'll still want to actually go fix the root cause; this just stops you from silently going backup-less in the meantime.
+</div>
+<h4>Example 4 — "suspend a client automatically if they go over quota, but unsuspend them just as automatically once they're back under it"</h4>
+<div class="help-example">
+Create a <code>clients</code> delegation and enable <strong>Auto-suspend/unsuspend clients</strong>. This one action covers both directions — the agent suspends when it observes a client over their resource plan's limit, and unsuspends once a later check shows them back within it, no separate toggle needed.
+</div>
+
+<h3>Turning it back off</h3>
+<p>Untick a specific action to stop just that behavior, or flip a delegation's <strong>Active</strong> switch off to pause the whole scope at once — either way, the agent reverts to observation-only for that scope immediately, with no delay. Delete a delegation to remove it entirely.</p>
+
+<h3>Reading the Consciousness Stream and Action Log</h3>
+<p>The <strong>Consciousness Stream</strong> card is the raw feed of every observation from every check cycle — this is the best place to understand what the agent is actually seeing, whether or not you've delegated anything yet. Severity is color-coded (critical / warning / info). The <strong>Action Log</strong> only shows entries when a delegated action was actually taken, each with a timestamp, the action, its target, and a success/failure result — this is your audit trail for anything the agent has done on your behalf, and the first place to check if something unexpected happened.</p>
+
+<h3>Practical tips</h3>
+<ul>
+<li>Start with observation only for a day or two before delegating anything — read the Consciousness Stream to get a feel for what's normal on your server before you let the agent act on it.</li>
+<li>Delegate one scope at a time, starting with the lowest-stakes one for your situation (usually <code>services</code> auto-restart) before moving to anything client-facing like <code>tickets</code> or <code>clients</code>.</li>
+<li>The stat cards at the top of this page (Active Delegations, Actions Enabled, Recent Observations, Last Check) are a quick at-a-glance summary — if "Last Check" ever shows something far in the past, the agent service itself may be down (check AI Agent → Overview).</li>
+</ul>
+`},
+migration:{title:'📖 Help — Migration & Remote Servers',html:`
+<p>The Migration menu (Pro) covers everything involved in moving a hosting account onto this server from somewhere else, and in connecting multiple SysAdminHCP servers together. It has four pages, used in this order for a first-time migration:</p>
+<table><tr><th>Page</th><th>Purpose</th></tr>
+<tr><td><strong>Overview &amp; History</strong></td><td>See any migration currently in progress, and a log of every past migration/resync with a one-click Resync shortcut.</td></tr>
+<tr><td><strong>Source Server Setup</strong></td><td>Run this on the <em>source</em> server (a different SysAdminHCP install) when migrating <em>from</em> SysAdminHCP — generates the API key the destination needs.</td></tr>
+<tr><td><strong>Migrate From...</strong></td><td>Run this on the <em>destination</em> server (this one) — the actual step-by-step wizard for cPanel/WHM, another SysAdminHCP server, or KloxoNG.</td></tr>
+<tr><td><strong>Remote Servers &amp; Cluster</strong></td><td>Save reusable connection presets for other SysAdminHCP servers, and optionally link them as DNS Cluster members.</td></tr>
+</table>
+
+<h3>The three source types, and which one to use</h3>
+<table><tr><th>Source</th><th>What it needs</th><th>Best for</th></tr>
+<tr><td><strong>cPanel / WHM</strong></td><td>WHM API token + root SSH password on the cPanel server</td><td>Connects live via API + SSH — no backup archive to download first. Ideal for accounts too large to comfortably move as a file (20GB+).</td></tr>
+<tr><td><strong>SysAdminHCP Server</strong></td><td>A Migration API key generated on the source server (see Source Server Setup) + root SSH password on the source</td><td>Full account transfer between two SysAdminHCP installs — domains, mail, databases, FTP, DNS, SSL, webmail, home folder. Passwords are carried over exactly as stored, nothing is regenerated.</td></tr>
+<tr><td><strong>KloxoNG Server</strong></td><td>Just the root SSH password on the KloxoNG server</td><td>No API key needed — connects directly via SSH and reads the KloxoNG MySQL database. Passwords carried over as-is.</td></tr>
+</table>
+
+<h3>Worked example: migrating a client from another SysAdminHCP server</h3>
+<div class="help-example">
+<strong>1.</strong> On the <em>source</em> server's panel, go to <strong>Source Server Setup</strong> → fill in a label (e.g. "migration to dc2"), optionally scope it to one client, optionally set an expiry, then <strong>Generate Key</strong>. Copy the key immediately — it's shown only once.<br>
+<strong>2.</strong> On <em>this</em> (destination) server, go to <strong>Migrate From...</strong> → choose <strong>SysAdminHCP Server</strong>.<br>
+<strong>3.</strong> Fill in the source host, the API key from step 1, and the source server's root SSH password (used separately, for rsync of files &amp; mail — the API key alone doesn't grant file access). Click <strong>Test Connection</strong>, then <strong>List Clients</strong>.<br>
+<strong>4.</strong> Pick the client to migrate, review what will be imported, and start the migration. Progress shows on the <strong>Overview &amp; History</strong> page while it runs.<br>
+<strong>5.</strong> Once complete, if you ever need to pull fresh changes from the source again (e.g. the client kept using the old server briefly during cutover), use the <strong>↻ Resync</strong> button next to that entry in History — it jumps back into the wizard with the host pre-filled.
+</div>
+
+<h3>Worked example: migrating from cPanel/WHM</h3>
+<div class="help-example">
+You'll need a WHM API token (Server Configuration → API Tokens in WHM, not the cPanel account password) and root SSH access to the cPanel box. In <strong>Migrate From...</strong> → <strong>cPanel/WHM</strong>, enter the WHM host/port/username/token plus the SSH password and port, <strong>Test Connection</strong>, then <strong>List Accounts</strong> and pick the one to bring over.
+</div>
+
+<h3>Worked example: migrating from KloxoNG</h3>
+<div class="help-example">
+The simplest of the three — just the KloxoNG server's hostname/IP and root SSH password. In <strong>Migrate From...</strong> → <strong>KloxoNG Server</strong>, <strong>Test Connection</strong>, then <strong>List Clients</strong> and pick one.
+</div>
+
+<h3>Remote Servers &amp; DNS Cluster</h3>
+<p>The <strong>Remote Servers &amp; Cluster</strong> page lets you save a SysAdminHCP server's connection details (host, Migration API key, SSH credentials) once, instead of re-entering them every time you migrate or resync a client from the same source — saved servers show up as one-click buttons under "Load a Saved Server" in the wizard.</p>
+<p>The same saved-server list doubles as your <strong>DNS Cluster</strong> membership: mark a saved server as a cluster member and this server's own DNS zone changes replicate to it automatically as a live BIND slave, giving you redundant, geographically distributed DNS with no manual syncing.</p>
+
+<h3>Related: importing DNS zones from a non-SysAdminHCP server</h3>
+<p>If you just need DNS records (not a full hosting account) from <em>any</em> BIND-based server — including non-SysAdminHCP panels like KloxoNG, whose config is often split across multiple included files — use the <strong>Import Zone</strong> button on the DNS Zones page (under Hosting → DNS) rather than the migration wizard here. It connects over SSH, discovers every zone the remote BIND is authoritative for, and imports whichever ones you pick with records copied exactly as found (no IPs rewritten).</p>
+
+<div class="help-warn"><strong>Credentials are never persisted.</strong> SSH passwords and API keys you enter in the wizard are used for that session only — they're not saved anywhere, including in Migration History. If you need to resync later, you'll re-enter them (or load a saved server from Remote Servers &amp; Cluster, which stores them for reuse only if you explicitly add it there).</div>
+`},
+};
+MODULE_HELP.migoverview=MODULE_HELP.migration;
+MODULE_HELP.migsource=MODULE_HELP.migration;
+MODULE_HELP.migwizard=MODULE_HELP.migration;
+MODULE_HELP.migremote=MODULE_HELP.migration;
+
 document.querySelectorAll('.nav-item').forEach(item=>{item.addEventListener('click',()=>{const page=item.dataset.page;if(!page)return;document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));item.classList.add('active');currentPage=page;document.getElementById('pageTitle').textContent=item.textContent.trim();renderPage(page);});});
 async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';checkLicenseBanner();checkHostingBanner();if(_HOSTING_PAGES.has(page)){const ha=await getHostingAccessStatus();if(ha&&!ha.hasAccess){el.innerHTML=`<div class="card"><div class="alert alert-error" style="margin:0">⛔ Hosting features require an active SysAdminHCP license (Free or Pro). Register a free license or purchase Pro to continue. <a href="#" onclick="document.querySelectorAll('.nav-item').forEach(i=>{if(i.dataset.page==='license')i.click();})">View License →</a></div></div>`;return;}}if(_LICENSED_PAGES.has(page)){const lic=await getLicenseStatus();const disabled=lic&&(lic.consecutiveFailureDays>=3||(lic.status!=='active'&&!lic.isActive));if(disabled){el.innerHTML=`<div class="card"><div class="alert alert-error" style="margin:0">⛔ This feature requires a valid SysAdminHCP Pro license. ${lic.consecutiveFailureDays>=3?`The billing server has been unreachable for ${lic.consecutiveFailureDays} day(s).`:'Your license is '+lic.status+'.'} <a href="#" onclick="document.querySelectorAll('.nav-item').forEach(i=>{if(i.dataset.page==='license')i.click();})">View License →</a></div></div>`;return;}}try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'web':await renderWeb(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'emailstats':await renderEmailStats(el);break;case 'webmail':await renderWebmail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'firewall':await renderFirewall(el);break;case 'clients':await renderClients(el);break;case 'resourceplans':await renderResourcePlans(el);break;case 'tickets':await renderTickets(el);break;case 'notifications':await renderNotifications(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'emailmigration':await renderEmailMigration(el);break;case 'phpfpm':await renderPhpFpm(el);break;case 'files':await renderFiles(el);break;case 'services':await renderServices(el);break;case 'fixscripts':await renderFixScripts(el);break;case 'backups':await renderBackups(el);break;case 'migoverview':await renderMigOverview(el);break;case 'migsource':await renderMigSource(el);break;case 'migwizard':await renderMigWizard(el);break;case 'migremote':await renderMigRemote(el);break;case 'spamfilter':await renderSpamFilter(el);break;case 'logs':await renderLogCenter(el);break;case 'settings':await renderSettings(el);break;case 'myaccount':await renderMyAccount(el);break;case 'phpmodules':await renderPhpModules(el);break;case 'ipaddresses':await renderIpAddresses(el);break;case 'cron':await renderCron(el);break;case 'sshconfig':await renderSshConfig(el);break;case 'terminal':await renderTerminal(el);break;case 'clamav':await renderClamAv(el);break;case 'blockedips':await renderBlockedIps(el);break;case 'whitelist':await renderWhitelist(el);break;case 'fail2ban':await renderFail2ban(el);break;case 'intrusion':await renderIntrusion(el);break;case 'about':await renderAbout(el);break;case 'license':await renderLicense(el);break;case 'billingkeys':await renderBillingKeys(el);break;case 'aiagent':await renderAiAgent(el);break;case 'aichat':case 'ainlscripts':case 'aiplaybooks':case 'aikbmanage':case 'aischeduled':case 'aiemailaccounts':case 'aiactivetasks':case 'aicredentials':case 'aidata':case 'aitokenusage':case 'aiagentsettings':case 'ailogs':case 'aiautonomous':if(window._aiInstalled===false&&page!=='aikbmanage'){renderAiNotInstalled(el);break;}if(page==='aichat')await renderAiChat(el);else if(page==='ainlscripts')await renderAiNlScripts(el);else if(page==='aiplaybooks')await renderAiPlaybooks(el);else if(page==='aikbmanage')await renderAiKbManage(el);else if(page==='aischeduled')await renderAiScheduled(el);else if(page==='aiemailaccounts')await renderAiEmailAccounts(el);else if(page==='aiactivetasks')await renderAiActiveTasks(el);else if(page==='aicredentials')await renderAiCredentials(el);else if(page==='aidata')await renderAiData(el);else if(page==='aitokenusage')await renderAiTokenUsage(el);else if(page==='aiagentsettings')await renderAiAgentSettings(el);else if(page==='ailogs')await renderAiLogs(el);else if(page==='aiautonomous')await renderAiAutonomous(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
 async function renderDashboard(el){const[info,svc,domains,clients,tasksData,si]=await Promise.all([api('/system/info').catch(()=>({})),api('/system/services').catch(()=>({services:{}})),api('/domains').catch(()=>({domains:[]})),api('/clients').catch(()=>({clients:[]})),api('/system/tasks').catch(()=>({tasks:[]})),api('/system/sysinfo').catch(()=>({}))]);const d=domains.domains||[];const c=clients.clients||[];const svcs=svc.services||{};const installedSvcs=Object.values(svcs).filter(s=>s&&s.isInstalled&&s.monitoringEnabled!==false);const rc=installedSvcs.filter(s=>s.isRunning).length;const tc=installedSvcs.length;const tasks=(tasksData.tasks||[]).filter(t=>!t.removed);const runningTasks=tasks.filter(t=>t.status==='running');const recentTasks=tasks.filter(t=>t.status!=='running').slice(0,5);let tasksHtml='';if(runningTasks.length>0){tasksHtml=`<div class="card" id="tasksCard"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>⏳ Running Tasks</span><button class="btn btn-xs btn-secondary" onclick="refreshTasks()">Refresh</button></div><div id="runningTasks">${runningTasks.map(t=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #eee"><div style="flex:1"><strong>${escHtml(t.name)}</strong><div style="color:#666;font-size:12px">${escHtml(t.message)}</div><div style="color:#999;font-size:11px">Started: ${new Date(t.startedAt).toLocaleTimeString()}</div></div><div style="width:200px"><div style="background:#e0e0e0;border-radius:4px;height:8px;overflow:hidden"><div style="background:linear-gradient(90deg,#3498db,#2ecc71);height:100%;width:${t.progress}%;transition:width 0.5s"></div></div><div style="text-align:center;font-size:11px;color:#666;margin-top:2px">${t.progress}%</div></div></div>`).join('')}</div></div>`;}else if(recentTasks.length>0){tasksHtml=`<div class="card" id="tasksCard"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>📋 Recent Tasks</span><button class="btn btn-xs btn-secondary" onclick="refreshTasks()">Refresh</button></div><div id="recentTasks">${recentTasks.map(t=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #eee"><div style="flex:1"><strong>${escHtml(t.name)}</strong><div style="color:#666;font-size:12px">${escHtml(t.message)}</div></div><div><span class="status-badge status-${t.status==='completed'?'on':'off'}">${t.status==='completed'?'✓ Done':'✗ Failed'}</span></div><div style="color:#999;font-size:11px">${t.completedAt?timeAgo(new Date(t.completedAt)):'—'}</div></div>`).join('')}</div></div>`;}if(runningTasks.length>0){setTimeout(refreshTasks,5000);}el.innerHTML=`<div class="stats-grid"><div class="stat-card"><div class="stat-value">${d.length}</div><div class="stat-label">Domains</div></div><div class="stat-card"><div class="stat-value">${c.length}</div><div class="stat-label">Clients</div></div><div class="stat-card"><div class="stat-value">${rc}/${tc}</div><div class="stat-label">Services Running</div></div><div class="stat-card"><div class="stat-value">${Math.round((info.freeMemory||0)/1024/1024)}MB</div><div class="stat-label">Free Memory</div></div></div>${tasksHtml}<div class="card"><div class="card-title">System Information</div><table class="data-table" style="width:100%"><tbody><tr><td style="width:170px"><strong>System hostname</strong></td><td>${si.hostname||info.hostname||'N/A'}${si.serverIp?' ('+si.serverIp+')':''}</td><td style="width:170px"><strong>Operating system</strong></td><td>${si.osName||(info.platform+' '+info.arch)||'N/A'}</td></tr><tr><td><strong>Panel version</strong></td><td>SysAdminHCP ${si.panelVersion||info.version||'8.0.25'}</td><td><strong>Time on system</strong></td><td>${si.currentTime||new Date().toLocaleString()}</td></tr><tr><td><strong>Kernel and CPU</strong></td><td>${si.kernelVersion||info.platform||'N/A'} on ${si.arch||info.arch||'N/A'}</td><td><strong>Processor information</strong></td><td>${si.cpuModel||'N/A'}, ${si.cpuCount||info.cpuCount||'N/A'} cores</td></tr><tr><td><strong>System uptime</strong></td><td>${si.uptimeFormatted||(Math.floor((info.uptime||0)/3600)+'h')}</td><td><strong>Running processes</strong></td><td>${si.processCount||'N/A'}</td></tr><tr><td><strong>CPU load averages</strong></td><td>${si.load1||'N/A'} (1 min) &nbsp; ${si.load5||'N/A'} (5 mins) &nbsp; ${si.load15||'N/A'} (15 mins)</td><td><strong>Real memory</strong></td><td>${si.memUsedMiB||Math.round(((info.totalMemory||0)-(info.freeMemory||0))/1024/1024)+'MB'} used / ${si.memCachedMiB||''} cached / ${si.memTotalMiB||Math.round((info.totalMemory||0)/1024/1024)+'MB'} total</td></tr><tr><td><strong>Virtual memory</strong></td><td>${si.swapUsedMiB||'N/A'} used / ${si.swapTotalMiB||'N/A'} total</td><td><strong>Local disk space</strong></td><td>${si.diskUsedGiB||'N/A'} used / ${si.diskFreeGiB||'N/A'} free / ${si.diskTotalGiB||'N/A'} total</td></tr></tbody></table></div><div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Usage Graphs <span id="dashGraphTime" style="color:#999;font-size:12px;font-weight:normal"></span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><div style="color:#555;font-size:12px;margin-bottom:4px;font-weight:600">CPU Usage</div><canvas id="dashCpuGraph" width="400" height="110" style="width:100%;height:110px;border-radius:4px;background:#f8f9fa"></canvas></div><div><div style="color:#555;font-size:12px;margin-bottom:4px;font-weight:600">Memory Usage</div><canvas id="dashMemGraph" width="400" height="110" style="width:100%;height:110px;border-radius:4px;background:#f8f9fa"></canvas></div><div><div style="color:#555;font-size:12px;margin-bottom:4px;font-weight:600">Virtual Memory (Swap)</div><canvas id="dashVMemGraph" width="400" height="110" style="width:100%;height:110px;border-radius:4px;background:#f8f9fa"></canvas></div><div><div style="color:#555;font-size:12px;margin-bottom:4px;font-weight:600">Local Disk Space</div><canvas id="dashDiskGraph" width="400" height="110" style="width:100%;height:110px;border-radius:4px;background:#f8f9fa"></canvas></div></div></div><div class="card"><div class="card-title">Service Status</div><div class="service-grid">${installedSvcs.map(s=>`<div class="service-card ${s.isRunning?'running':'stopped'}"><h3>${s.serviceType} - ${s.name}</h3><div class="svc-status">${s.isRunning?'✓ Running':'✗ Stopped'}</div><div class="svc-actions"><button class="btn btn-xs btn-success" onclick="svcAct('${s.serviceType}','${s.name}','start')">Start</button><button class="btn btn-xs btn-warning" onclick="svcAct('${s.serviceType}','${s.name}','restart')">Restart</button><button class="btn btn-xs btn-danger" onclick="svcAct('${s.serviceType}','${s.name}','stop')">Stop</button></div></div>`).join('')}</div></div>`;startDashGraphs(si);}
@@ -1530,7 +1693,7 @@ async function idUnblock(ip){
 // unchecked. The connect-form select is now id="sa_useSsl" (see saConn()/rsLoadServer() above).
 
 async function renderMigOverview(el){
-  el.innerHTML=`<div class="card"><div class="card-title">Active Migrations</div><div id="migActiveTasks"><span style="color:#a7a9be;font-size:13px">Checking...</span></div></div>
+  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Active Migrations</span><button class="btn btn-sm btn-help" onclick="showModuleHelp('migration')">❓ Help</button></div><div id="migActiveTasks"><span style="color:#a7a9be;font-size:13px">Checking...</span></div></div>
     <div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">History <button class="btn btn-primary btn-sm" onclick="document.querySelectorAll('.nav-item').forEach(i=>{if(i.dataset.page==='migwizard')i.click();})">+ New Migration</button></div><div id="migHistoryTable"><span style="color:#a7a9be;font-size:13px">Loading...</span></div></div>`;
   loadMigActiveTasks();
   loadMigHistory();
@@ -1565,7 +1728,7 @@ async function loadMigHistory(){
 }
 
 async function renderMigSource(el){
-  el.innerHTML=`<div class="card"><div class="card-title">Source Server Setup</div>
+  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Source Server Setup</span><button class="btn btn-sm btn-help" onclick="showModuleHelp('migration')">❓ Help</button></div>
     <div class="alert alert-info">This server can act as a migration <strong>source</strong>. Generate an API key here, then give it to whoever runs the migration wizard on the <strong>destination</strong> server.</div>
     <div style="background:#f4f6f9;border:1px solid #d7dee8;border-radius:8px;padding:16px;margin-bottom:16px">
       <h4 style="margin:0 0 12px;color:#0984e3">+ Generate New Key</h4>
@@ -1587,7 +1750,7 @@ async function renderMigSource(el){
 let _migSourceType=null;
 async function renderMigWizard(el){
   _migSourceType=null;
-  el.innerHTML=`<div class="card"><div class="card-title">Migrate From...</div>
+  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Migrate From...</span><button class="btn btn-sm btn-help" onclick="showModuleHelp('migration')">❓ Help</button></div>
     <div id="migWizStep1">
       <p style="color:#666;font-size:13px;margin:0 0 14px">Step 1 of 4 — choose what you're migrating from.</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
@@ -1657,7 +1820,7 @@ function selectMigSource(type){
 }
 
 async function renderMigRemote(el){
-  el.innerHTML=`<div class="card"><div class="card-title">Remote Servers &amp; DNS Cluster</div>
+  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>Remote Servers &amp; DNS Cluster</span><button class="btn btn-sm btn-help" onclick="showModuleHelp('migration')">❓ Help</button></div>
     <div class="alert alert-info">Servers saved here are reusable connection presets for migration, and can optionally replicate DNS zone changes as part of a DNS Cluster.</div>
     <div id="rs_table"><span style="color:#a7a9be;font-size:13px">Loading...</span></div></div>
     <div class="card"><div class="card-title">+ Add a Server</div>
@@ -2858,7 +3021,7 @@ async function renderAiAgent(el){
   const en=await api(`${_aiBase}/enabled`).catch(()=>({enabled:false}));
   const notInstalled=!svc.installed;
   applyAiNavState(!notInstalled);
-  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>🤖 AI Agent Assistant — Overview</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal"><input type="checkbox" id="aiEnableToggle" ${en.enabled?'checked':''} onchange="toggleAiAgent(this.checked)"> Enabled</label></div>
+  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>🤖 AI Agent Assistant — Overview</span><span style="display:flex;align-items:center;gap:14px"><button class="btn btn-sm btn-help" onclick="showModuleHelp('aiagent')">❓ Help</button><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:normal"><input type="checkbox" id="aiEnableToggle" ${en.enabled?'checked':''} onchange="toggleAiAgent(this.checked)"> Enabled</label></span></div>
   ${notInstalled?`<div class="alert alert-warning" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><div>⚠️ <strong>AI Agent not installed on this server.</strong> The directory <code>/opt/aiagentassistant</code> was not found. Click Install to clone from GitHub, build, and configure the service automatically.</div><button class="btn btn-primary" onclick="doAiInstall()">⬇️ Install AI Agent</button></div><div id="aiInstallLog" style="display:none"></div>`:''}
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-value" style="color:${notInstalled?'#999':svc.active?'#27ae60':'#e74c3c'}">${notInstalled?'Not Installed':svc.active?'Running':'Stopped'}</div><div class="stat-label">Service</div></div>
@@ -3144,7 +3307,7 @@ const _DELEGATION_ACTION_WARNINGS={
   autoRetryBackup:'The agent will start a new full backup automatically when it detects one overdue or failed. This can be a large, resource-intensive operation and may run at any time of day. It retries at most once every 6 hours even if backups keep failing.',
 };
 async function renderAiAutonomous(el){
-  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">🤖 Autonomous Mode</h3></div><div class="toolbar-right"><button class="btn btn-primary btn-sm" onclick="amShowNewDelegation()">+ New Delegation</button></div></div>
+  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">🤖 Autonomous Mode</h3></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('aiautonomous')">❓ Help</button> <button class="btn btn-primary btn-sm" onclick="amShowNewDelegation()">+ New Delegation</button></div></div>
     <div class="alert alert-info" style="margin-bottom:12px">Monitoring is always on and has no side effects — the agent checks system health, open tickets, and security activity every 5 minutes and records what it sees below. Nothing below the Delegations card can act on your panel: every action stays off until you explicitly delegate it here, and enabling any single action requires a separate confirmation.</div>
     <div class="stats-grid" id="am_stats"><div class="stat-card"><div class="stat-value">…</div><div class="stat-label">Loading</div></div></div>
     <div class="card"><div class="card-title">Delegations</div><div id="am_delegations">Loading...</div></div>
