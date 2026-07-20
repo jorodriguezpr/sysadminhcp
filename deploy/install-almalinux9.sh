@@ -867,6 +867,18 @@ fi
 # ─── Step 12.5: Configure Security Tools ────────────────────────────────────
 info "Step 12.5: Configuring security tools..."
 
+# ── SSH drop-in config support ─────────────────────────────────────────────
+# The panel's SSH Config page writes to /etc/ssh/sshd_config.d/00-sysadminhcp.conf.
+# Unlike Debian/Ubuntu's stock sshd_config (which includes sshd_config.d/*.conf by
+# default), AlmaLinux/RHEL's stock config has no such Include line — without it,
+# anything the panel writes to that drop-in is silently ignored, no matter how
+# many times sshd is restarted.
+mkdir -p /etc/ssh/sshd_config.d
+if ! grep -q '^Include /etc/ssh/sshd_config.d/\*.conf' /etc/ssh/sshd_config; then
+  sed -i '1i Include /etc/ssh/sshd_config.d/*.conf' /etc/ssh/sshd_config
+  info "Added sshd_config.d Include directive (required for panel SSH Config changes to take effect)"
+fi
+
 # ── Fail2ban ──────────────────────────────────────────────────────────────
 if command -v fail2ban-client &>/dev/null; then
   if [[ ! -f /etc/fail2ban/jail.local ]]; then
