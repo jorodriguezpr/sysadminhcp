@@ -689,12 +689,14 @@ mkdir -p /var/log/sysadminhcp
 mkdir -p /var/tmp/sysadminhcp
 mkdir -p /var/run/sysadminhcp
 mkdir -p /var/cache/sysadminhcp
+mkdir -p /var/backup/sysadminhcp
 
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP "$SYSADMINHCP_ROOT"
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/log/sysadminhcp
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/tmp/sysadminhcp
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/run/sysadminhcp
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/cache/sysadminhcp
+chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/backup
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/lib/sysadminhcp
 chmod 750 "$SYSADMINHCP_ROOT/etc/sysadminhcp.env"
 

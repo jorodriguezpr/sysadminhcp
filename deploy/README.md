@@ -143,7 +143,7 @@ usermod -a -G named sysadminhcp             # for BIND DNS access (/etc/named.co
 
 # 3. Create directories
 mkdir -p /usr/local/sysadminhcp/{httpdocs,data,etc,file/template,backup,log,tmp}
-mkdir -p /var/log/sysadminhcp /var/tmp/sysadminhcp /var/run/sysadminhcp /var/cache/sysadminhcp
+mkdir -p /var/log/sysadminhcp /var/tmp/sysadminhcp /var/run/sysadminhcp /var/cache/sysadminhcp /var/backup/sysadminhcp
 
 # 4. Build and deploy
 cd /path/to/sysadminhcp
@@ -160,7 +160,7 @@ cp .env.example /usr/local/sysadminhcp/etc/sysadminhcp.env
 
 # 6. Set permissions
 chown -R sysadminhcp:sysadminhcp /usr/local/sysadminhcp
-chown -R sysadminhcp:sysadminhcp /var/log/sysadminhcp /var/tmp/sysadminhcp /var/run/sysadminhcp /var/cache/sysadminhcp
+chown -R sysadminhcp:sysadminhcp /var/log/sysadminhcp /var/tmp/sysadminhcp /var/run/sysadminhcp /var/cache/sysadminhcp /var/backup
 
 # Configure sudoers for the sysadminhcp user
 cat > /etc/sudoers.d/sysadminhcp-logs << 'EOF'

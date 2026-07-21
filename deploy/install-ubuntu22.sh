@@ -907,13 +907,14 @@ info "Step 10: Setting permissions..."
 
 mkdir -p "$SYSADMINHCP_ROOT"/{httpdocs,data,etc,file/template,file/ssl,backup,log,tmp}
 mkdir -p "$SYSADMINHCP_ROOT/httpdocs/web-console"
-mkdir -p /var/log/sysadminhcp /var/tmp/sysadminhcp /var/run/sysadminhcp /var/cache/sysadminhcp
+mkdir -p /var/log/sysadminhcp /var/tmp/sysadminhcp /var/run/sysadminhcp /var/cache/sysadminhcp /var/backup/sysadminhcp
 
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP "$SYSADMINHCP_ROOT"
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/log/sysadminhcp
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/tmp/sysadminhcp
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/run/sysadminhcp
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/cache/sysadminhcp
+chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/backup
 chown -R $SYSADMINHCP_USER:$SYSADMINHCP_GROUP /var/lib/sysadminhcp
 chmod 750 "$SYSADMINHCP_ROOT/etc/sysadminhcp.env"
 
