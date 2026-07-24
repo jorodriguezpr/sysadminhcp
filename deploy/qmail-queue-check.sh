@@ -28,6 +28,16 @@
 #   Gated on /var/qmail/control/dkim-signing-enabled (global switch, panel Settings
 #   toggle) AND /var/qmail/control/domainkeys/<domain>/private (per-domain key, panel
 #   "Generate DKIM Keys" button). Requires python3-dkim (apt package).
+#
+# SpamAssassin content scanning (see MailService.enableSpamAssassin() in mailService.ts):
+#   Gated on /var/qmail/control/spamassassin-scanning-enabled (panel Mail > Spam toggle).
+#   Runs the message through spamc (SpamAssassin's client — talks to the already-running
+#   spamd daemon) to add the standard X-Spam-Checker-Version/X-Spam-Level/X-Spam-Status
+#   headers. QmailToaster's own simscan package is patched to call rspamd's rspamc
+#   instead of spamc, and this codebase never installs/runs rspamd — so simscan-based
+#   scanning silently produces no X-Spam headers at all even when "wired in". Piping
+#   through spamc here bypasses that dependency entirely and uses the classic
+#   SpamAssassin daemon this panel already manages (Mail > Spam score/blacklist/whitelist).
 
 REAL_QQ=/var/qmail/bin/qmail-queue.real
 RATE_DIR=/var/lib/sysadminhcp/email-rate
@@ -129,6 +139,21 @@ if [[ -f "$DKIM_MARKER" && -n "$DOMAIN" && -f "/var/qmail/control/domainkeys/${D
     mv "$SIGNED_TMP" "$MSG_TMP"
   else
     rm -f "$SIGNED_TMP"
+  fi
+fi
+
+# ── SpamAssassin content scanning (panel Mail > Spam toggle) ─────────
+# Gated on a marker file so this is a zero-overhead no-op unless explicitly enabled.
+# spamc always returns the message with X-Spam-* headers added (scored or not) unless
+# it can't reach spamd, in which case it just echoes the original message back — same
+# "never block or corrupt delivery" contract as the DKIM step above.
+SPAM_MARKER=/var/qmail/control/spamassassin-scanning-enabled
+if [[ -f "$SPAM_MARKER" ]]; then
+  SCANNED_TMP=$(mktemp /tmp/qqspam.XXXXXX)
+  if timeout 30 spamc < "$MSG_TMP" > "$SCANNED_TMP" 2>/dev/null && [[ -s "$SCANNED_TMP" ]]; then
+    mv "$SCANNED_TMP" "$MSG_TMP"
+  else
+    rm -f "$SCANNED_TMP"
   fi
 fi
 
