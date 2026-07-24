@@ -479,27 +479,33 @@ async function doChangeIpClient(zone){const ip=(document.getElementById('m_chIp'
 // MAIL
 // ═══════════════════════════════════════════════════════════════════════
 async function renderMail(el){
-    const[domains,accounts]=await Promise.all([api('/client/mail/domains'),api('/client/mail/accounts')]);
-    const md=domains.mailDomains||[];
-    const ma=accounts.accounts||[];
     el.innerHTML=`<div class="tab-bar"><div class="tab active" onclick="showMailTab('accounts')">Mail Accounts</div><div class="tab" onclick="showMailTab('domains')">Mail Domains</div><div class="tab" onclick="showMailTab('forwards')">Forwards</div><div class="tab" onclick="showMailTab('whitelist')">Spam Whitelist</div><div class="tab" onclick="showMailTab('blacklist')">Spam Blacklist</div></div><div id="mailContent"></div>`;
     showMailTab('accounts');
 }
 async function showMailTab(tab){
     const el=document.getElementById('mailContent');
     document.querySelectorAll('#mailContent ~ .tab-bar .tab, .tab-bar .tab').forEach(t=>{t.classList.remove('active');if(t.getAttribute('onclick')===`showMailTab('${tab}')`)t.classList.add('active');});
+    // Each tab fetches and renders independently — a failure on one (e.g. a permissions error
+    // scoped to just mail forwards) shows an inline error for that tab only, instead of a single
+    // failed call blanking the whole mail section including tabs that would have worked fine.
     if(tab==='accounts'){
+        try{
         const data=await api('/client/mail/accounts');
         const a=data.accounts||[];
         el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'mat')"></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddMailAccount()">+ Add Account</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Email</th><th>Domain</th><th>Quota</th><th>Status</th><th>Actions</th></tr></thead><tbody id="mat">${a.map(m=>{const lp=m.nname.includes('@')?m.nname.split('@')[0]:m.nname;return`<tr><td><strong>${lp}@${m.domainName}</strong></td><td>${m.domainName}</td><td>${m.quota>0?formatBytes(m.quota*1024*1024):'Unlimited'}</td><td><span class="status-badge status-${m.status==='on'?'on':'off'}">${m.status}</span></td><td><button class="btn btn-xs btn-secondary" onclick="openWebmailForDomain('${m.domainName}')">Webmail</button> <button class="btn btn-xs btn-warning" onclick="showChangeMailPassword('${lp}','${m.domainName}')">Password</button> <button class="btn btn-xs btn-danger" onclick="delMailAccount('${lp}','${m.domainName}')">Delete</button></td></tr>`;}).join('')}</tbody></table></div>`;
+        }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
     }else if(tab==='domains'){
+        try{
         const data=await api('/client/mail/domains');
         const d=data.mailDomains||[];
         el.innerHTML=`<div class="card"><table class="data-table"><thead><tr><th>Domain</th><th>Status</th><th>Catchall</th></tr></thead><tbody>${d.map(dm=>`<tr><td><strong>${dm.domainName}</strong></td><td><span class="status-badge status-${dm.status==='on'?'on':'off'}">${dm.status}</span></td><td>${dm.catchall?dm.catchallEmail||'Enabled':'Disabled'}</td></tr>`).join('')}</tbody></table></div>`;
+        }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
     }else if(tab==='forwards'){
+        try{
         const data=await api('/client/mail/forwards');
         const f=data.forwards||[];
         el.innerHTML=`<div class="toolbar"><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddMailForward()">+ Add Forward</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Source</th><th>Destination</th><th>Actions</th></tr></thead><tbody>${f.map(fw=>`<tr><td><strong>${fw.nname}</strong></td><td>${Array.isArray(fw.destinations)?fw.destinations.join(', '):fw.destination||'-'}</td><td><button class="btn btn-xs btn-danger" onclick="delMailForward('${fw.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
+        }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
     }else if(tab==='whitelist'){
         el.innerHTML=`<div class="card"><div class="card-title">Spam Whitelist <span style="font-size:12px;font-weight:400;color:#888">— senders that bypass the AI spam filter for your mailboxes</span></div><div style="padding:12px"><div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><select id="cl_wlScope" onchange="clWlScopeChange()" style="width:130px"><option value="domain">My Domain</option><option value="user">My Mailbox</option></select><select id="cl_wlEntryType" style="width:120px"><option value="email">Email address</option><option value="domain">Domain (all @)</option></select><input id="cl_wlTarget" placeholder="yourmail@yourdomain.com or yourdomain.com" style="width:200px"><input id="cl_wlValue" placeholder="sender@example.com or example.com" style="flex:1;min-width:180px"><button class="btn btn-success" onclick="clAddWhitelist()">+ Add</button></div><div style="font-size:12px;color:#888;margin-bottom:12px" id="cl_wlHint">Domain: applies to all your mailboxes on a domain. Mailbox: applies only to a specific mailbox you own.</div><div id="cl_wlTable"><div style="color:#888;text-align:center;padding:20px">Loading...</div></div></div></div>`;
         clLoadWhitelist();
@@ -584,8 +590,8 @@ async function doAddMailAccount(){try{await api('/client/mail/accounts',{method:
 function showChangeMailPassword(local,domain){showModal('Change Password',`<div class="form-group"><label>New Password</label><input id="m_mpP" type="password"></div>`,[{label:'Change',cls:'btn-primary',onclick:`doChangeMailPassword('${local}','${domain}')`}]);}
 async function doChangeMailPassword(local,domain){try{await api(`/client/mail/accounts/${encodeURIComponent(local+'@'+domain)}/password`,{method:'PUT',body:JSON.stringify({password:document.getElementById('m_mpP').value})});closeModal();showAlert('Password changed','success');}catch(e){showAlert(e.message,'error');}}
 async function delMailAccount(local,domain){if(!confirm(`Delete ${local}@${domain}?`))return;try{await api(`/client/mail/accounts/${encodeURIComponent(local+'@'+domain)}`,{method:'DELETE'});showAlert('Deleted','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
-function showAddMailForward(){showModal('Add Mail Forward',`<div class="form-group"><label>Source Address</label><input id="m_mfS" placeholder="user@domain.com"></div><div class="form-group"><label>Destination</label><input id="m_mfD" placeholder="dest@example.com"></div>`,[{label:'Create',cls:'btn-primary',onclick:'doAddMailForward()'}]);}
-async function doAddMailForward(){try{await api('/client/mail/forwards',{method:'POST',body:JSON.stringify({source:document.getElementById('m_mfS').value,destination:document.getElementById('m_mfD').value})});closeModal();showAlert('Forward created','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
+function showAddMailForward(){showModal('Add Mail Forward',`<div class="form-group"><label>Source Address</label><input id="m_mfS" placeholder="user@domain.com"></div><div class="form-group"><label>Destination</label><input id="m_mfD" placeholder="dest@example.com"></div><div class="form-group"><label>Keep Copy</label><select id="m_mfK"><option value="false">No</option><option value="true">Yes</option></select></div>`,[{label:'Create',cls:'btn-primary',onclick:'doAddMailForward()'}]);}
+async function doAddMailForward(){try{await api('/client/mail/forwards',{method:'POST',body:JSON.stringify({source:document.getElementById('m_mfS').value,destination:document.getElementById('m_mfD').value,keepCopy:document.getElementById('m_mfK').value==='true'})});closeModal();showAlert('Forward created','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
 async function delMailForward(name){if(!confirm('Delete this forward?'))return;try{await api(`/client/mail/forwards/${encodeURIComponent(name)}`,{method:'DELETE'});showAlert('Deleted','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
 
 // ═══════════════════════════════════════════════════════════════════════

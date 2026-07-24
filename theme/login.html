@@ -327,6 +327,29 @@
             80% { transform: translateX(4px); }
         }
 
+        .success-msg {
+            color: #4ade80;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 16px;
+            display: none;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .login-link {
+            display: block;
+            text-align: center;
+            margin-top: 14px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .login-link:hover { color: rgba(255, 255, 255, 0.9); }
+
         .version {
             text-align: center;
             color: rgba(255, 255, 255, 0.35);
@@ -409,6 +432,7 @@
             <p>Hosting Control Panel</p>
         </div>
         <div id="error" class="error-msg"></div>
+        <div id="success" class="success-msg"></div>
         <form id="loginForm">
             <div class="form-group">
                 <label for="username">Username</label>
@@ -419,6 +443,7 @@
                 <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Enter your password" required>
             </div>
             <button type="submit" class="login-btn"><span>Sign In</span></button>
+            <a class="login-link" onclick="showForgotForm()">Forgot password?</a>
         </form>
         <form id="mfaForm" style="display:none">
             <div class="form-group">
@@ -426,6 +451,25 @@
                 <input type="text" id="mfaCode" name="mfaCode" autocomplete="one-time-code" placeholder="6-digit code or backup code" required autofocus>
             </div>
             <button type="submit" class="login-btn"><span>Verify</span></button>
+        </form>
+        <form id="forgotForm" style="display:none">
+            <div class="form-group">
+                <label for="forgotUsername">Username</label>
+                <input type="text" id="forgotUsername" name="forgotUsername" autocomplete="username" placeholder="Enter your username" required autofocus>
+            </div>
+            <button type="submit" class="login-btn"><span>Send Reset Link</span></button>
+            <a class="login-link" onclick="backToLoginFromForgot()">Back to sign in</a>
+        </form>
+        <form id="resetForm" style="display:none">
+            <div class="form-group">
+                <label for="resetPassword">New Password</label>
+                <input type="password" id="resetPassword" name="resetPassword" autocomplete="new-password" placeholder="New password" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="resetPasswordConfirm">Confirm New Password</label>
+                <input type="password" id="resetPasswordConfirm" name="resetPasswordConfirm" autocomplete="new-password" placeholder="Confirm new password" required minlength="6">
+            </div>
+            <button type="submit" class="login-btn"><span>Set New Password</span></button>
         </form>
         <div class="version" id="panelVersion">SysAdminHCP</div>
     </div>
@@ -475,9 +519,82 @@
 
         // ── Login Form ──
         const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
         const form = document.getElementById('loginForm');
         const mfaForm = document.getElementById('mfaForm');
+        const forgotForm = document.getElementById('forgotForm');
+        const resetForm = document.getElementById('resetForm');
         let pendingMfaToken = null;
+
+        function showError(msg) { errorDiv.textContent = msg; errorDiv.style.display = 'block'; successDiv.style.display = 'none'; }
+        function showSuccess(msg) { successDiv.textContent = msg; successDiv.style.display = 'block'; errorDiv.style.display = 'none'; }
+
+        // Landed here from the email confirmation link (/api/auth/verify-email redirects here)
+        const _urlParams = new URLSearchParams(window.location.search);
+        const _verified = _urlParams.get('verified');
+        if (_verified === '1') showSuccess(_urlParams.get('msg') || 'Email confirmed.');
+        else if (_verified === '0') showError(_urlParams.get('msg') || 'This verification link is invalid or has expired.');
+
+        // Landed here from the password-reset email — show the "set new password" form instead
+        // of the normal login form for the rest of this page load.
+        const _resetToken = _urlParams.get('reset');
+        if (_resetToken) {
+            form.style.display = 'none';
+            resetForm.style.display = 'block';
+        }
+
+        function showForgotForm() {
+            form.style.display = 'none';
+            forgotForm.style.display = 'block';
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+        }
+        function backToLoginFromForgot() {
+            forgotForm.style.display = 'none';
+            form.style.display = 'block';
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+        }
+
+        forgotForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: document.getElementById('forgotUsername').value })
+                });
+                const data = await response.json();
+                showSuccess(data.message || 'If that account has an email on file, a password reset link has been sent.');
+                forgotForm.reset();
+            } catch (err) {
+                showError('Connection error. Please try again.');
+            }
+        });
+
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const np = document.getElementById('resetPassword').value;
+            const cp = document.getElementById('resetPasswordConfirm').value;
+            if (np !== cp) { showError('Passwords do not match'); return; }
+            try {
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: _resetToken, newPassword: np })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    resetForm.style.display = 'none';
+                    form.style.display = 'block';
+                    showSuccess(data.message || 'Password updated — you can now log in.');
+                } else {
+                    showError(data.error || 'Reset failed');
+                }
+            } catch (err) {
+                showError('Connection error. Please try again.');
+            }
+        });
 
         function completeLogin(data) {
             localStorage.setItem('token', data.token);

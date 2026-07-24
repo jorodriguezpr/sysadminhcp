@@ -162,19 +162,31 @@ dnf install -y bind bind-utils
 dnf remove -y postfix 2>/dev/null || true
 userdel postfix 2>/dev/null || true
 
-# Install QMT repo for EL10
-# NOTE: EL10 packages may not be available yet — check https://github.com/qmtoaster
-QMT_RPM="qmt-release-1-8.qt.el10.noarch.rpm"
-cd /tmp
-if curl -L --fail -o "$QMT_RPM" "http://repo.whitehorsetc.com/10/testing/x86_64/$QMT_RPM" 2>/dev/null; then
-  rpm -ivh "$QMT_RPM" 2>/dev/null || rpm -Uvh "$QMT_RPM" 2>/dev/null || warn "QMT repo install failed"
-  dnf config-manager --enable qmt-testing 2>/dev/null || true
+# Install QMT repo for EL10 — written directly rather than installed from a versioned
+# "qmt-release-X-Y.qt.el10.noarch.rpm" release package, because that filename's version number
+# has already moved once (1-8 -> 1-9) since EL10 support first appeared upstream and isn't
+# pinned to anything stable; a hardcoded filename 404s the moment it's bumped again, which is
+# exactly what silently broke every fresh EL10 install until this fix (curl --fail failed, the
+# repo was never registered, so dnf install/download for every qmail-toaster package below was
+# a guaranteed no-op that only warned — the panel still reported a successful install with an
+# empty /var/qmail/, and qmail-smtp.service failed at runtime with "No such file or directory").
+# EL10 packages currently only exist in the "testing" channel upstream (10/current/x86_64/ is
+# still empty as of this writing) — matches the qmt-testing enable/qmt-current disable below.
+QMT_BASEURL="http://repo.whitehorsetc.com/10/testing/x86_64"
+if curl -s -o /dev/null --fail "$QMT_BASEURL/repodata/repomd.xml"; then
+  cat > /etc/yum.repos.d/qmt-testing.repo << QMTREPO
+[qmt-testing]
+name=QmailToaster EL10 Testing
+baseurl=$QMT_BASEURL
+enabled=1
+gpgcheck=0
+QMTREPO
   dnf config-manager --disable qmt-current 2>/dev/null || true
   dnf clean all 2>/dev/null || true
-  info "QMT EL10 repo installed"
+  info "QMT EL10 repo registered ($QMT_BASEURL)"
 else
-  warn "QMT EL10 repo not found — qmail packages may need manual installation."
-  warn "Check https://github.com/qmtoaster for EL10 package availability."
+  warn "QMT EL10 repo not reachable at $QMT_BASEURL — qmail packages may need manual installation."
+  warn "Check https://github.com/qmtoaster for current EL10 package availability."
 fi
 
 dnf install -y mysql-libs 2>/dev/null || true
@@ -221,6 +233,21 @@ reject-sender=no-mx
 dns-blacklist-entry=bl.rbl-dns.com
 SPAMDYKECONF
 fi
+# Fix spamdyke's broken default TLS cipher list — it passes TLS 1.3 ciphersuite names
+# ("TLS_AES_256_GCM_SHA384:..." — that's the package-shipped spamdyke.conf default here) to
+# OpenSSL's legacy SSL_CTX_set_cipher_list() (the TLS <=1.2 API, which never accepted TLS 1.3
+# suite names — those need the separate SSL_CTX_set_ciphersuites() call spamdyke doesn't use).
+# Older OpenSSL tolerated the mismatch; OpenSSL 3.2+ (EL10's default) rejects it outright,
+# logging "unable to set SSL/TLS cipher list" on every connection and silently breaking
+# STARTTLS. Idempotent: strips any existing tls-cipher-list line (right or wrong) before
+# appending the corrected one, so re-running this script always converges on the fix.
+for f in /etc/spamdyke/spamdyke.conf /etc/spamdyke/spamdyke-submission.conf; do
+  if [ -f "$f" ]; then
+    sed -i '/^#\?tls-cipher-list=/d' "$f"
+    echo 'tls-cipher-list=ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384' >> "$f"
+  fi
+done
+
 if [ -f /var/qmail/supervise/smtp/run ] && ! grep -q '\$SPAMDYKE --config-file' /var/qmail/supervise/smtp/run; then
   sed -i 's|^# # SPAMDYKE="/usr/bin/spamdyke"|SPAMDYKE="/usr/bin/spamdyke"|' /var/qmail/supervise/smtp/run
   sed -i 's|^# # SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"|SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"|' /var/qmail/supervise/smtp/run

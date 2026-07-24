@@ -280,6 +280,21 @@ reject-sender=no-mx
 dns-blacklist-entry=bl.rbl-dns.com
 SPAMDYKECONF
 fi
+
+# Fix spamdyke's broken default TLS cipher list — it passes TLS 1.3 ciphersuite names
+# ("TLS_AES_256_GCM_SHA384:..." — the package-shipped spamdyke.conf default) to OpenSSL's
+# legacy SSL_CTX_set_cipher_list() (the TLS <=1.2 API, which never accepted TLS 1.3 suite
+# names — those need the separate SSL_CTX_set_ciphersuites() call spamdyke doesn't use).
+# Older OpenSSL tolerated the mismatch; OpenSSL 3.2+ rejects it outright, logging "unable to
+# set SSL/TLS cipher list" on every connection and silently breaking STARTTLS. Idempotent:
+# strips any existing tls-cipher-list line (right or wrong) before appending the corrected one.
+for f in /etc/spamdyke/spamdyke.conf /etc/spamdyke/spamdyke-submission.conf; do
+  if [ -f "$f" ]; then
+    sed -i '/^#\?tls-cipher-list=/d' "$f"
+    echo 'tls-cipher-list=ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384' >> "$f"
+  fi
+done
+
 if [ -f /var/qmail/supervise/smtp/run ] && ! grep -q '\$SPAMDYKE --config-file' /var/qmail/supervise/smtp/run; then
   sed -i 's|^# # SPAMDYKE="/usr/bin/spamdyke"|SPAMDYKE="/usr/bin/spamdyke"|' /var/qmail/supervise/smtp/run
   sed -i 's|^# # SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"|SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"|' /var/qmail/supervise/smtp/run

@@ -501,12 +501,24 @@ fi
 # public listener), and a lighter TLS/AUTH-only config for port 587 submission. IP-reputation
 # checks (RBL, rdns) must NOT apply to authenticated submission — a legitimate user on a
 # residential/mobile IP would get incorrectly rejected; the SMTP AUTH itself is the real gate there.
+# tls-cipher-list is written explicitly in both configs below — spamdyke passes this string to
+# OpenSSL's legacy SSL_CTX_set_cipher_list() (the TLS <=1.2 API, which never accepted TLS 1.3
+# ciphersuite names — those need the separate SSL_CTX_set_ciphersuites() call spamdyke doesn't
+# use). Leaving the directive out entirely is NOT a safe default here: this build's own
+# compiled-in default is "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:..." (the same
+# broken TLS 1.3-named value every qmail-toaster RPM ships as its spamdyke.conf default) —
+# confirmed live on Ubuntu with no tls-cipher-list line present at all. Older OpenSSL tolerated
+# the mismatch; OpenSSL 3.0+ (Ubuntu 22.04+) rejects it outright, logging "unable to set
+# SSL/TLS cipher list" on every connection and silently breaking STARTTLS.
+SPAMDYKE_CIPHER_LIST="ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
+
 mkdir -p /etc/spamdyke
 if [[ ! -f /etc/spamdyke/spamdyke.conf ]]; then
   cat > /etc/spamdyke/spamdyke.conf << EOF
 log-level=info
 tls-certificate-file=/etc/pki/tls/certs/localhost.crt
 tls-privatekey-file=/etc/pki/tls/private/localhost.key
+tls-cipher-list=$SPAMDYKE_CIPHER_LIST
 smtp-auth-command=/home/vpopmail/bin/vchkpw /bin/true
 smtp-auth-level=ondemand
 idle-timeout-secs=300
@@ -524,6 +536,7 @@ if [[ ! -f /etc/spamdyke/spamdyke-submission.conf ]]; then
 log-level=info
 tls-certificate-file=/etc/pki/tls/certs/localhost.crt
 tls-privatekey-file=/etc/pki/tls/private/localhost.key
+tls-cipher-list=$SPAMDYKE_CIPHER_LIST
 smtp-auth-command=/home/vpopmail/bin/vchkpw /bin/true
 smtp-auth-level=always
 idle-timeout-secs=300
@@ -531,6 +544,15 @@ greeting-delay-secs=0
 EOF
   info "spamdyke-submission.conf created"
 fi
+
+# Idempotent fix for existing installs re-running this script: correct the line even if the
+# config files already existed and were skipped by the [[ ! -f ]] guards above.
+for f in /etc/spamdyke/spamdyke.conf /etc/spamdyke/spamdyke-submission.conf; do
+  if [[ -f "$f" ]]; then
+    sed -i '/^#\?tls-cipher-list=/d' "$f"
+    echo "tls-cipher-list=$SPAMDYKE_CIPHER_LIST" >> "$f"
+  fi
+done
 
 # ── qmail supervise-style run scripts + systemd units (same as AlmaLinux) ──
 if [[ -d /var/qmail ]]; then
