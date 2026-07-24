@@ -1299,7 +1299,12 @@ ln -sf /etc/pure-ftpd/db/mysql.conf /etc/pure-ftpd/pureftpd-mysql.conf
 echo no                > /etc/pure-ftpd/conf/PAMAuthentication
 echo "30000 31000"     > /etc/pure-ftpd/conf/PassivePortRange
 echo yes               > /etc/pure-ftpd/conf/CreateHomeDir 2>/dev/null || true
-info "Pure-FTPd: PAM off, MySQL auth on, passive ports 30000-31000"
+# Debian's pure-ftpd package ships AltLog commented out by default (RHEL's does not) — without
+# it, the Bandwidth Analyzer has no FTP transfer log to read at all. See also the runtime
+# self-heal in BandwidthService.ensureFtpAltLog() for servers installed before this line existed.
+echo "clf:/var/log/pureftpd.log" > /etc/pure-ftpd/conf/AltLog
+touch /var/log/pureftpd.log && chmod 644 /var/log/pureftpd.log
+info "Pure-FTPd: PAM off, MySQL auth on, passive ports 30000-31000, AltLog enabled"
 
 systemctl enable pure-ftpd-mysql 2>/dev/null || systemctl enable pure-ftpd 2>/dev/null || true
 systemctl restart pure-ftpd-mysql 2>/dev/null || systemctl restart pure-ftpd 2>/dev/null || warn "Pure-FTPd failed to start"
