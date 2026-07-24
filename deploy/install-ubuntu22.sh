@@ -1364,9 +1364,14 @@ CREATE TABLE IF NOT EXISTS lastauth (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 VPOPTABLES
     info "vpopmail MySQL tables created"
+    # ALTER USER alongside CREATE USER IF NOT EXISTS (matching the vpopmail user block above) —
+    # without it, a re-run whose extracted $KLOXOJRA_DB_PASS ever drifts from what MySQL actually
+    # has on file for this user leaves MySQL's real password stuck at whatever it was, silently
+    # breaking Dovecot/Pure-FTPd MySQL auth for every mailbox on the server until fixed by hand.
     mysql -u root -p"${MYSQL_ROOT_PASS}" <<EOSQL2 2>/dev/null || warn "sysadminhcp database user setup failed"
 CREATE DATABASE IF NOT EXISTS sysadminhcp;
 CREATE USER IF NOT EXISTS 'sysadminhcp'@'localhost' IDENTIFIED BY '${KLOXOJRA_DB_PASS}';
+ALTER USER 'sysadminhcp'@'localhost' IDENTIFIED BY '${KLOXOJRA_DB_PASS}';
 GRANT ALL PRIVILEGES ON sysadminhcp.* TO 'sysadminhcp'@'localhost';
 GRANT SELECT ON vpopmail.* TO 'sysadminhcp'@'localhost';
 FLUSH PRIVILEGES;
