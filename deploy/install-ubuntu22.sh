@@ -1812,6 +1812,53 @@ else
   warn "Database file not found — it is seeded automatically on first startup."
 fi
 
+# ─── Step 15.5: Verify Core Services & Minimum Requirements ─────────────────
+# The health check above only proves the SysAdminHCP Node process itself is
+# answering - it says nothing about httpd, MariaDB, or the mail stack, which
+# is exactly the gap that let a broken vhost take down Apache server-wide
+# (every site on the box, not just the one being changed) while SysAdminHCP's
+# own health check kept passing throughout, because the app doesn't depend on
+# Apache being up to answer /health. This checks each service explicitly and
+# runs a real Apache config test, so a broken install is reported here and
+# now instead of discovered later by a confused admin.
+info "Step 15.5: Verifying core services..."
+
+SERVICE_CHECK_FAILED=0
+check_service() {
+  local svc="$1" label="$2"
+  if systemctl is-active --quiet "$svc" 2>/dev/null; then
+    info "  OK: $label ($svc) is running"
+  else
+    warn "  FAIL: $label ($svc) is NOT running - check: systemctl status $svc"
+    SERVICE_CHECK_FAILED=1
+  fi
+}
+
+check_service httpd "Web server"
+check_service mariadb "Database server"
+check_service qmail-send "Mail delivery (qmail-send)"
+check_service qmail-smtp "SMTP (qmail-smtp)"
+check_service dovecot "IMAP/POP3 (Dovecot)"
+check_service "$SYSADMINHCP_SERVICE" "SysAdminHCP control panel"
+
+if command -v apachectl &>/dev/null; then
+  if ! apachectl configtest &>/dev/null; then
+    warn "  FAIL: Apache configuration test failed - run 'apachectl configtest' (or 'apache2ctl configtest') on the server to see the exact error"
+    SERVICE_CHECK_FAILED=1
+  fi
+elif command -v apache2ctl &>/dev/null; then
+  if ! apache2ctl configtest &>/dev/null; then
+    warn "  FAIL: Apache configuration test failed - run 'apache2ctl configtest' on the server to see the exact error"
+    SERVICE_CHECK_FAILED=1
+  fi
+fi
+
+if [[ $SERVICE_CHECK_FAILED -eq 1 ]]; then
+  warn "One or more core services are not running - hosting features may not work until this is resolved."
+else
+  info "All core services verified running."
+fi
+
 # ─── Done ──────────────────────────────────────────────────────────────────
 echo ""
 info "======================================================"

@@ -315,7 +315,6 @@
         </div>
         <div class="nav-section"><div class="nav-section-title">Account</div>
             <div class="nav-item" data-page="account"><span class="icon">👤</span> My Account</div>
-            <div class="nav-item" data-page="manual"><span class="icon">📖</span> User Manual</div>
             <div class="nav-item" data-page="about"><span class="icon">ℹ️</span> About</div>
         </div>
     </nav>
@@ -373,7 +372,7 @@ async function ntfClickItem(id,alreadyRead){
 }
 document.addEventListener('click',(e)=>{const wrap=document.getElementById('ntfBellWrap');if(wrap&&_ntfDropdownOpen&&!wrap.contains(e.target)){document.getElementById('ntfDropdown').style.display='none';_ntfDropdownOpen=false;}});
 
-async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
+async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
 
 // ═══════════════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -1541,21 +1540,6 @@ async function renderBandwidth(el){
   }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
 }
 
-async function renderManual(el){
-  el.innerHTML=`<div class="card"><div class="card-title">📖 User Manual</div>
-  <div style="max-width:620px;margin:0 auto;padding:20px;text-align:center">
-    <div style="font-size:48px;margin-bottom:8px">📖</div>
-    <h2 style="margin:0 0 4px">SysAdminHCP Client Portal — User Manual</h2>
-    <p style="color:#7f8c8d;margin:4px 0 24px">A complete, step-by-step guide to every feature in this portal — domains, email, spam filters, SSL certificates, databases, backups, support tickets, and more.</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
-      <a href="/theme/SysAdminHCP-Client-Manual.pdf" download class="btn btn-primary" style="text-decoration:none">⬇ Download PDF</a>
-      <a href="/theme/client-manual.html" target="_blank" class="btn btn-secondary" style="text-decoration:none">🔗 View Online</a>
-    </div>
-    <div style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:left;font-size:13px;color:#666">
-      The PDF is best for printing or reading offline. "View Online" opens the same manual as a web page you can search with Ctrl+F / Cmd+F right in your browser.
-    </div>
-  </div></div>`;
-}
 async function renderAbout(el){
   el.innerHTML=`<div class="card"><div class="card-title">ℹ️ About SysAdminHCP</div>
   <div style="max-width:600px;margin:0 auto;padding:20px">
