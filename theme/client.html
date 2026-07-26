@@ -315,6 +315,7 @@
         </div>
         <div class="nav-section"><div class="nav-section-title">Account</div>
             <div class="nav-item" data-page="account"><span class="icon">👤</span> My Account</div>
+            <div class="nav-item" data-page="manual"><span class="icon">📖</span> User Manual</div>
             <div class="nav-item" data-page="about"><span class="icon">ℹ️</span> About</div>
         </div>
     </nav>
@@ -372,7 +373,7 @@ async function ntfClickItem(id,alreadyRead){
 }
 document.addEventListener('click',(e)=>{const wrap=document.getElementById('ntfBellWrap');if(wrap&&_ntfDropdownOpen&&!wrap.contains(e.target)){document.getElementById('ntfDropdown').style.display='none';_ntfDropdownOpen=false;}});
 
-async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
+async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
 
 // ═══════════════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -1299,6 +1300,8 @@ async function renderSpamStats(el){
     }).join('');
     return`<div style="margin-bottom:8px">${tabBtns}</div>${panels}`;
   };
+  const enabledDomains=d.enabledDomains||[];
+  const domainSelectHtml=enabledDomains.length>1?`<select id="spamRecentDomain" style="width:auto"><option value="">All my domains</option>${enabledDomains.map(dn=>`<option value="${escHtml(dn)}">${escHtml(dn)}</option>`).join('')}</select>`:'';
   el.innerHTML=`
   <div class="card" style="margin-bottom:16px">
     <div class="card-title">🛡️ AI Spam Filter — Email Stats (Last 30 Days)</div>
@@ -1309,6 +1312,16 @@ async function renderSpamStats(el){
       <div class="stat-card"><div class="stat-value">${s.spamRate!=null?s.spamRate+'%':'—'}</div><div class="stat-label">Spam Rate</div></div>
     </div>
   </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">📨 Email Log — Recent Entries</div>
+    <p style="font-size:12px;color:#888;margin:4px 0 12px">Every email that reached your domain(s), and whether it was delivered to the inbox or quarantined as spam — proof a message actually arrived if you or a client ever need to check.</p>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      ${domainSelectHtml}
+      <input type="text" id="spamRecentSearch" placeholder="Search by sender, recipient or subject..." style="flex:1;min-width:220px" oninput="spamFilterRecentRows()">
+      <button class="btn btn-sm btn-secondary" onclick="spamLoadRecent()">↻ Load Recent Entries</button>
+    </div>
+    <div id="spamRecentTableWrap"><p style="color:#888;font-size:13px">Click "Load Recent Entries" to view your email log.</p></div>
+  </div>
   <div class="card">
     <div class="card-title">🪙 Token Usage <span style="font-size:12px;font-weight:400;color:#888">(total all-time: ${fmtN(tu.total)} tokens)</span></div>
     <p style="font-size:12px;color:#888;margin:4px 0 12px">Token consumption across your domains — useful for estimating monthly AI costs.</p>
@@ -1316,6 +1329,41 @@ async function renderSpamStats(el){
   </div>`;
 }
 function spamTab(id,idx){for(let i=0;i<3;i++){const p=document.getElementById(`${id}_p${i}`);const b=document.getElementById(`${id}_tb${i}`);if(p)p.style.display=i===idx?'':'none';if(b){b.className='btn btn-xs '+(i===idx?'btn-primary':'btn-secondary');}}}
+
+let _spamRecentRows=[];
+async function spamLoadRecent(){
+  const wrap=document.getElementById('spamRecentTableWrap');
+  if(!wrap)return;
+  wrap.innerHTML='<p style="color:#888">Loading...</p>';
+  try{
+    const domainSel=document.getElementById('spamRecentDomain');
+    const domain=domainSel?domainSel.value:'';
+    const qs=domain?('&domain='+encodeURIComponent(domain)):'';
+    const data=await api('/client/spam-stats/recent?limit=150'+qs);
+    _spamRecentRows=data.entries||[];
+    const search=document.getElementById('spamRecentSearch');
+    if(search)search.value='';
+    spamRenderRecentRows(_spamRecentRows);
+  }catch(e){wrap.innerHTML='<div class="alert alert-error">'+escHtml(e.message)+'</div>';}
+}
+function spamRenderRecentRows(rows){
+  const wrap=document.getElementById('spamRecentTableWrap');
+  if(!wrap)return;
+  if(!rows.length){wrap.innerHTML='<p style="color:#888;font-size:13px">No entries found.</p>';return;}
+  const body=rows.map(e=>{
+    const d=new Date(e.ts*1000).toLocaleString();
+    const statusBadge=e.isSpam?('<span class="status-badge status-off" title="'+escHtml(e.spamType||'')+'">🚫 Quarantined</span>'):'<span class="status-badge status-on">✓ Delivered</span>';
+    return '<tr><td style="white-space:nowrap;font-size:12px;color:#666">'+escHtml(d)+'</td><td style="font-size:12px">'+escHtml(e.from)+'</td><td style="font-size:12px">'+escHtml(e.to)+'</td><td style="font-size:12px">'+escHtml(e.subject)+'</td><td>'+statusBadge+'</td><td style="font-size:12px">'+Math.round((e.confidence||0)*100)+'%</td></tr>';
+  }).join('');
+  wrap.innerHTML='<table class="data-table"><thead><tr><th>Date</th><th>From</th><th>To</th><th>Subject</th><th>Status</th><th>Confidence</th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+function spamFilterRecentRows(){
+  const searchEl=document.getElementById('spamRecentSearch');
+  const q=(searchEl?searchEl.value:'').toLowerCase().trim();
+  if(!q){spamRenderRecentRows(_spamRecentRows);return;}
+  const filtered=_spamRecentRows.filter(e=>(e.from||'').toLowerCase().includes(q)||(e.to||'').toLowerCase().includes(q)||(e.subject||'').toLowerCase().includes(q));
+  spamRenderRecentRows(filtered);
+}
 
 // ═══ Support Tickets (Pro feature) ═══════════════════════════════════════════
 function tkTimeAgo(date){const now=new Date();const diff=Math.floor((now.getTime()-date.getTime())/1000);if(diff<60)return diff+'s ago';if(diff<3600)return Math.floor(diff/60)+'m ago';if(diff<86400)return Math.floor(diff/3600)+'h ago';return Math.floor(diff/86400)+'d ago';}
@@ -1540,6 +1588,21 @@ async function renderBandwidth(el){
   }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
 }
 
+async function renderManual(el){
+  el.innerHTML=`<div class="card"><div class="card-title">📖 User Manual</div>
+  <div style="max-width:620px;margin:0 auto;padding:20px;text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">📖</div>
+    <h2 style="margin:0 0 4px">SysAdminHCP Client Portal — User Manual</h2>
+    <p style="color:#7f8c8d;margin:4px 0 24px">A complete, step-by-step guide to every feature in this portal — domains, email, spam filters, SSL certificates, databases, backups, support tickets, and more.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
+      <a href="/theme/SysAdminHCP-Client-Manual.pdf" download class="btn btn-primary" style="text-decoration:none">⬇ Download PDF</a>
+      <a href="/theme/client-manual.html" target="_blank" class="btn btn-secondary" style="text-decoration:none">🔗 View Online</a>
+    </div>
+    <div style="background:#f8f9fa;border-radius:8px;padding:16px;text-align:left;font-size:13px;color:#666">
+      The PDF is best for printing or reading offline. "View Online" opens the same manual as a web page you can search with Ctrl+F / Cmd+F right in your browser.
+    </div>
+  </div></div>`;
+}
 async function renderAbout(el){
   el.innerHTML=`<div class="card"><div class="card-title">ℹ️ About SysAdminHCP</div>
   <div style="max-width:600px;margin:0 auto;padding:20px">

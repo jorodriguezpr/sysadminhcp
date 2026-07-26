@@ -50,21 +50,24 @@ try {
     $emailParser = new \QmailAiFilter\Email\EmailParser($emailPath, $logger);
     $emailData = $emailParser->getEmailData();
 
+    // Bare sender address, extracted once here (not just inside the whitelist
+    // branch below) - the client-portal email log needs a real "From" address
+    // on every stats.jsonl entry, not only the ones that happened to hit the
+    // whitelist check.
+    $rawFrom = $emailData['from'] ?? '';
+    if (preg_match('/<([^>@\s]+@[^>]+)>/', $rawFrom, $fm)) {
+        $senderEmail = strtolower(trim($fm[1]));
+    } else {
+        $senderEmail = strtolower(trim(preg_replace('/\s+.*$/', '', $rawFrom)));
+    }
+    $senderDomain = '';
+    $atPos = strrpos($senderEmail, '@');
+    if ($atPos !== false) $senderDomain = substr($senderEmail, $atPos + 1);
+
     // ── Whitelist check — bypass AI entirely for trusted senders ─────────────
     $whitelistFile = $installDir . '/config/whitelist.json';
     if (file_exists($whitelistFile)) {
         $wl = json_decode(file_get_contents($whitelistFile), true) ?: [];
-
-        $rawFrom = $emailData['from'] ?? '';
-        // Extract bare email from "Name <email>" format
-        if (preg_match('/<([^>@\s]+@[^>]+)>/', $rawFrom, $fm)) {
-            $senderEmail = strtolower(trim($fm[1]));
-        } else {
-            $senderEmail = strtolower(trim(preg_replace('/\s+.*$/', '', $rawFrom)));
-        }
-        $senderDomain = '';
-        $atPos = strrpos($senderEmail, '@');
-        if ($atPos !== false) $senderDomain = substr($senderEmail, $atPos + 1);
 
         $recipientLc  = strtolower($recipientEmail);
         $atPos2 = strrpos($recipientLc, '@');
@@ -94,6 +97,8 @@ try {
                 'ts' => time(), 'domain' => $parts[1] ?? $recipientEmail,
                 'account' => $recipientEmail, 'is_spam' => false,
                 'confidence' => 0.0, 'spam_type' => 'whitelisted',
+                'from' => $senderEmail ?: $rawFrom,
+                'subject' => mb_substr((string)($emailData['subject'] ?? ''), 0, 200),
             ]) . "\n", FILE_APPEND | LOCK_EX);
 
             echo json_encode(['is_spam' => false, 'confidence' => 0.0, 'reason' => 'Whitelisted sender', 'spam_type' => 'whitelisted']);
@@ -173,6 +178,8 @@ try {
         'is_spam'    => $isSpam,
         'confidence' => round((float)($result['confidence'] ?? 0), 4),
         'spam_type'  => $result['spam_type'] ?? 'none',
+        'from'       => $senderEmail ?: $rawFrom,
+        'subject'    => mb_substr((string)($emailData['subject'] ?? ''), 0, 200),
     ]) . "\n";
     @file_put_contents($statsFile, $statsEntry, FILE_APPEND | LOCK_EX);
 

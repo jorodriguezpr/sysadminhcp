@@ -2347,7 +2347,9 @@ async function loadMigHistory(){
       // credentials are never persisted in history, so the admin still re-enters or
       // reloads a saved server before resyncing.
       const resyncBtn=(r.sourceType==='sysadminhcp'||r.sourceType==='kloxong'||r.sourceType==='kloxomr'||r.sourceType==='cpanel')?`<button class="btn btn-xs btn-success" onclick="resyncFromHistory('${escHtml(r.sourceType)}','${escHtml(r.sourceHost)}','${escHtml(r.clientName)}')">↻ Resync</button>`:'';
-      return `<tr><td>${new Date(r.startedAt).toLocaleString()}</td><td>${escHtml(typeLabel[r.sourceType]||r.sourceType)}</td><td>${escHtml(r.action)}</td><td>${escHtml(r.clientName)}</td><td>${escHtml(r.sourceHost)}</td><td><span class="status-badge status-${r.status==='completed'?'on':'off'}" title="${escHtml(r.message||r.errorDetail||'')}">${escHtml(r.status)}</span></td><td>${resyncBtn}</td></tr>`;
+      const warnCount=(r.warnings||[]).length;
+      const warnBadge=warnCount?`<span class="status-badge status-off" style="margin-left:6px;cursor:help" title="${escHtml(r.warnings.join('\n'))}">⚠ ${warnCount} warning${warnCount===1?'':'s'}</span>`:'';
+      return `<tr><td>${new Date(r.startedAt).toLocaleString()}</td><td>${escHtml(typeLabel[r.sourceType]||r.sourceType)}</td><td>${escHtml(r.action)}</td><td>${escHtml(r.clientName)}</td><td>${escHtml(r.sourceHost)}</td><td><span class="status-badge status-${r.status==='completed'?'on':'off'}" title="${escHtml(r.message||r.errorDetail||'')}">${escHtml(r.status)}</span>${warnBadge}</td><td>${resyncBtn}</td></tr>`;
     }).join('')+'</tbody></table>';
   }catch(e){box.innerHTML='<span style="color:#e17055">'+escHtml(e.message)+'</span>';}
 }
