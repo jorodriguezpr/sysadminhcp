@@ -816,20 +816,34 @@ chmod 644 /etc/logrotate.d/sysadminhcp-acl
 
 # ─── Step 12: Configure Firewall ───────────────────────────────────────────
 info "Step 12: Configuring firewall..."
-if command -v firewall-cmd &>/dev/null && systemctl is-active firewalld &>/dev/null; then
-  firewall-cmd --permanent --add-port=7778/tcp
-  firewall-cmd --permanent --add-port=7777/tcp
-  firewall-cmd --permanent --add-service=http
-  firewall-cmd --permanent --add-service=https
-  firewall-cmd --permanent --add-service=dns
-  firewall-cmd --permanent --add-service=ftp
-  firewall-cmd --permanent --add-port=30000-31000/tcp
-  firewall-cmd --reload
-  info "Firewall rules added for ports 7778, 7777, 80, 443, 21, 30000-31000"
-elif [[ $WSL_MODE -eq 1 ]]; then
+if [[ $WSL_MODE -eq 1 ]]; then
   info "WSL detected: skipping firewall configuration (Windows handles networking)"
+elif command -v firewall-cmd &>/dev/null; then
+  # firewalld ships installed+enabled on some AlmaLinux 10 cloud images but is never actually
+  # started on first boot (confirmed live: `systemctl is-enabled` said enabled, `is-active` said
+  # inactive, with no prior start/crash in the journal at all - it just never ran). The old check
+  # here only tested is-active and silently skipped the whole firewall setup if it was down,
+  # which also meant Intrusion Detection's IP-block feature (firewall-cmd --zone=drop) failed
+  # with "FirewallD is not running" for as long as the panel's own reload/`fix-firewall` step
+  # never explicitly starts the service either.
+  if ! systemctl is-active firewalld &>/dev/null; then
+    systemctl enable --now firewalld 2>/dev/null || true
+  fi
+  if systemctl is-active firewalld &>/dev/null; then
+    firewall-cmd --permanent --add-port=7778/tcp
+    firewall-cmd --permanent --add-port=7777/tcp
+    firewall-cmd --permanent --add-service=http
+    firewall-cmd --permanent --add-service=https
+    firewall-cmd --permanent --add-service=dns
+    firewall-cmd --permanent --add-service=ftp
+    firewall-cmd --permanent --add-port=30000-31000/tcp
+    firewall-cmd --reload
+    info "Firewall rules added for ports 7778, 7777, 80, 443, 21, 30000-31000"
+  else
+    warn "firewalld could not be started. Skipping firewall configuration."
+  fi
 else
-  warn "firewalld not running. Skipping firewall configuration."
+  warn "firewall-cmd not found. Skipping firewall configuration."
 fi
 
 # ─── Step 12.5: Configure Security Tools ────────────────────────────────────
