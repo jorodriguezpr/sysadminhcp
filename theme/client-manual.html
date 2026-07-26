@@ -121,7 +121,7 @@
     files, backups and support tickets from your SysAdminHCP hosting account.
   </div>
   <div class="meta">
-    Document version 1.0<br>
+    Document version 1.1<br>
     Covers the Client Portal (not the Admin Portal)<br>
     In memory of Kloxo CP
   </div>
@@ -175,7 +175,11 @@
     <li><a href="#s14">Backups</a></li>
     <li><a href="#s15">PHP Version</a></li>
     <li><a href="#s16">Bandwidth</a></li>
-    <li><a href="#s17">AI Spam Filter Statistics</a></li>
+    <li><a href="#s17">AI Spam Filter &amp; Email Log</a>
+      <ol>
+        <li><a href="#s17-1">Email Log — Recent Entries</a></li>
+      </ol>
+    </li>
     <li><a href="#s18">Support Tickets <span class="pro-badge">Pro</span></a></li>
     <li><a href="#s19">Notifications <span class="pro-badge">Pro</span></a></li>
     <li><a href="#s20">App Installer <span class="pro-badge">Pro</span></a></li>
@@ -705,10 +709,47 @@
 <!-- ============ 17. AI SPAM FILTER ============ -->
 <section id="s17">
   <h1 class="part">Chapter 17</h1>
-  <h2><span class="num">17.</span>AI Spam Filter Statistics</h2>
+  <h2><span class="num">17.</span>AI Spam Filter &amp; Email Log</h2>
   <p>This menu item only appears if your administrator has enabled AI-based spam filtering on at least one of your
   domains. It shows, for the last 30 days: Emails Analyzed, Spam Blocked, Ham (legitimate mail) Delivered, and your
   Spam Rate percentage — plus a breakdown of AI token usage by day, month, and year.</p>
+
+  <h3 id="s17-1">17.1 Email Log — Recent Entries</h3>
+  <p>Below the stats tiles is an <strong>Email Log</strong> card — a record of every individual email that reached
+  your domain(s), showing exactly who it was from, who it was addressed to, its subject, and whether it was
+  delivered to the inbox or quarantined as spam.</p>
+  <div class="box tip">
+    <span class="box-title">Proof an email actually arrived</span>
+    This is the place to check whenever you (or one of your own clients) believe an expected email "never
+    arrived." Search the log for the sender or subject — if it's there, you'll see immediately whether it was
+    delivered normally or caught by the spam filter, instead of just taking "I never got it" at face value.
+  </div>
+  <ol class="steps">
+    <li>Go to <span class="ui">AI Spam Filter</span> in the sidebar.</li>
+    <li>If you have more than one domain with the filter enabled, choose which one to view from the
+    <strong>domain dropdown</strong> (or leave it on "All my domains").</li>
+    <li>Click <span class="ui">↻ Load Recent Entries</span>.</li>
+    <li>Use the <strong>search box</strong> to filter the list by sender, recipient, or subject — handy when
+    you're looking for one specific email rather than scrolling the whole list.</li>
+  </ol>
+  <p>Each row shows:</p>
+  <table>
+    <tr><th>Column</th><th>Meaning</th></tr>
+    <tr><td><strong>Date</strong></td><td>When the email was received and processed</td></tr>
+    <tr><td><strong>From</strong></td><td>The sender's email address</td></tr>
+    <tr><td><strong>To</strong></td><td>The mailbox on your domain it was delivered to</td></tr>
+    <tr><td><strong>Subject</strong></td><td>The email's subject line</td></tr>
+    <tr><td><strong>Status</strong></td><td><strong style="color:var(--ok)">✓ Delivered</strong> — reached the inbox normally, or
+    <strong style="color:var(--danger)">🚫 Quarantined</strong> — held as spam (hover the badge to see why, e.g. "phishing", "marketing")</td></tr>
+    <tr><td><strong>Confidence</strong></td><td>How confident the AI filter was in that verdict</td></tr>
+  </table>
+  <div class="box warn">
+    <span class="box-title">Only covers domains with AI filtering enabled</span>
+    The Email Log only has data for domains where your administrator has turned on AI spam filtering — it isn't a
+    general record of every email your server has ever handled. If a domain doesn't appear in the dropdown, or
+    the whole AI Spam Filter menu item is missing, filtering isn't enabled for it; ask your administrator if you'd
+    like this turned on.
+  </div>
 </section>
 
 <!-- ============ 18. SUPPORT TICKETS ============ -->
@@ -868,6 +909,11 @@
   <h4>File Manager won't let me go outside my home folder</h4>
   <p>This is intentional — client accounts are confined to their own home directory
   (<code>/home/{username}</code>) for security.</p>
+
+  <h4>A client (or I) says an email was never received</h4>
+  <p>Check the <a href="#s17-1">Email Log</a> under AI Spam Filter — search for the sender or subject and see
+  whether it actually arrived and was delivered, or was caught and quarantined as spam. If the domain doesn't have
+  AI spam filtering enabled, there's no log to check yet; ask your administrator to enable it.</p>
 </section>
 
 <!-- ============ 24. GETTING HELP ============ -->
