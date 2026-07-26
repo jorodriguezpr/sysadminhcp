@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SysAdminHCP Client Portal — User Manual</title>
+<style>
+  :root{
+    --primary:#4361ee; --accent:#4cc9f0; --accent2:#7b2ff7;
+    --ink:#1c2333; --sub:#5a6474; --line:#e3e7ef; --bg-soft:#f6f8fc;
+    --ok:#27ae60; --warn:#e67e22; --danger:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    color:var(--ink); line-height:1.55; margin:0; font-size:14px;
+    background:#fff;
+  }
+  .page{max-width:900px;margin:0 auto;padding:0 36px;}
+  a{color:var(--primary); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---- Cover ---- */
+  .cover{
+    min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;
+    text-align:center; background:linear-gradient(150deg,#0f1224 0%,#1b2140 45%,#241a4a 100%);
+    color:#fff; padding:60px 40px; page-break-after:always;
+  }
+  .cover .logo{font-size:64px; margin-bottom:18px}
+  .cover h1{
+    font-size:40px; margin:0 0 8px; font-weight:800; letter-spacing:.5px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .cover .sub{font-size:19px; color:#c7ccdd; margin-bottom:34px}
+  .cover .tagline{font-size:13px; color:#8890ab; max-width:520px; margin-bottom:40px; line-height:1.7}
+  .cover .meta{font-size:12px; color:#6b7290; border-top:1px solid #333a5c; padding-top:18px; width:260px}
+
+  /* ---- TOC ---- */
+  .toc{page-break-after:always; padding-top:50px}
+  .toc h2{font-size:22px; color:var(--primary); border-bottom:2px solid var(--line); padding-bottom:10px}
+  .toc ol{list-style:none; margin:0; padding:0; counter-reset:toc}
+  .toc > ol > li{margin:10px 0; font-weight:600; font-size:14.5px}
+  .toc ol ol{margin:6px 0 6px 22px; padding:0}
+  .toc ol ol li{font-weight:400; font-size:13px; margin:4px 0; color:var(--sub)}
+  .toc a{color:var(--ink)}
+  .toc a:hover{color:var(--primary)}
+
+  /* ---- Content ---- */
+  section{page-break-before:always; padding-top:40px}
+  section:first-of-type{page-break-before:auto}
+  h1.part{
+    font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--accent2);
+    font-weight:700; margin:0 0 4px;
+  }
+  h2{
+    font-size:25px; margin:0 0 18px; color:var(--ink); font-weight:800;
+    padding-bottom:10px; border-bottom:3px solid var(--primary);
+  }
+  h2 .num{color:var(--primary); margin-right:8px}
+  h3{font-size:17px; color:var(--primary); margin:28px 0 10px; font-weight:700}
+  h4{font-size:14.5px; color:var(--ink); margin:18px 0 8px; font-weight:700}
+  p{margin:0 0 12px}
+  ul,ol{margin:0 0 14px; padding-left:22px}
+  li{margin:0 0 6px}
+  ol.steps{padding-left:0; list-style:none; counter-reset:step}
+  ol.steps > li{
+    position:relative; padding-left:38px; margin-bottom:12px; counter-increment:step; min-height:26px;
+  }
+  ol.steps > li::before{
+    content:counter(step); position:absolute; left:0; top:-1px;
+    background:linear-gradient(135deg,var(--primary),var(--accent2)); color:#fff;
+    width:24px; height:24px; border-radius:50%; font-size:12px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  code, .ui{
+    font-family:'Consolas','Menlo',monospace; background:var(--bg-soft); border:1px solid var(--line);
+    border-radius:4px; padding:1px 6px; font-size:12.5px; color:#c0392b;
+  }
+  .ui{color:var(--primary); font-weight:600; font-family:inherit; border-style:dashed}
+  table{width:100%; border-collapse:collapse; margin:14px 0 18px; font-size:12.8px}
+  th,td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top}
+  th{background:var(--bg-soft); font-weight:700; color:var(--ink)}
+  tr:nth-child(even) td{background:#fbfcfe}
+
+  .box{border-radius:8px; padding:14px 16px; margin:16px 0; font-size:13px; border-left:4px solid}
+  .box.tip{background:#eef7ff; border-color:var(--accent)}
+  .box.warn{background:#fff8ec; border-color:var(--warn)}
+  .box.danger{background:#fdecea; border-color:var(--danger)}
+  .box .box-title{font-weight:700; display:block; margin-bottom:4px}
+  .box.tip .box-title{color:#1a6fa8}
+  .box.warn .box-title{color:#a65c00}
+  .box.danger .box-title{color:var(--danger)}
+
+  .pro-badge{
+    display:inline-block; font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+    background:linear-gradient(135deg,#f5b942,#e67e22); color:#fff; padding:2px 8px; border-radius:10px;
+    vertical-align:middle; margin-left:8px;
+  }
+  .kv{width:100%; border-collapse:collapse; font-size:12.8px; margin:10px 0 18px}
+  .kv td{border:none; border-bottom:1px solid var(--line); padding:6px 4px}
+  .kv td:first-child{font-weight:700; width:190px; color:var(--sub)}
+
+  .footer-note{margin-top:40px; padding-top:14px; border-top:1px solid var(--line); font-size:11px; color:#9aa1b4; text-align:center}
+
+  @media print{
+    a{color:var(--ink) !important}
+    .cover{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+    @page{margin:16mm 14mm}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="logo">🖥️</div>
+  <h1>SysAdminHCP</h1>
+  <div class="sub">Client Portal — Complete User Manual</div>
+  <div class="tagline">
+    A step-by-step guide to managing your domains, email, databases, SSL certificates,
+    files, backups and support tickets from your SysAdminHCP hosting account.
+  </div>
+  <div class="meta">
+    Document version 1.0<br>
+    Covers the Client Portal (not the Admin Portal)<br>
+    In memory of Kloxo CP
+  </div>
+</div>
+
+<!-- ============ TABLE OF CONTENTS ============ -->
+<div class="page toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Getting Started</a>
+      <ol>
+        <li><a href="#s1-1">Logging in</a></li>
+        <li><a href="#s1-2">Portal layout &amp; navigation</a></li>
+        <li><a href="#s1-3">Feature permissions &amp; hidden menu items</a></li>
+        <li><a href="#s1-4">Appearance: themes, font size &amp; density</a></li>
+      </ol>
+    </li>
+    <li><a href="#s2">Dashboard &amp; Resource Usage</a></li>
+    <li><a href="#s3">Domains</a>
+      <ol>
+        <li><a href="#s3-1">Adding a domain</a></li>
+        <li><a href="#s3-2">Editing a domain</a></li>
+        <li><a href="#s3-3">Advanced: VHost, SSL VHost &amp; Webmail VHost editors</a></li>
+        <li><a href="#s3-4">Viewing visitor statistics</a></li>
+        <li><a href="#s3-5">Deleting a domain</a></li>
+      </ol>
+    </li>
+    <li><a href="#s4">Subdomains</a></li>
+    <li><a href="#s5">DNS Records</a></li>
+    <li><a href="#s6">Email</a>
+      <ol>
+        <li><a href="#s6-1">Mail accounts</a></li>
+        <li><a href="#s6-2">Mail domains</a></li>
+        <li><a href="#s6-3">Forwards</a></li>
+        <li><a href="#s6-4">Spam whitelist</a></li>
+        <li><a href="#s6-5">Spam blacklist</a></li>
+      </ol>
+    </li>
+    <li><a href="#s7">Webmail</a></li>
+    <li><a href="#s8">FTP Accounts</a></li>
+    <li><a href="#s9">Databases</a>
+      <ol>
+        <li><a href="#s9-1">Creating a database</a></li>
+        <li><a href="#s9-2">Database users &amp; access</a></li>
+      </ol>
+    </li>
+    <li><a href="#s10">phpMyAdmin</a></li>
+    <li><a href="#s11">SSL Certificates</a></li>
+    <li><a href="#s12">Let's Encrypt (Free SSL)</a></li>
+    <li><a href="#s13">File Manager</a></li>
+    <li><a href="#s14">Backups</a></li>
+    <li><a href="#s15">PHP Version</a></li>
+    <li><a href="#s16">Bandwidth</a></li>
+    <li><a href="#s17">AI Spam Filter Statistics</a></li>
+    <li><a href="#s18">Support Tickets <span class="pro-badge">Pro</span></a></li>
+    <li><a href="#s19">Notifications <span class="pro-badge">Pro</span></a></li>
+    <li><a href="#s20">App Installer <span class="pro-badge">Pro</span></a></li>
+    <li><a href="#s21">Email Migration <span class="pro-badge">Pro</span></a></li>
+    <li><a href="#s22">My Account</a>
+      <ol>
+        <li><a href="#s22-1">Profile</a></li>
+        <li><a href="#s22-2">Changing your password</a></li>
+        <li><a href="#s22-3">Two-Factor Authentication (2FA)</a></li>
+        <li><a href="#s22-4">API Access</a></li>
+      </ol>
+    </li>
+    <li><a href="#s23">Troubleshooting &amp; FAQ</a></li>
+    <li><a href="#s24">Getting Help</a></li>
+  </ol>
+</div>
+
+<div class="page">
+
+<!-- ============ 1. GETTING STARTED ============ -->
+<section id="s1">
+  <h1 class="part">Chapter 1</h1>
+  <h2><span class="num">1.</span>Getting Started</h2>
+
+  <h3 id="s1-1">1.1 Logging in</h3>
+  <p>Your hosting provider gives you a Client Portal URL (usually <code>https://yourserver:7777/display</code> or a
+  custom address they provide), along with a username and password. Open the URL in your browser and sign in with
+  those credentials.</p>
+  <p>If your provider has enabled Two-Factor Authentication (2FA) on your account, you'll be asked for a 6-digit
+  code from your authenticator app after entering your password. See <a href="#s22-3">Section 22.3</a> to set this
+  up yourself if it isn't already enabled.</p>
+
+  <h3 id="s1-2">1.2 Portal layout &amp; navigation</h3>
+  <p>The left sidebar is your main menu, grouped into sections:</p>
+  <table>
+    <tr><th>Group</th><th>Contains</th></tr>
+    <tr><td><strong>Overview</strong></td><td>Dashboard</td></tr>
+    <tr><td><strong>Hosting</strong></td><td>Domains, Subdomains, DNS Records, Email, Webmail, FTP, Databases, phpMyAdmin</td></tr>
+    <tr><td><strong>Security</strong></td><td>SSL, Let's Encrypt</td></tr>
+    <tr><td><strong>Tools</strong></td><td>File Manager, Backups, PHP Version, Bandwidth, App Installer<span class="pro-badge">Pro</span>, Email Migration<span class="pro-badge">Pro</span></td></tr>
+    <tr><td><strong>Analytics</strong></td><td>AI Spam Filter (only visible if enabled for you)</td></tr>
+    <tr><td><strong>Support</strong></td><td>Support Tickets <span class="pro-badge">Pro</span></td></tr>
+    <tr><td><strong>Account</strong></td><td>My Account, About</td></tr>
+  </table>
+  <p>The header bar at the top shows the current page title, a notification bell (Pro accounts), your username, and
+  a <span class="ui">Logout</span> button. On mobile devices, tap the hamburger icon (☰) to open the sidebar.</p>
+
+  <div class="box tip">
+    <span class="box-title">Tip — Quick Links</span>
+    The Dashboard has a grid of Quick Link tiles (Domains, Email, DNS, FTP, Databases, phpMyAdmin, SSL, Files,
+    Backups) that jump straight to each section — handy shortcuts once you're logged in.
+  </div>
+
+  <h3 id="s1-3">1.3 Feature permissions &amp; hidden menu items</h3>
+  <p>Not every account can use every feature. Your administrator controls, per account, which actions you're
+  allowed to perform (adding domains, adding mailboxes, deleting FTP accounts, managing DNS, etc.), as well as
+  numeric limits (maximum number of domains, mailboxes, FTP accounts, databases, disk space and bandwidth).</p>
+  <div class="box warn">
+    <span class="box-title">If a button doesn't work</span>
+    If you click a "Create" or "Delete" button and get a permission error, or a menu item you expect to see is
+    missing entirely, your administrator has most likely restricted that feature on your account, or you've hit
+    a resource limit. Contact your administrator to review your account's permissions and limits.
+  </div>
+  <p>Similarly, some sidebar items only appear when applicable:</p>
+  <ul>
+    <li><strong>AI Spam Filter</strong> — only shows if your administrator has turned on AI-based spam filtering for at least one of your domains.</li>
+    <li><strong>Support Tickets, Notifications bell, App Installer, Email Migration</strong> — these are Pro features. They only appear if your hosting account is on a Pro license.</li>
+  </ul>
+
+  <h3 id="s1-4">1.4 Appearance: themes, font size &amp; density</h3>
+  <p>Under <span class="ui">My Account</span> you'll find an Appearance/Theme section where you can personalize how
+  the portal looks — purely visual, saved to your browser, and doesn't affect your hosting in any way:</p>
+  <ul>
+    <li><strong>Theme:</strong> Cosmic (default), Classic, Dark, Ocean, Sunset, Forest</li>
+    <li><strong>Font Size:</strong> Small, Medium, Large</li>
+    <li><strong>Density:</strong> Compact, Cozy, Comfortable</li>
+  </ul>
+</section>
+
+<!-- ============ 2. DASHBOARD ============ -->
+<section id="s2">
+  <h1 class="part">Chapter 2</h1>
+  <h2><span class="num">2.</span>Dashboard &amp; Resource Usage</h2>
+  <p>The Dashboard is your home page after logging in. It shows:</p>
+  <ul>
+    <li>A <strong>Quick Links</strong> grid for jumping directly to any major feature.</li>
+    <li>A <strong>Resource Usage</strong> card with a usage bar for each of the following, showing how much you've
+    used against your account's limit:
+      <ul>
+        <li><strong>Disk Space</strong> — calculated from your home directory and mailbox storage</li>
+        <li><strong>Bandwidth</strong> — calculated for your current billing cycle</li>
+        <li><strong>Domains</strong>, <strong>Mail Accounts</strong>, <strong>FTP Accounts</strong>, <strong>Databases</strong> — counts against your account limits</li>
+      </ul>
+    </li>
+  </ul>
+  <p>Each usage bar changes color as you approach your limit: <strong style="color:var(--ok)">green</strong> under
+  70%, <strong style="color:var(--warn)">orange</strong> between 70–90%, and <strong style="color:var(--danger)">red</strong>
+  above 90%. If a limit shows as <strong>∞</strong>, that resource is unlimited on your account.</p>
+  <div class="box tip">
+    <span class="box-title">No "plan" picker</span>
+    Unlike some hosting panels, there is no self-service plan-upgrade page in the Client Portal — your resource
+    limits are individual settings on your account configured by your administrator. If you need more space,
+    domains, or mailboxes, contact your administrator (or open a support ticket, if enabled — see
+    <a href="#s18">Section 18</a>).
+  </div>
+</section>
+
+<!-- ============ 3. DOMAINS ============ -->
+<section id="s3">
+  <h1 class="part">Chapter 3</h1>
+  <h2><span class="num">3.</span>Domains</h2>
+  <p>The Domains page lists every domain on your account with its Type, Status, PHP version, and whether SSL is
+  active (✓/✗).</p>
+
+  <h3 id="s3-1">3.1 Adding a domain</h3>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add Domain</span> in the top-right toolbar.</li>
+    <li>Enter the <strong>Domain Name</strong> (e.g. <code>example.com</code>).</li>
+    <li>Choose a <strong>Type</strong>: <em>Virtual</em> (a normal, independent website), <em>Addon</em>, or <em>Forward</em>
+    (redirects to another URL).</li>
+    <li>Click <span class="ui">Create</span>.</li>
+  </ol>
+  <div class="box warn">
+    <span class="box-title">Domain limit reached?</span>
+    If you see "Domain limit reached", your account has hit its maximum number of domains. Contact your
+    administrator to raise the limit.
+  </div>
+
+  <h3 id="s3-2">3.2 Editing a domain</h3>
+  <p>Click <span class="ui">Edit</span> on any domain row to open its settings, organized into four groups:</p>
+  <table>
+    <tr><th>Group</th><th>Settings</th></tr>
+    <tr><td><strong>General</strong></td><td>Document Root (default <code>/home/{you}/{domain}</code>), Index File (default <code>index.html</code>)</td></tr>
+    <tr><td><strong>Forward</strong> <em>(Forward-type domains only)</em></td><td>Forward URL, Forward Type (301 Permanent / 302 Temporary)</td></tr>
+    <tr><td><strong>Web</strong></td><td>SSL Enabled, PHP Version (5.6 – 8.4), PHP Mode (PHP-FPM, mod_php, suPHP, FCGId, CGI, LSAPI), Force HTTPS</td></tr>
+    <tr><td><strong>Mail</strong></td><td>Catchall Enabled/Disabled, Catchall Email address</td></tr>
+    <tr><td><strong>DNS</strong></td><td>DNS Managed (Yes/No)</td></tr>
+  </table>
+  <p>Make your changes and click <span class="ui">Save</span>.</p>
+
+  <h3 id="s3-3">3.3 Advanced: VHost, SSL VHost &amp; Webmail VHost editors</h3>
+  <p>Each domain row also has three advanced buttons that open the raw web-server configuration for that domain:</p>
+  <ul>
+    <li><strong>VHost</strong> — the plain HTTP (port 80) Apache/Nginx virtual host configuration.</li>
+    <li><strong>SSL VHost</strong> — the HTTPS (port 443) virtual host. Includes a <span class="ui">Generate Template</span>
+    button that fills in a working boilerplate block for you.</li>
+    <li><strong>Webmail VHost</strong> — the configuration for <code>webmail.{domain}</code>.</li>
+  </ul>
+  <div class="box danger">
+    <span class="box-title">Advanced users only</span>
+    These editors let you directly edit the live server configuration text for your domain. An invalid
+    configuration can take your site offline. Only use these if you understand Apache/Nginx configuration syntax,
+    or if your administrator has instructed you to make a specific change here.
+  </div>
+
+  <h3 id="s3-4">3.4 Viewing visitor statistics</h3>
+  <p>Click <span class="ui">Stats</span> on a domain row to open its traffic report in a new tab. If no report has
+  been generated yet, you'll see a "No stats report available yet" message.</p>
+
+  <h3 id="s3-5">3.5 Deleting a domain</h3>
+  <p>Click <span class="ui">Delete</span> on a domain row and confirm. This permanently removes the domain and
+  <strong>all</strong> associated data (files, mail, databases tied to it, DNS records) — this action cannot be
+  undone, so make sure you have a backup first (see <a href="#s14">Section 14</a>).</p>
+</section>
+
+<!-- ============ 4. SUBDOMAINS ============ -->
+<section id="s4">
+  <h1 class="part">Chapter 4</h1>
+  <h2><span class="num">4.</span>Subdomains</h2>
+  <p>Subdomains (like <code>shop.example.com</code> or <code>blog.example.com</code>) are managed on their own
+  page.</p>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add Subdomain</span>.</li>
+    <li>Enter the <strong>Subdomain Name</strong> (just the prefix, e.g. <code>shop</code>).</li>
+    <li>Choose the <strong>Parent Domain</strong> from the dropdown.</li>
+    <li>Click <span class="ui">Create</span>. Your new subdomain will be <code>shop.example.com</code>.</li>
+  </ol>
+  <p>To remove one, click <span class="ui">Delete</span> on its row and confirm.</p>
+</section>
+
+<!-- ============ 5. DNS ============ -->
+<section id="s5">
+  <h1 class="part">Chapter 5</h1>
+  <h2><span class="num">5.</span>DNS Records</h2>
+  <p>If you only have one domain, the DNS Records page opens straight into that domain's record list. With
+  multiple domains, you'll first see a list of DNS zones — click <span class="ui">Manage Records</span> on the one
+  you want to edit.</p>
+
+  <h3>Adding a record</h3>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add Record</span>.</li>
+    <li>Enter the <strong>Hostname</strong> (use <code>@</code> for the root domain, or a prefix like <code>www</code>).</li>
+    <li>Choose the <strong>Type</strong>: A, AAAA, CNAME, MX, TXT, or NS.</li>
+    <li>Enter the <strong>Content</strong> (an IP address for A/AAAA, or a hostname for CNAME/MX/NS).</li>
+    <li>Set the <strong>TTL</strong> in seconds (default <code>3600</code>).</li>
+    <li>If Type is <strong>MX</strong>, also set a <strong>Priority</strong> (default <code>10</code> — lower numbers are tried first).</li>
+    <li>Click <span class="ui">Add</span>.</li>
+  </ol>
+
+  <h3>Editing or deleting a record</h3>
+  <p>Click <span class="ui">Edit</span> on any record row to change its Type, Host, Value, TTL, Priority, or
+  Weight (the edit form additionally supports SRV and CAA record types). Click <span class="ui">Delete</span> and
+  confirm to remove a record.</p>
+
+  <h3>Bulk-updating all A records ("Change IP")</h3>
+  <p>If your server's IP address changes and you need to update every A record in a zone at once:</p>
+  <ol class="steps">
+    <li>Click <span class="ui">🌐 Change IP</span> at the top of the zone view.</li>
+    <li>Enter the <strong>New IP Address</strong>.</li>
+    <li>Click <span class="ui">Update All A Records</span> — every A record in that zone is updated in one step.</li>
+  </ol>
+</section>
+
+<!-- ============ 6. EMAIL ============ -->
+<section id="s6">
+  <h1 class="part">Chapter 6</h1>
+  <h2><span class="num">6.</span>Email</h2>
+  <p>The Email page has five tabs: <strong>Mail Accounts</strong>, <strong>Mail Domains</strong>, <strong>Forwards</strong>,
+  <strong>Spam Whitelist</strong>, and <strong>Spam Blacklist</strong>.</p>
+
+  <h3 id="s6-1">6.1 Mail Accounts</h3>
+  <p>This tab lists every mailbox on your account with its domain, quota, and status.</p>
+  <h4>Creating a mailbox</h4>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add Account</span>.</li>
+    <li>Enter the <strong>Email Address</strong> (just the part before the @).</li>
+    <li>Choose the <strong>Domain</strong>.</li>
+    <li>Set a <strong>Password</strong>.</li>
+    <li>Set a <strong>Quota in MB</strong> (enter <code>0</code> for unlimited).</li>
+    <li>Click <span class="ui">Create</span>.</li>
+  </ol>
+  <p>To change a mailbox's password, click <span class="ui">Password</span> on its row. To remove a mailbox
+  entirely (including its stored mail), click <span class="ui">Delete</span> and confirm. You can also click
+  <span class="ui">Webmail</span> on any row to jump straight into that domain's webmail login.</p>
+
+  <h3 id="s6-2">6.2 Mail Domains</h3>
+  <p>A read-only list of which of your domains have mail enabled, and their catchall address status.</p>
+
+  <h3 id="s6-3">6.3 Forwards</h3>
+  <p>A forward automatically redirects incoming mail for one address to another address, without creating a real
+  mailbox.</p>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add Forward</span>.</li>
+    <li>Enter the <strong>Source Address</strong> (e.g. <code>sales@example.com</code>).</li>
+    <li>Enter the <strong>Destination</strong> (e.g. <code>me@gmail.com</code>).</li>
+    <li>Choose whether to <strong>Keep Copy</strong> — Yes delivers to a local mailbox as well as forwarding; No forwards only.</li>
+    <li>Click <span class="ui">Create</span>.</li>
+  </ol>
+  <p>Click <span class="ui">Delete</span> on a forward's row to remove it.</p>
+
+  <h3 id="s6-4">6.4 Spam Whitelist</h3>
+  <p>Senders on your whitelist always bypass the AI spam filter for your mailboxes.</p>
+  <ol class="steps">
+    <li>Choose a <strong>Scope</strong>: <em>My Domain</em> (applies to every mailbox on a domain) or <em>My Mailbox</em> (applies to one address only).</li>
+    <li>Choose an <strong>Entry Type</strong>: <em>Email address</em> or <em>Domain (all @)</em>.</li>
+    <li>Fill in the <strong>Target</strong> (which domain or mailbox this rule applies to) and the <strong>Value</strong>
+    (the sender email or sender domain to whitelist).</li>
+    <li>Click <span class="ui">+ Add</span>.</li>
+  </ol>
+  <p>The table shows who added each entry — <strong>Admin</strong>, <strong>You</strong>, or <strong>One-click
+  link</strong> (added via a quarantine notification email link). Click <span class="ui">Remove</span> to delete
+  an entry.</p>
+
+  <h3 id="s6-5">6.5 Spam Blacklist</h3>
+  <p>Senders on your blacklist are instantly marked as spam without being analyzed — this also saves AI processing
+  cost. Works identically to the whitelist above (same Scope / Entry Type / Target / Value fields).</p>
+
+  <div class="box tip">
+    <span class="box-title">Ownership is always checked</span>
+    You can only add whitelist/blacklist entries and forwards for domains and mailboxes you actually own — the
+    portal will reject entries for domains that aren't on your account.
+  </div>
+</section>
+
+<!-- ============ 7. WEBMAIL ============ -->
+<section id="s7">
+  <h1 class="part">Chapter 7</h1>
+  <h2><span class="num">7.</span>Webmail</h2>
+  <p>This page lists a webmail login link for each of your domains
+  (<code>https://webmail.{domain}/</code>) — click any link to open that domain's webmail in a new tab and log in
+  with a mailbox address and password.</p>
+  <p>If your server has both Roundcube and RainLoop installed, a <strong>Client</strong> dropdown appears next to
+  each domain so you can choose which webmail application serves that domain.</p>
+</section>
+
+<!-- ============ 8. FTP ============ -->
+<section id="s8">
+  <h1 class="part">Chapter 8</h1>
+  <h2><span class="num">8.</span>FTP Accounts</h2>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add FTP Account</span>.</li>
+    <li>Enter a <strong>Username</strong> and <strong>Password</strong>.</li>
+    <li>Optionally choose a <strong>Domain</strong> to associate the account with.</li>
+    <li>Set the <strong>Home Directory</strong> (pre-filled to your home folder — you can point it at a specific
+    subfolder to restrict what this FTP account can see).</li>
+    <li>Click <span class="ui">Create</span>.</li>
+  </ol>
+  <p>Use the <span class="ui">Password</span> button on any row to reset that account's password, or
+  <span class="ui">Delete</span> to remove it.</p>
+</section>
+
+<!-- ============ 9. DATABASES ============ -->
+<section id="s9">
+  <h1 class="part">Chapter 9</h1>
+  <h2><span class="num">9.</span>Databases</h2>
+  <p>This page has two cards: <strong>Databases</strong> and <strong>Database Users</strong>.</p>
+
+  <h3 id="s9-1">9.1 Creating a database</h3>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add Database</span>.</li>
+    <li>Enter a <strong>Database Name</strong>.</li>
+    <li>Optionally, enter a <strong>DB User Name</strong> and <strong>DB User Password</strong> to create a
+    dedicated user for it in the same step.</li>
+    <li>Click <span class="ui">Create</span>.</li>
+  </ol>
+  <div class="box tip">
+    <span class="box-title">Important — your databases are automatically prefixed</span>
+    To keep every client's databases separate on a shared server, SysAdminHCP automatically prefixes anything you
+    create with your account username. If your username is <code>acme</code> and you create a database called
+    <code>shop</code>, the real database name on the server is <code>acme_shop</code> — and a database user
+    <code>webuser</code> becomes <code>acme_webuser</code>. Use these <strong>full, prefixed</strong> names in your
+    website's/application's database connection settings.
+  </div>
+  <p>Click <span class="ui">phpMyAdmin</span> on any database row to open it directly in phpMyAdmin (see
+  <a href="#s10">Section 10</a>), or <span class="ui">Delete</span> to permanently remove the database and all its
+  data.</p>
+
+  <h3 id="s9-2">9.2 Database users &amp; access</h3>
+  <h4>Creating a standalone database user</h4>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Add DB User</span>.</li>
+    <li>Enter a <strong>Username</strong> and <strong>Password</strong>.</li>
+    <li>Click <span class="ui">Create</span>.</li>
+  </ol>
+  <h4>Granting a user access to a database</h4>
+  <ol class="steps">
+    <li>On the user's row, click <span class="ui">Assign DB</span>.</li>
+    <li>Choose the <strong>Database</strong>.</li>
+    <li>Choose the <strong>Privileges</strong> level:
+      <ul>
+        <li><em>ALL PRIVILEGES</em> — full access</li>
+        <li><em>SELECT</em> — read-only</li>
+        <li><em>Read/Write</em> — can read and modify data, but not change the database schema</li>
+      </ul>
+    </li>
+    <li>Click <span class="ui">Grant Access</span>.</li>
+  </ol>
+  <p>Each granted database appears as a badge on the user's row with its own <span class="ui">Revoke</span> button.
+  Use the row's <span class="ui">Password</span> button to reset a user's password, or <span class="ui">Delete</span>
+  to remove the user entirely (this revokes all their access).</p>
+</section>
+
+<!-- ============ 10. PHPMYADMIN ============ -->
+<section id="s10">
+  <h1 class="part">Chapter 10</h1>
+  <h2><span class="num">10.</span>phpMyAdmin</h2>
+  <p>Click <span class="ui">🧭 Open phpMyAdmin</span> to log in automatically — no separate phpMyAdmin password to
+  remember. You'll be signed in with the credentials of your own database user, and can see every database owned
+  by your account.</p>
+  <div class="box tip">
+    <span class="box-title">How the automatic login works</span>
+    If you haven't created a dedicated database user yet, the portal quietly creates one for you the first time
+    you open phpMyAdmin. The single-click login link is valid for 60 seconds and can only be used once.
+  </div>
+  <div class="box warn">
+    <span class="box-title">"Cannot connect to MySQL" error</span>
+    If phpMyAdmin login fails with a message like <em>"Cannot connect to MySQL as '...'. The database user may not
+    exist or the password is incorrect."</em> — go to <a href="#s9-2">Section 9.2</a> and verify your database user
+    exists and has a valid password.
+  </div>
+  <p>If this page instead shows <em>"phpMyAdmin is not installed on this server"</em> or <em>"Your account does not
+  have access to phpMyAdmin"</em>, contact your administrator.</p>
+</section>
+
+<!-- ============ 11. SSL ============ -->
+<section id="s11">
+  <h1 class="part">Chapter 11</h1>
+  <h2><span class="num">11.</span>SSL Certificates</h2>
+  <p>The SSL page lists every certificate installed on your domains — Domain, Type, Valid From, Expires, Auto
+  Renew, and Status.</p>
+  <div class="box tip">
+    <span class="box-title">Requesting a free certificate</span>
+    This page is view-only. To actually request and install a certificate yourself, use
+    <strong>Let's Encrypt</strong> (<a href="#s12">Section 12</a>). There is currently no self-service option to
+    upload your own purchased/custom SSL certificate — if you have one you need installed, contact your
+    administrator.
+  </div>
+</section>
+
+<!-- ============ 12. LETS ENCRYPT ============ -->
+<section id="s12">
+  <h1 class="part">Chapter 12</h1>
+  <h2><span class="num">12.</span>Let's Encrypt (Free SSL)</h2>
+  <p>Let's Encrypt certificates are free, automatically trusted by all browsers, and renew themselves — no ongoing
+  action needed from you once issued.</p>
+  <h3>Requesting a certificate</h3>
+  <ol class="steps">
+    <li>Go to <span class="ui">Let's Encrypt</span> in the sidebar.</li>
+    <li>Under <strong>Request New Certificate</strong>, select the <strong>Domain</strong> you want to secure.</li>
+    <li>Optionally enter a <strong>notification Email</strong> (if left blank, an address at your domain is used
+    automatically).</li>
+    <li>Click <span class="ui">Request Certificate</span>. You'll see "Requesting certificate... this may take a
+    minute" while it's issued.</li>
+    <li>Once complete, you'll see "Certificate installed successfully!" and the domain now shows SSL as active
+    everywhere in the portal.</li>
+  </ol>
+  <div class="box warn">
+    <span class="box-title">Before requesting</span>
+    Your domain's DNS must already be pointing at this server, and the domain must be reachable over plain HTTP,
+    for Let's Encrypt's ownership verification to succeed. If DNS was only just changed, wait for it to propagate
+    first.
+  </div>
+  <p>The Issued Certificates table on this page shows status badges: <strong style="color:var(--danger)">Expired</strong>,
+  <strong style="color:var(--warn)">Expiring Soon</strong> (within 30 days), or <strong style="color:var(--ok)">Active</strong>.
+  Auto-renewal is always on for Let's Encrypt certificates — there is nothing further you need to do.</p>
+</section>
+
+<!-- ============ 13. FILE MANAGER ============ -->
+<section id="s13">
+  <h1 class="part">Chapter 13</h1>
+  <h2><span class="num">13.</span>File Manager</h2>
+  <p>File Manager gives you full access to your own home directory (<code>/home/{you}</code>) and everything
+  inside it — you cannot browse outside this folder.</p>
+
+  <h3>Navigating</h3>
+  <p>Use the breadcrumb trail at the top, or type a path directly into the path box and click <span class="ui">Go</span>.
+  Click <span class="ui">Show hidden</span> to reveal dotfiles (like <code>.htaccess</code>).</p>
+
+  <h3>Uploading, creating &amp; organizing files</h3>
+  <ul>
+    <li><strong>Upload:</strong> click <span class="ui">⬆ Upload</span> and choose one or more files, or drag files
+    directly onto the file listing (up to 200MB per file).</li>
+    <li><strong>New Folder / New File:</strong> use the respective toolbar buttons and enter a name.</li>
+    <li><strong>Select multiple files</strong> via the checkboxes to reveal a bulk toolbar: <span class="ui">Copy</span>,
+    <span class="ui">Cut</span>, <span class="ui">Download</span> (bundles selected files into a zip),
+    <span class="ui">Compress</span>, and <span class="ui">Delete</span>.</li>
+    <li>After a Copy or Cut, navigate to the destination folder and click <span class="ui">📋 Paste</span>.</li>
+  </ul>
+
+  <h3>Per-file actions</h3>
+  <table>
+    <tr><th>Action</th><th>What it does</th></tr>
+    <tr><td>⬇ Download</td><td>Downloads the file to your computer</td></tr>
+    <tr><td>Edit</td><td>Opens recognized text files (HTML, CSS, JS, PHP, config files, etc.) in a built-in editor</td></tr>
+    <tr><td>Extract</td><td>Unpacks a <code>.zip</code>, <code>.tar</code>, <code>.gz</code>, <code>.tgz</code> or <code>.tar.gz</code> archive into a folder you choose</td></tr>
+    <tr><td>Rename</td><td>Renames the file or folder</td></tr>
+    <tr><td>Chmod</td><td>Changes Unix permissions (e.g. <code>755</code>) — for folders, you can apply this recursively</td></tr>
+    <tr><td>Delete</td><td>Permanently deletes the file or folder</td></tr>
+  </table>
+  <p>To compress files, select them and click <span class="ui">Compress</span>, name the archive, and choose
+  <strong>ZIP</strong> or <strong>TAR.GZ</strong>.</p>
+</section>
+
+<!-- ============ 14. BACKUPS ============ -->
+<section id="s14">
+  <h1 class="part">Chapter 14</h1>
+  <h2><span class="num">14.</span>Backups</h2>
+  <p>You can create, download, restore, and delete your own account backups at any time — no need to wait for
+  your administrator.</p>
+
+  <h3>Creating a backup</h3>
+  <ol class="steps">
+    <li>Click <span class="ui">+ Create Backup</span>.</li>
+    <li>By default, <strong>Full Backup (all components)</strong> is checked — this backs up everything.
+    Uncheck it to pick specific components instead:
+      <ul>
+        <li>🏠 Home Files — all files in your home directory</li>
+        <li>⚙️ Account Settings — domains, DNS zones, mail accounts, FTP users, database records</li>
+        <li>📧 Email Data — mailbox contents for all your domains</li>
+        <li>🔒 SSL Certificates — certificate and key files</li>
+        <li>🗄️ Databases — MySQL/MariaDB dumps</li>
+        <li>📂 FTP Users — FTP account configuration</li>
+        <li>🌐 DNS Zone Files</li>
+        <li>🖥️ Apache Config — virtual host files</li>
+        <li>📬 Webmail Config</li>
+      </ul>
+    </li>
+    <li>Click <span class="ui">🚀 Create Backup</span>. A progress bar tracks the job (this runs in the background,
+    so you can navigate elsewhere and come back).</li>
+  </ol>
+
+  <h3>Downloading, restoring &amp; deleting</h3>
+  <p>Each backup in the list shows its contents, size, and creation date, with three actions:</p>
+  <ul>
+    <li><strong>⬇ Download</strong> — saves the backup archive (<code>.tgz</code>) to your computer.</li>
+    <li><strong>🔄 Restore</strong> — opens a confirmation showing what's in the backup. Check
+    <strong>Skip existing records</strong> if you only want to restore what's missing without overwriting current
+    data, then click <span class="ui">🔄 Restore Now</span>.</li>
+    <li><strong>🗑 Delete</strong> — permanently removes the backup file from the server.</li>
+  </ul>
+  <div class="box danger">
+    <span class="box-title">Restoring overwrites data</span>
+    Unless you check "Skip existing records", restoring a backup will overwrite your current domains, mail
+    accounts, and other settings with what's in the backup, and databases are recreated from the backup's SQL
+    dumps. Only restore when you're sure this is what you want.
+  </div>
+</section>
+
+<!-- ============ 15. PHP VERSION ============ -->
+<section id="s15">
+  <h1 class="part">Chapter 15</h1>
+  <h2><span class="num">15.</span>PHP Version</h2>
+  <p>This page lists each of your domains with its current PHP version and a dropdown to change it.</p>
+  <ol class="steps">
+    <li>Find the domain you want to change.</li>
+    <li>Choose a version from the <strong>Change To</strong> dropdown (only versions your administrator has
+    enabled on the server are shown).</li>
+    <li>Click <span class="ui">Apply</span>.</li>
+  </ol>
+  <p>The change takes effect within a few seconds as the PHP process for your domain restarts automatically.</p>
+</section>
+
+<!-- ============ 16. BANDWIDTH ============ -->
+<section id="s16">
+  <h1 class="part">Chapter 16</h1>
+  <h2><span class="num">16.</span>Bandwidth</h2>
+  <p>This page shows your data-transfer usage for the current billing cycle, broken down per domain, plus a
+  12-month history chart (hover any bar to see the exact figure for that month).</p>
+  <div class="box warn">
+    <span class="box-title">Quota warnings</span>
+    If you're nearing your bandwidth limit, an amber banner appears at 90% usage. If you go over 100%, a red
+    banner warns that hosting services may be suspended until your next billing cycle or until your administrator
+    raises your limit.
+  </div>
+</section>
+
+<!-- ============ 17. AI SPAM FILTER ============ -->
+<section id="s17">
+  <h1 class="part">Chapter 17</h1>
+  <h2><span class="num">17.</span>AI Spam Filter Statistics</h2>
+  <p>This menu item only appears if your administrator has enabled AI-based spam filtering on at least one of your
+  domains. It shows, for the last 30 days: Emails Analyzed, Spam Blocked, Ham (legitimate mail) Delivered, and your
+  Spam Rate percentage — plus a breakdown of AI token usage by day, month, and year.</p>
+</section>
+
+<!-- ============ 18. SUPPORT TICKETS ============ -->
+<section id="s18">
+  <h1 class="part">Chapter 18</h1>
+  <h2><span class="num">18.</span>Support Tickets <span class="pro-badge">Pro</span></h2>
+  <p>If your hosting account is on a Pro license, you can open and track support tickets directly from the
+  portal.</p>
+
+  <h3>Opening a ticket</h3>
+  <ol class="steps">
+    <li>Click <span class="ui">+ New Ticket</span>.</li>
+    <li>Enter a <strong>Subject</strong>.</li>
+    <li>Choose a <strong>Department</strong>.</li>
+    <li>Choose a <strong>Priority</strong>: Low, Medium (default), High, or Urgent.</li>
+    <li>Optionally select a <strong>Related Domain</strong>.</li>
+    <li>Write your <strong>Message</strong> describing the issue.</li>
+    <li>Click <span class="ui">Submit Ticket</span>.</li>
+  </ol>
+
+  <h3>Replying to a ticket</h3>
+  <p>Click any ticket in your list to open it. Support staff replies appear on a light-blue background labeled
+  "Support Staff"; your own replies appear in gray. If the ticket is still open, type your reply in the box at the
+  bottom and click <span class="ui">Send Reply</span>. Closed tickets show "This ticket is closed" instead of a
+  reply box — open a new ticket if you need further help on the same topic.</p>
+</section>
+
+<!-- ============ 19. NOTIFICATIONS ============ -->
+<section id="s19">
+  <h1 class="part">Chapter 19</h1>
+  <h2><span class="num">19.</span>Notifications <span class="pro-badge">Pro</span></h2>
+  <p>The bell icon (🔔) in the header shows important account notifications from your administrator or the
+  system, color-coded by severity: <strong style="color:#1a6fa8">info</strong> (blue),
+  <strong style="color:var(--warn)">warning</strong> (orange), <strong style="color:var(--danger)">critical</strong>
+  (red). Unread notifications are marked with a dot and shown in bold; click one to mark it read, or use
+  "mark all read" to clear the badge.</p>
+</section>
+
+<!-- ============ 20. APP INSTALLER ============ -->
+<section id="s20">
+  <h1 class="part">Chapter 20</h1>
+  <h2><span class="num">20.</span>App Installer <span class="pro-badge">Pro</span></h2>
+  <p>Install common web applications onto a domain without manual setup.</p>
+  <ol class="steps">
+    <li>Click <span class="ui">New Install</span> (or similarly-labeled button).</li>
+    <li>Choose the <strong>Application</strong> to install.</li>
+    <li>Choose the <strong>Domain</strong> (subdomains aren't listed here — install onto the main domain).</li>
+    <li>Optionally set an <strong>Install Path</strong> to install into a subfolder rather than the domain root.</li>
+    <li>Submit — the install list auto-refreshes every 5 seconds while your install is in progress
+    (status moves from <em>pending</em> → <em>installing</em> → <em>completed</em>/<em>failed</em>).</li>
+  </ol>
+  <p>Click a completed install to see its site URL and any post-install instructions. Use
+  <span class="ui">Delete</span> to remove an install — note this removes the installed files from your hosting
+  account.</p>
+</section>
+
+<!-- ============ 21. EMAIL MIGRATION ============ -->
+<section id="s21">
+  <h1 class="part">Chapter 21</h1>
+  <h2><span class="num">21.</span>Email Migration <span class="pro-badge">Pro</span></h2>
+  <p>Bring your mailbox over from your old email host. SysAdminHCP connects to your old provider over IMAP and
+  copies your messages straight into a mailbox here — your old account is never modified.</p>
+  <ol class="steps">
+    <li>Click <span class="ui">New Import</span>.</li>
+    <li>Under <strong>Your Old Mailbox (IMAP)</strong>, enter the old provider's IMAP Host, Port (default 993),
+    whether to use TLS (default Yes), and your old Email/Username and Password.</li>
+    <li>Under <strong>Your New Mailbox</strong>, choose the destination Domain and Email. You can set a New
+    Mailbox Password, or leave it blank to auto-generate one (only used if the mailbox doesn't already exist).</li>
+    <li>Submit the import.</li>
+  </ol>
+  <div class="box tip">
+    <span class="box-title">Your old password is never stored</span>
+    Your old mailbox's password is used only once, for this import, and is not saved anywhere afterward.
+  </div>
+  <p>The import list shows live progress (<code>migrated/total</code> messages, current folder) and
+  auto-refreshes every few seconds while running. Deleting an import from the list does not remove any mail
+  already copied over.</p>
+</section>
+
+<!-- ============ 22. MY ACCOUNT ============ -->
+<section id="s22">
+  <h1 class="part">Chapter 22</h1>
+  <h2><span class="num">22.</span>My Account</h2>
+
+  <h3 id="s22-1">22.1 Profile</h3>
+  <p>Update your Real Name, Email, Phone, Language (English/Español/Português), Address, City, State and Country,
+  then click <span class="ui">Save Changes</span>. Your Username and Login Type are fixed and cannot be changed
+  here.</p>
+
+  <h3 id="s22-2">22.2 Changing your password</h3>
+  <ol class="steps">
+    <li>Enter your <strong>Current Password</strong>.</li>
+    <li>Enter a <strong>New Password</strong>.</li>
+    <li>Click <span class="ui">Change Password</span>.</li>
+  </ol>
+
+  <h3 id="s22-3">22.3 Two-Factor Authentication (2FA)</h3>
+  <p>2FA adds a second security step (a rotating 6-digit code from an app like Google Authenticator or Authy) on
+  top of your password.</p>
+  <h4>Enabling 2FA</h4>
+  <ol class="steps">
+    <li>Click <span class="ui">Enable 2FA</span>.</li>
+    <li>Scan the QR code shown with your authenticator app (or type in the manual-entry code if you can't scan).</li>
+    <li>Enter the current 6-digit code from the app and click <span class="ui">Verify &amp; Enable</span>.</li>
+    <li>You'll be shown a set of one-time-use <strong>backup codes</strong> — save these somewhere safe now, as
+    they will not be shown again. Use a backup code to log in if you ever lose access to your authenticator app.</li>
+  </ol>
+  <h4>Disabling 2FA</h4>
+  <p>Click <span class="ui">Disable 2FA</span> and confirm with your current password.</p>
+
+  <h3 id="s22-4">22.4 API Access</h3>
+  <p>Generate an API key to call the SysAdminHCP API from your own scripts or tools, without exposing your account
+  password.</p>
+  <ol class="steps">
+    <li>Click <span class="ui">Generate New Key</span>.</li>
+    <li>Enter a <strong>Label</strong> to remember what it's for, and optionally an expiry in <strong>Days</strong>.</li>
+    <li>Click <span class="ui">Generate</span> — the raw key is shown <strong>once</strong>. Copy it immediately;
+    it cannot be retrieved again later.</li>
+  </ol>
+  <p>To use the key, exchange it for a temporary access token by calling <code>POST /api/auth/api-login</code>
+  with <code>{"apiKey":"..."}</code> — the key itself cannot be used to log into the portal directly. Revoke a key
+  at any time from its row; this never affects your account password.</p>
+</section>
+
+<!-- ============ 23. TROUBLESHOOTING ============ -->
+<section id="s23">
+  <h1 class="part">Chapter 23</h1>
+  <h2><span class="num">23.</span>Troubleshooting &amp; FAQ</h2>
+
+  <h4>"I don't have permission" / a button doesn't do anything</h4>
+  <p>Your administrator can restrict individual actions (adding domains, deleting mailboxes, managing DNS, etc.)
+  per account. This is expected behavior, not a bug — contact your administrator to review your permissions.</p>
+
+  <h4>A menu item I expect to see is missing</h4>
+  <p>Some sections only appear when relevant: <strong>AI Spam Filter</strong> requires it to be enabled on at
+  least one domain; <strong>Support Tickets</strong>, the <strong>notification bell</strong>, <strong>App
+  Installer</strong>, and <strong>Email Migration</strong> all require a Pro license.</p>
+
+  <h4>My database isn't named what I typed</h4>
+  <p>Databases and database users you create are automatically prefixed with your account username
+  (<code>{username}_{name}</code>) — see <a href="#s9-1">Section 9.1</a>. Use the full prefixed name in your
+  application's connection settings.</p>
+
+  <h4>phpMyAdmin says it can't connect to MySQL</h4>
+  <p>Check that your database user exists and has a working password under <a href="#s9-2">Databases → Database
+  Users</a>.</p>
+
+  <h4>I hit a limit (domains, mailboxes, disk space, bandwidth...)</h4>
+  <p>These are individual account limits set by your administrator, visible as usage bars on the
+  <a href="#s2">Dashboard</a>. There's no self-service upgrade — contact your administrator or open a support
+  ticket to request a higher limit.</p>
+
+  <h4>I can't find a way to upload my own SSL certificate</h4>
+  <p>Self-service SSL is currently limited to free Let's Encrypt certificates (<a href="#s12">Section 12</a>). If
+  you need a purchased/custom certificate installed, ask your administrator.</p>
+
+  <h4>File Manager won't let me go outside my home folder</h4>
+  <p>This is intentional — client accounts are confined to their own home directory
+  (<code>/home/{username}</code>) for security.</p>
+</section>
+
+<!-- ============ 24. GETTING HELP ============ -->
+<section id="s24">
+  <h1 class="part">Chapter 24</h1>
+  <h2><span class="num">24.</span>Getting Help</h2>
+  <p>If this manual doesn't answer your question:</p>
+  <ul>
+    <li>If your account has <strong>Support Tickets</strong> enabled, open a ticket from the
+    <a href="#s18">Support Tickets</a> page — this is the fastest way to reach your hosting provider directly.</li>
+    <li>Otherwise, contact your hosting provider/administrator using whatever contact details they gave you when
+    your account was set up.</li>
+    <li>The <span class="ui">About</span> page in the sidebar shows information about the SysAdminHCP software
+    itself.</li>
+  </ul>
+
+  <div class="footer-note">
+    SysAdminHCP Client Portal User Manual — generated for your hosting account. Screens and available features
+    may vary slightly depending on your account's permissions and your provider's configuration.
+  </div>
+</section>
+
+</div>
+</body>
+</html>
