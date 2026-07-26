@@ -417,8 +417,13 @@ dnf install -y pure-ftpd
 # Database
 dnf install -y mariadb-server
 
-# PHP-FPM (EL10 AppStream ships PHP 8.3)
-dnf install -y php php-fpm php-mysqlnd php-xml php-gd php-mbstring
+# PHP-FPM (EL10 AppStream ships PHP 8.3). Some AlmaLinux 10 cloud images ship with PHP 8.4
+# pre-installed (php8.4-* from @System) instead - its packages Conflict with the unversioned
+# php/php-fpm/etc names below (both provide the same virtual capabilities), which aborts this
+# install outright under set -e. --allowerasing lets dnf swap the pre-installed 8.4 packages
+# out for 8.3 to complete the transaction - this is the version the rest of this installer
+# (and the panel's PHP-FPM pool configs) is actually built and tested against.
+dnf install -y --allowerasing php php-fpm php-mysqlnd php-xml php-gd php-mbstring
 
 # Utilities
 dnf install -y wget curl rsync sshpass logrotate htop unzip tar openssl
