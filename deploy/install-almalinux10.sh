@@ -967,6 +967,23 @@ EOSQL
   fi
 fi
 
+# AlmaLinux 10's stock httpd.service ships with ProtectHome=read-only, which makes /home
+# appear read-only to httpd inside its own systemd sandbox regardless of real filesystem
+# permissions. SysAdminHCP puts every domain's docroot AND per-vhost error/access logs under
+# /home/<client>/<domain>/, so this breaks Apache the moment any vhost's log path is opened -
+# confirmed live: httpd started fine at install time (before any per-vhost log had been
+# touched), then failed outright on every subsequent restart once a domain's error.log open
+# was attempted, with a misleading "(30)Read-only file system" error despite the disk itself
+# being writable. ReadWritePaths=/home alone was NOT sufficient to override ProtectHome here -
+# only explicitly disabling ProtectHome for this unit worked.
+mkdir -p /etc/systemd/system/httpd.service.d
+cat > /etc/systemd/system/httpd.service.d/sysadminhcp-readwrite-home.conf << 'HTTPDOVERRIDE'
+[Service]
+ProtectHome=false
+ReadWritePaths=/home
+HTTPDOVERRIDE
+systemctl daemon-reload
+
 systemctl enable httpd 2>/dev/null || true
 systemctl start httpd 2>/dev/null || warn "Apache failed to start"
 
