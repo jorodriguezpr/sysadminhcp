@@ -127,6 +127,17 @@ fi
 
 # ─── Step 1: System Update ─────────────────────────────────────────────────
 info "Step 1: Updating system packages..."
+# A NodeSource apt repo added by a *previous* run's Step 3 (below) sticks around in
+# /etc/apt/sources.list.d/ permanently. If that upstream feed ever goes down or starts
+# 403ing (observed live against Server 3, 2026-07-27), this unconditional `apt-get
+# update` fails and - under `set -e` - kills the entire installer at Step 1, before it
+# ever reaches the binary swap step, even though Node is already installed and Step 3
+# would skip it anyway. Drop the stale repo first when that's the case; Step 3 only
+# re-adds it if `command -v node` fails.
+if command -v node &>/dev/null; then
+  rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/nodesource.sources \
+    /usr/share/keyrings/nodesource.gpg 2>/dev/null || true
+fi
 # Third-party PPAs (e.g. ondrej/php) legitimately change their Release "Label"/"Origin"
 # metadata over time - apt treats that as a security-relevant change and refuses to
 # proceed without explicit consent, which under `set -e` killed this entire installer
