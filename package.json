@@ -1,6 +1,6 @@
 {
   "name": "sysadminhcp-runtime",
-  "version": "8.0.302",
+  "version": "8.0.306",
   "private": true,
   "license": "UNLICENSED",
   "dependencies": {

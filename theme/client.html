@@ -295,6 +295,12 @@
             <div class="nav-item" data-page="databases"><span class="icon">🗄️</span> Databases</div>
             <div class="nav-item" data-page="phpmyadmin"><span class="icon">🧭</span> phpMyAdmin</div>
         </div>
+        <div class="nav-section"><div class="nav-section-title">Website</div>
+            <div class="nav-item" data-page="redirects"><span class="icon">↪️</span> Redirects</div>
+            <div class="nav-item" data-page="errorpages"><span class="icon">🚫</span> Error Pages</div>
+            <div class="nav-item" data-page="dirprotect"><span class="icon">🔐</span> Directory Protection</div>
+            <div class="nav-item" data-page="mimetypes"><span class="icon">🧩</span> MIME Types</div>
+        </div>
         <div class="nav-section"><div class="nav-section-title">Security</div>
             <div class="nav-item" data-page="ssl"><span class="icon">🔒</span> SSL</div>
             <div class="nav-item" data-page="letsencrypt"><span class="icon">🆓</span> Let's Encrypt</div>
@@ -373,7 +379,7 @@ async function ntfClickItem(id,alreadyRead){
 }
 document.addEventListener('click',(e)=>{const wrap=document.getElementById('ntfBellWrap');if(wrap&&_ntfDropdownOpen&&!wrap.contains(e.target)){document.getElementById('ntfDropdown').style.display='none';_ntfDropdownOpen=false;}});
 
-async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
+async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;case 'redirects':await renderRedirects(el);break;case 'errorpages':await renderErrorPages(el);break;case 'dirprotect':await renderDirProtect(el);break;case 'mimetypes':await renderMimeTypes(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
 
 // ═══════════════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -443,6 +449,162 @@ async function saveDomainSslVhost(d){try{const config=document.getElementById('m
 async function generateSslVhostTemplate(d){try{const domain=d;const docRoot=`/home/${user.username}/${domain}`;const sslDir=`/etc/httpd/ssl/${domain}`;const socketPath=`/var/run/php-fpm/${domain}.sock`;const template=`<VirtualHost *:443>\n    ServerName ${domain}\n    ServerAlias www.${domain}\n    DocumentRoot "${docRoot}"\n    ServerAdmin webmaster@${domain}\n    ErrorLog "${docRoot}/stats/ssl_error.log"\n    CustomLog "${docRoot}/stats/ssl_access.log" combined\n    SSLEngine on\n    SSLCertificateFile "${sslDir}/domain.crt"\n    SSLCertificateKeyFile "${sslDir}/domain.key"\n    <FilesMatch \\.php$>\n        SetHandler "proxy:unix:${socketPath}|fcgi://localhost"\n    </FilesMatch>\n    <Directory "${docRoot}">\n        Options Indexes FollowSymLinks ExecCGI\n        AllowOverride All\n        Require all granted\n    </Directory>\n    DirectoryIndex index.html index.htm index.php\n</VirtualHost>`;document.getElementById('m_sslVC').value=template;showAlert('SSL template generated. Review and edit before saving.','success');}catch(e){showAlert(e.message,'error');}}
 async function showWebmailVhost(d){try{const data=await api(`/client/domains/${d}/vhost-webmail`);const hasConfig=data.currentConfig&&data.currentConfig.trim().length>0;showModal('Webmail VirtualHost Editor: '+d,`<div style="max-height:72vh;overflow-y:auto"><div class="form-row"><div class="form-group"><label>Webmail Config Path</label><input value="${data.webmailVhostPath||''}" disabled></div><div class="form-group"><label>SSL Certificate</label><input value="${data.hasCert?'✓ Found':'✗ Not found'}" disabled></div></div><div class="form-group"><label>Webmail VirtualHost Config</label><textarea id="m_wmVC" rows="20" style="font-family:monospace">${(data.currentConfig||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></div>${!hasConfig?'<div style="background:#fff3cd;padding:10px;border-radius:6px;margin-bottom:12px;font-size:13px">⚠️ No webmail vhost file found. A template has been pre-loaded — review and save to create it.</div>':''}</div>`,[{label:'Save Webmail VHost',cls:'btn-primary',onclick:`saveWebmailVhost('${d}')`}]);}catch(e){showAlert(e.message,'error');}}
 async function saveWebmailVhost(d){try{const config=document.getElementById('m_wmVC').value;if(!config.trim()){showAlert('Webmail VirtualHost config cannot be empty','error');return;}await api(`/client/domains/${d}/vhost-webmail`,{method:'PUT',body:JSON.stringify({config})});closeModal();showAlert('Webmail VirtualHost saved','success');}catch(e){showAlert(e.message,'error');}}
+
+// ═══════════════════════════════════════════════════════════════════════
+// REDIRECTS
+// ═══════════════════════════════════════════════════════════════════════
+async function renderRedirects(el){
+    const data=await api('/client/domains');
+    const doms=data.domains||[];
+    if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
+    const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
+    el.innerHTML=`<div class="card"><div class="card-title">Redirects</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Send visitors from an old path on your site straight to a new URL.</p><div class="toolbar"><div class="toolbar-left"><select id="rd_domain" onchange="loadRedirects()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddRedirect()">+ Add Redirect</button></div></div><div id="rd_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
+    loadRedirects();
+}
+async function loadRedirects(){
+    const domain=document.getElementById('rd_domain').value;
+    const el=document.getElementById('rd_table');
+    try{
+        const data=await api(`/client/redirects/${domain}`);
+        const r=data.redirects||[];
+        if(r.length===0){el.innerHTML='<p style="color:#888;padding:12px">No redirects configured for this domain.</p>';return;}
+        el.innerHTML=`<table class="data-table"><thead><tr><th>Source Path</th><th>Target URL</th><th>Type</th><th>Actions</th></tr></thead><tbody>${r.map(x=>`<tr><td>${escHtml(x.source)}</td><td>${escHtml(x.target)}</td><td>${x.type}</td><td><button class="btn btn-xs btn-danger" onclick="delRedirect('${domain}','${encodeURIComponent(x.source)}')">Delete</button></td></tr>`).join('')}</tbody></table>`;
+    }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
+}
+function showAddRedirect(){
+    const domain=document.getElementById('rd_domain').value;
+    showModal('Add Redirect',`<div class="form-group"><label>Source Path</label><input id="m_rdS" placeholder="/old-page"></div><div class="form-group"><label>Target URL</label><input id="m_rdT" placeholder="https://example.com/new-page"></div><div class="form-group"><label>Type</label><select id="m_rdY"><option value="301">301 (Permanent)</option><option value="302">302 (Temporary)</option></select></div>`,[{label:'Add',cls:'btn-primary',onclick:`doAddRedirect('${domain}')`}]);
+}
+async function doAddRedirect(domain){
+    try{await api(`/client/redirects/${domain}`,{method:'POST',body:JSON.stringify({source:document.getElementById('m_rdS').value,target:document.getElementById('m_rdT').value,type:document.getElementById('m_rdY').value})});closeModal();showAlert('Redirect added','success');loadRedirects();}catch(e){showAlert(e.message,'error');}
+}
+async function delRedirect(domain,source){
+    if(!confirm('Delete this redirect?'))return;
+    try{await api(`/client/redirects/${domain}/${source}`,{method:'DELETE'});showAlert('Redirect deleted','success');loadRedirects();}catch(e){showAlert(e.message,'error');}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CUSTOM ERROR PAGES
+// ═══════════════════════════════════════════════════════════════════════
+async function renderErrorPages(el){
+    const data=await api('/client/domains');
+    const doms=data.domains||[];
+    if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
+    const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
+    el.innerHTML=`<div class="card"><div class="card-title">Custom Error Pages</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Replace the server's default error page with your own for any of these HTTP codes.</p><div class="toolbar"><div class="toolbar-left"><select id="ep_domain" onchange="loadErrorPages()">${opts}</select></div></div><div id="ep_grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px"></div></div>`;
+    loadErrorPages();
+}
+async function loadErrorPages(){
+    const domain=document.getElementById('ep_domain').value;
+    const el=document.getElementById('ep_grid');
+    el.innerHTML='<div style="padding:20px;text-align:center;color:#888">Loading...</div>';
+    try{
+        const data=await api(`/client/error-pages/${domain}`);
+        const configured=data.configured||[];
+        el.innerHTML=(data.codes||[]).map(c=>{
+            const isSet=configured.includes(c);
+            return `<div class="card" style="text-align:center;padding:16px"><div style="font-size:22px;font-weight:600">${c}</div><div style="margin:6px 0 10px;font-size:12px;color:${isSet?'#27ae60':'#888'}">${isSet?'Custom page set':'Using default'}</div><button class="btn btn-xs btn-primary" onclick="showEditErrorPage('${domain}','${c}')">Edit</button>${isSet?` <button class="btn btn-xs btn-danger" onclick="delErrorPage('${domain}','${c}')">Reset</button>`:''}</div>`;
+        }).join('');
+    }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
+}
+function showEditErrorPage(domain,code){
+    showModal(`Edit ${code} Error Page`,`<div class="form-group"><label>HTML Content</label><textarea id="m_epH" rows="16" style="font-family:monospace" placeholder="&lt;html&gt;&lt;body&gt;&lt;h1&gt;Page not found&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"></textarea></div>`,[{label:'Save',cls:'btn-primary',onclick:`doSaveErrorPage('${domain}','${code}')`}]);
+}
+async function doSaveErrorPage(domain,code){
+    try{
+        const html=document.getElementById('m_epH').value;
+        if(!html.trim()){showAlert('HTML content is required','error');return;}
+        await api(`/client/error-pages/${domain}/${code}`,{method:'PUT',body:JSON.stringify({html})});
+        closeModal();showAlert('Error page saved','success');loadErrorPages();
+    }catch(e){showAlert(e.message,'error');}
+}
+async function delErrorPage(domain,code){
+    if(!confirm('Reset this error page to the server default?'))return;
+    try{await api(`/client/error-pages/${domain}/${code}`,{method:'DELETE'});showAlert('Reset to default','success');loadErrorPages();}catch(e){showAlert(e.message,'error');}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DIRECTORY PASSWORD PROTECTION
+// ═══════════════════════════════════════════════════════════════════════
+async function renderDirProtect(el){
+    const data=await api('/client/domains');
+    const doms=data.domains||[];
+    if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
+    const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
+    el.innerHTML=`<div class="card"><div class="card-title">Directory Password Protection</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Require a username and password before anyone can view a folder on your site.</p><div class="toolbar"><div class="toolbar-left"><select id="dp_domain" onchange="loadProtectedDirs()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddProtectedDir()">+ Protect a Directory</button></div></div><div id="dp_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
+    loadProtectedDirs();
+}
+async function loadProtectedDirs(){
+    const domain=document.getElementById('dp_domain').value;
+    const el=document.getElementById('dp_table');
+    try{
+        const data=await api(`/client/protected-dirs/${domain}`);
+        const dirs=data.protectedDirs||[];
+        if(dirs.length===0){el.innerHTML='<p style="color:#888;padding:12px">No protected directories yet.</p>';return;}
+        el.innerHTML=`<table class="data-table"><thead><tr><th>Directory</th><th>Users</th><th>Actions</th></tr></thead><tbody>${dirs.map(d=>`<tr><td>${escHtml(d.directoryPath||'/')}</td><td>${d.userCount}</td><td><button class="btn btn-xs btn-secondary" onclick="showManageProtectedDir('${domain}','${d.nname}')">Manage Users</button> <button class="btn btn-xs btn-danger" onclick="delProtectedDir('${domain}','${d.nname}')">Remove</button></td></tr>`).join('')}</tbody></table>`;
+    }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
+}
+function showAddProtectedDir(){
+    const domain=document.getElementById('dp_domain').value;
+    showModal('Protect a Directory',`<div class="form-group"><label>Directory Path (relative to your site root)</label><input id="m_dpP" placeholder="/admin"></div><div class="card-title" style="font-size:13px;margin-top:10px">First User</div><div class="form-row"><div class="form-group"><label>Username</label><input id="m_dpU"></div><div class="form-group"><label>Password</label><input id="m_dpW" type="password"></div></div>`,[{label:'Protect',cls:'btn-primary',onclick:`doAddProtectedDir('${domain}')`}]);
+}
+async function doAddProtectedDir(domain){
+    try{await api(`/client/protected-dirs/${domain}`,{method:'POST',body:JSON.stringify({directoryPath:document.getElementById('m_dpP').value||'/',username:document.getElementById('m_dpU').value,password:document.getElementById('m_dpW').value})});closeModal();showAlert('Directory protected','success');loadProtectedDirs();}catch(e){showAlert(e.message,'error');}
+}
+async function delProtectedDir(domain,id){
+    if(!confirm('Remove protection from this directory? It will become publicly accessible again.'))return;
+    try{await api(`/client/protected-dirs/${domain}/${id}`,{method:'DELETE'});showAlert('Protection removed','success');loadProtectedDirs();}catch(e){showAlert(e.message,'error');}
+}
+async function showManageProtectedDir(domain,id){
+    try{
+        const data=await api(`/client/protected-dirs/${domain}/${id}`);
+        const users=data.protectedDir.users||[];
+        window._dpCurrent={domain,id};
+        showModal('Manage Users: '+(data.protectedDir.directoryPath||'/'),`<div style="margin-bottom:10px">${users.length===0?'<p style="color:#888">No users yet — add one below.</p>':`<table class="data-table"><thead><tr><th>Username</th><th></th></tr></thead><tbody>${users.map(u=>`<tr><td>${escHtml(u)}</td><td><button class="btn btn-xs btn-danger" onclick="delProtectedDirUser('${escHtml(u)}')">Remove</button></td></tr>`).join('')}</tbody></table>`}</div><div class="card-title" style="font-size:13px">Add User</div><div class="form-row"><div class="form-group"><label>Username</label><input id="m_dpAU"></div><div class="form-group"><label>Password</label><input id="m_dpAW" type="password"></div></div>`,[{label:'Add User',cls:'btn-primary',onclick:'doAddProtectedDirUser()'}]);
+    }catch(e){showAlert(e.message,'error');}
+}
+async function doAddProtectedDirUser(){
+    const {domain,id}=window._dpCurrent;
+    try{await api(`/client/protected-dirs/${domain}/${id}/users`,{method:'POST',body:JSON.stringify({username:document.getElementById('m_dpAU').value,password:document.getElementById('m_dpAW').value})});showAlert('User added','success');showManageProtectedDir(domain,id);}catch(e){showAlert(e.message,'error');}
+}
+async function delProtectedDirUser(username){
+    const {domain,id}=window._dpCurrent;
+    if(!confirm(`Remove user "${username}"?`))return;
+    try{await api(`/client/protected-dirs/${domain}/${id}/users/${encodeURIComponent(username)}`,{method:'DELETE'});showAlert('User removed','success');showManageProtectedDir(domain,id);}catch(e){showAlert(e.message,'error');}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CUSTOM MIME TYPES
+// ═══════════════════════════════════════════════════════════════════════
+async function renderMimeTypes(el){
+    const data=await api('/client/domains');
+    const doms=data.domains||[];
+    if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
+    const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
+    el.innerHTML=`<div class="card"><div class="card-title">Custom MIME Types</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Tell the web server how to label a file extension it doesn't already recognize.</p><div class="toolbar"><div class="toolbar-left"><select id="mt_domain" onchange="loadMimeTypes()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddMimeType()">+ Add MIME Type</button></div></div><div id="mt_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
+    loadMimeTypes();
+}
+async function loadMimeTypes(){
+    const domain=document.getElementById('mt_domain').value;
+    const el=document.getElementById('mt_table');
+    try{
+        const data=await api(`/client/mime-types/${domain}`);
+        const m=data.mimeTypes||[];
+        if(m.length===0){el.innerHTML='<p style="color:#888;padding:12px">No custom MIME types configured.</p>';return;}
+        el.innerHTML=`<table class="data-table"><thead><tr><th>Extension</th><th>MIME Type</th><th>Actions</th></tr></thead><tbody>${m.map(x=>`<tr><td>${escHtml(x.extension)}</td><td>${escHtml(x.mimeType)}</td><td><button class="btn btn-xs btn-danger" onclick="delMimeType('${domain}','${encodeURIComponent(x.extension)}')">Delete</button></td></tr>`).join('')}</tbody></table>`;
+    }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
+}
+function showAddMimeType(){
+    const domain=document.getElementById('mt_domain').value;
+    showModal('Add MIME Type',`<div class="form-row"><div class="form-group"><label>File Extension</label><input id="m_mtE" placeholder=".mp4"></div><div class="form-group"><label>MIME Type</label><input id="m_mtM" placeholder="video/mp4"></div></div>`,[{label:'Add',cls:'btn-primary',onclick:`doAddMimeType('${domain}')`}]);
+}
+async function doAddMimeType(domain){
+    try{await api(`/client/mime-types/${domain}`,{method:'POST',body:JSON.stringify({extension:document.getElementById('m_mtE').value,mimeType:document.getElementById('m_mtM').value})});closeModal();showAlert('MIME type added','success');loadMimeTypes();}catch(e){showAlert(e.message,'error');}
+}
+async function delMimeType(domain,ext){
+    if(!confirm('Delete this MIME type?'))return;
+    try{await api(`/client/mime-types/${domain}/${ext}`,{method:'DELETE'});showAlert('Deleted','success');loadMimeTypes();}catch(e){showAlert(e.message,'error');}
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // SUBDOMAINS
