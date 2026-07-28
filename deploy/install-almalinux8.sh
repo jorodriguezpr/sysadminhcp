@@ -658,9 +658,29 @@ fi
 # ─── Step 9: Configure Environment ─────────────────────────────────────────
 info "Step 9: Configuring environment..."
 
-# Generate random secrets for production
-SESSION_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 64 /dev/urandom | xxd -p -c 64 | head -c 64)
-COOKIE_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 64 /dev/urandom | xxd -p -c 64 | head -c 64)
+# This file gets rewritten on every run of this script, including upgrades (autoinstall.sh
+# re-runs it, not just fresh installs) — so secrets generated here MUST be reused from any
+# existing env file rather than regenerated every time. Regenerating SESSION_SECRET on an
+# upgrade invalidates every logged-in session's JWT immediately; regenerating
+# SYSADMINHCP_TOTP_ENC_KEY would make every already-enrolled user's stored 2FA secret
+# undecryptable. Only a truly fresh install (no existing env file, or no matching line in it)
+# gets a newly generated value.
+EXISTING_ENV="$SYSADMINHCP_ROOT/etc/sysadminhcp.env"
+reuse_or_generate() {
+  local var_name="$1"
+  local existing_val=""
+  if [ -f "$EXISTING_ENV" ]; then
+    existing_val=$(grep "^${var_name}=" "$EXISTING_ENV" 2>/dev/null | head -1 | cut -d= -f2-)
+  fi
+  if [ -n "$existing_val" ]; then
+    echo "$existing_val"
+  else
+    openssl rand -hex 32 2>/dev/null || head -c 64 /dev/urandom | xxd -p -c 64 | head -c 64
+  fi
+}
+SESSION_SECRET=$(reuse_or_generate SYSADMINHCP_SESSION_SECRET)
+COOKIE_SECRET=$(reuse_or_generate SYSADMINHCP_COOKIE_SECRET)
+TOTP_ENC_KEY=$(reuse_or_generate SYSADMINHCP_TOTP_ENC_KEY)
 
 # MySQL root password (KLOXOJRA_DB_PASS already generated in Step 5 for Dovecot config — reused here)
 MYSQL_ROOT_PASS='kloxoroot'
@@ -679,6 +699,7 @@ SYSADMINHCP_DB_SYNC=true
 SYSADMINHCP_SESSION_SECRET=${SESSION_SECRET}
 SYSADMINHCP_SESSION_MAX_AGE=86400000
 SYSADMINHCP_COOKIE_SECRET=${COOKIE_SECRET}
+SYSADMINHCP_TOTP_ENC_KEY=${TOTP_ENC_KEY}
 SYSADMINHCP_CORS_ORIGIN=*
 SYSADMINHCP_DEBUG=false
 NODE_ENV=production
