@@ -606,7 +606,7 @@ reuse_or_generate() {
 SESSION_SECRET=$(reuse_or_generate SYSADMINHCP_SESSION_SECRET)
 COOKIE_SECRET=$(reuse_or_generate SYSADMINHCP_COOKIE_SECRET)
 TOTP_ENC_KEY=$(reuse_or_generate SYSADMINHCP_TOTP_ENC_KEY)
-MYSQL_ROOT_PASS='kloxoroot'
+MYSQL_ROOT_PASS=$(reuse_or_generate SYSADMINHCP_MYSQL_ROOT_PASS)
 
 cat > "$SYSADMINHCP_ROOT/etc/sysadminhcp.env" << EOF
 # SysAdminHCP Environment Configuration
@@ -983,7 +983,7 @@ EOSQL
     echo -n "${MYSQL_ROOT_PASS}" > /usr/local/sysadminhcp/etc/mysql-root-password
     chown sysadminhcp:sysadminhcp /usr/local/sysadminhcp/etc/mysql-root-password
     chmod 600 /usr/local/sysadminhcp/etc/mysql-root-password
-    warn "MariaDB root password set to 'kloxoroot' - CHANGE THIS IMMEDIATELY!"
+    info "MariaDB root password randomly generated and saved to /usr/local/sysadminhcp/etc/mysql-root-password"
   else
     warn "MariaDB not responding after 30s - skipping secure installation"
   fi
