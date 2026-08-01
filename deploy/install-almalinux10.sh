@@ -43,6 +43,13 @@ error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 # ─── Pre-flight Checks ────────────────────────────────────────────────────
 info "SysAdminHCP Control Panel Installer for AlmaLinux 10"
 info "================================================"
+warn "EXPERIMENTAL: AlmaLinux 10 / RHEL 10 support is not yet production-ready."
+warn "AlmaLinux 10 ships only MariaDB Connector/C (libmariadb), not the legacy"
+warn "libmysqlclient.so.24 that the prebuilt vpopmail/qmail-toaster packages this"
+warn "installer pulls in expect — mail delivery and mailbox creation will not work"
+warn "correctly until that gap is addressed. Use AlmaLinux 9 for any real install"
+warn "today; this script is here for early testing only. Full support is coming"
+warn "very soon."
 
 if [[ $EUID -ne 0 ]]; then
   error "This script must be run as root (use sudo)"
