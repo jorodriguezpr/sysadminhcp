@@ -29,6 +29,8 @@ SYSADMINHCP_USER="sysadminhcp"
 SYSADMINHCP_GROUP="sysadminhcp"
 SYSADMINHCP_SERVICE="sysadminhcp"
 NODE_MAJOR=22
+NOTQMAIL_VERSION="1.08"
+VPOPMAIL_VERSION="5.4.33"
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 RED='\033[0;31m'
@@ -43,13 +45,14 @@ error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 # ─── Pre-flight Checks ────────────────────────────────────────────────────
 info "SysAdminHCP Control Panel Installer for AlmaLinux 10"
 info "================================================"
-warn "EXPERIMENTAL: AlmaLinux 10 / RHEL 10 support is not yet production-ready."
-warn "AlmaLinux 10 ships only MariaDB Connector/C (libmariadb), not the legacy"
-warn "libmysqlclient.so.24 that the prebuilt vpopmail/qmail-toaster packages this"
-warn "installer pulls in expect — mail delivery and mailbox creation will not work"
-warn "correctly until that gap is addressed. Use AlmaLinux 9 for any real install"
-warn "today; this script is here for early testing only. Full support is coming"
-warn "very soon."
+warn "AlmaLinux 10 / RHEL 10: mail stack (qmail + vpopmail) is built from source against"
+warn "MariaDB Connector/C, since AlmaLinux 10 ships only libmariadb, not the legacy"
+warn "libmysqlclient.so.24 that prebuilt QmailToaster packages expect. Live-verified"
+warn "2026-08-02 on a real AlmaLinux 10 box end-to-end: vadddomain/vadduser/vpasswd/"
+warn "vdeluser all working, real SMTP delivery, and real IMAP login all confirmed."
+warn "ezmlm/simscan/qmailadmin/vqadmin still come from the prebuilt QMT packages and"
+warn "are unconfirmed for the same libmysqlclient issue — watch those specifically if"
+warn "mailing-list, spam-scan, or admin-tool features misbehave on this OS."
 
 if [[ $EUID -ne 0 ]]; then
   error "This script must be run as root (use sudo)"
@@ -196,26 +199,196 @@ else
   warn "Check https://github.com/qmtoaster for current EL10 package availability."
 fi
 
-dnf install -y mysql-libs 2>/dev/null || true
+dnf install -y mariadb-connector-c-devel gcc make 2>/dev/null || warn "MariaDB dev headers failed to install — vpopmail build below will fail without them"
 
-# QMT packages
+# QMT packages — daemontools/ucspi-tcp/spamdyke/etc still come from the QMT repo; only
+# vpopmail and qmail are source-built below. Their prebuilt EL10 RPMs link against
+# libmysqlclient.so.24, which doesn't exist on EL10 (only MariaDB Connector/C is available) —
+# breaks both mailbox management (vadduser/vpasswd/vadddomain/vdeluser) and qmail-smtpd
+# itself (rejects every inbound connection). Confirmed live on a real EL10 box.
 dnf install -y --skip-broken \
   daemontools spamassassin ucspi-tcp libsrs2 spamdyke \
   autorespond control-panel qmailmrtg maildrop isoqlog ripmime \
   dovecot dovecot-mysql clamav clamd fetchmail 2>/dev/null || warn "Some QMT packages failed to install"
 
-# vpopmail/qmail/ezmlm/simscan/qmailadmin/vqadmin with --nodeps
-dnf download --enablerepo=qmt-testing vpopmail qmail ezmlm simscan qmailadmin vqadmin 2>/dev/null || true
-rpm -ivh --nodeps vpopmail-*.rpm 2>/dev/null || true
-rpm -ivh --nodeps qmail-*.rpm 2>/dev/null || true
+# ezmlm/simscan/qmailadmin/vqadmin still come from the QMT repo — not confirmed to have the
+# same MySQL-linkage problem as vpopmail/qmail, so left as prebuilt RPMs for now.
+dnf download --enablerepo=qmt-testing ezmlm simscan qmailadmin vqadmin 2>/dev/null || true
 rpm -ivh --nodeps ezmlm-*.rpm 2>/dev/null || true
 rpm -ivh --nodeps simscan-*.rpm 2>/dev/null || true
 rpm -ivh --nodeps qmailadmin-*.rpm 2>/dev/null || true
 rpm -ivh --nodeps vqadmin-*.rpm 2>/dev/null || true
-rm -f /tmp/vpopmail-*.rpm /tmp/qmail-*.rpm /tmp/ezmlm-*.rpm /tmp/simscan-*.rpm /tmp/qmailadmin-*.rpm /tmp/vqadmin-*.rpm
+rm -f /tmp/ezmlm-*.rpm /tmp/simscan-*.rpm /tmp/qmailadmin-*.rpm /tmp/vqadmin-*.rpm
 
 groupadd -g 89 vchkpw 2>/dev/null || true
-useradd -u 89 -g 89 vpopmail -s '/sbin/nologin' 2>/dev/null || true
+useradd -u 89 -g 89 vpopmail -s '/sbin/nologin' -d /home/vpopmail 2>/dev/null || true
+mkdir -p /home/vpopmail
+chown vpopmail:vchkpw /home/vpopmail
+chmod 755 /home/vpopmail
+
+# qmail users/groups (classic layout, needed before the source build below)
+groupadd nofiles 2>/dev/null || true
+groupadd qmail   2>/dev/null || true
+for u in alias qmaild qmaill qmailp; do
+  useradd -g nofiles -d /var/qmail/alias -s /sbin/nologin "$u" 2>/dev/null || true
+done
+for u in qmailq qmailr qmails; do
+  useradd -g qmail -d /var/qmail -s /sbin/nologin "$u" 2>/dev/null || true
+done
+
+# ── Build notqmail from source (see comment above — same real fix already proven working
+# on install-ubuntu22.sh, which has built qmail this way against MariaDB successfully) ─────
+if [[ ! -x /var/qmail/bin/qmail-smtpd ]]; then
+  info "Building notqmail $NOTQMAIL_VERSION from source..."
+  cd /tmp
+  rm -rf "notqmail-$NOTQMAIL_VERSION"
+  if curl -fsSL -o notqmail.tar.gz \
+      "https://github.com/notqmail/notqmail/releases/download/notqmail-$NOTQMAIL_VERSION/notqmail-$NOTQMAIL_VERSION.tar.gz"; then
+    tar xzf notqmail.tar.gz
+    cd "notqmail-$NOTQMAIL_VERSION"
+    # GCC 14 (AlmaLinux 10's default) made -Wimplicit-function-declaration an error instead
+    # of a warning — breaks seek_cur.c/seek_end.c/seek_set.c (call lseek() without including
+    # <unistd.h>, ~20-year-old K&R-style code). conf-cc is what notqmail's DJB-style build
+    # actually reads for the compile command — it does NOT respect the CFLAGS env var, so
+    # this can't be fixed by setting CFLAGS before the make calls below. Confirmed live on a
+    # real AlmaLinux 10 box: this exact fix takes the build from a hard compile error to a
+    # clean install.
+    echo "cc -O2 -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" > conf-cc
+    make -j"$(nproc)" 2>&1 | tail -3 || true
+    make setup check 2>&1 | tail -3
+    ./config-fast "$(hostname -f 2>/dev/null || hostname)" 2>/dev/null || true
+    info "notqmail installed to /var/qmail"
+    cd /tmp && rm -rf "notqmail-$NOTQMAIL_VERSION" notqmail.tar.gz
+  else
+    warn "notqmail download failed — mail (SMTP) will be unavailable until installed manually"
+  fi
+else
+  info "qmail already present at /var/qmail — skipping build"
+fi
+
+if [ -d /var/qmail/control ]; then
+  echo "./Maildir/" > /var/qmail/control/defaultdelivery
+fi
+if [ -d /var/qmail ]; then
+  cat > /var/qmail/rc << 'EOF'
+#!/bin/sh
+exec env - PATH="/var/qmail/bin:$PATH" \
+qmail-start "`cat /var/qmail/control/defaultdelivery 2>/dev/null || echo ./Maildir/`"
+EOF
+  chmod 755 /var/qmail/rc
+fi
+
+# ── Build vpopmail from source against MariaDB Connector/C (the actual fix — same
+# -fcommon/header-detection approach already proven on install-ubuntu22.sh) ────────────────
+if [[ ! -x /home/vpopmail/bin/vadddomain && -d /var/qmail ]]; then
+  info "Building vpopmail $VPOPMAIL_VERSION from source (MySQL auth via MariaDB Connector/C)..."
+  cd /tmp
+  rm -rf "vpopmail-$VPOPMAIL_VERSION"
+  if curl -fsSL -o vpopmail.tar.gz \
+      "https://sourceforge.net/projects/vpopmail/files/vpopmail-stable/$VPOPMAIL_VERSION/vpopmail-$VPOPMAIL_VERSION.tar.gz/download"; then
+    tar xzf vpopmail.tar.gz
+    cd "vpopmail-$VPOPMAIL_VERSION"
+    MYSQL_INC="/usr/include/mysql"
+    [[ -d /usr/include/mariadb && ! -d /usr/include/mysql ]] && MYSQL_INC="/usr/include/mariadb"
+    # Same GCC 10+ -fcommon fix already proven on install-ubuntu22.sh — this ~20-year-old
+    # codebase relies on pre-GCC-10 tentative-definition behavior for several globals. The
+    # three -Wno-error= flags are the same GCC 14 fix as notqmail's, for the
+    # (autoconf-driven, CFLAGS-respecting) vpopmail build outside the cdb/ subdirectory.
+    export CFLAGS="-fcommon -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
+    ./configure \
+      --enable-auth-module=mysql \
+      --enable-many-domains=y \
+      --enable-incdir="$MYSQL_INC" \
+      --enable-libdir=/usr/lib64 \
+      --enable-auth-logging=y \
+      --enable-clear-passwd=y \
+      --enable-logging=p > /tmp/vpopmail_build.log 2>&1
+    # vpopmail vendors its OWN copy of the DJB cdb library (cdb/cdb_seek.c — the exact same
+    # file/issue as notqmail's seek_*.c above), built via its own internal conf-cc that does
+    # NOT respect the outer CFLAGS above. This MUST run AFTER ./configure, not before —
+    # confirmed live: configure's own generated script itself does
+    # `echo "${CC} -O2" > cdb/conf-cc` as one of its last steps (the file doesn't even exist
+    # in the raw tarball at all), silently overwriting an earlier edit and reintroducing the
+    # exact same GCC 14 implicit-function-declaration/incompatible-pointer-types errors.
+    if [[ -f cdb/conf-cc ]]; then
+      echo "gcc -O2 -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" > cdb/conf-cc
+    fi
+    make -j"$(nproc)" >> /tmp/vpopmail_build.log 2>&1 && make install-strip >> /tmp/vpopmail_build.log 2>&1
+    if [[ -x /home/vpopmail/bin/vadddomain ]]; then
+      info "vpopmail installed to /home/vpopmail"
+      rm -f /tmp/vpopmail_build.log
+    else
+      warn "vpopmail build did not produce binaries — mail account management will be unavailable"
+      warn "Last 30 lines of build log (full log kept at /tmp/vpopmail_build.log):"
+      tail -30 /tmp/vpopmail_build.log | while IFS= read -r line; do warn "  $line"; done
+    fi
+    cd /tmp && rm -rf "vpopmail-$VPOPMAIL_VERSION" vpopmail.tar.gz
+  else
+    warn "vpopmail download failed — install manually from sourceforge.net/projects/vpopmail"
+  fi
+else
+  info "vpopmail already present (or qmail missing) — skipping build"
+fi
+
+# ── qmail supervise run scripts — source-built qmail/vpopmail don't ship these; the QMT
+# "qmail" RPM we no longer install used to. SMTPAUTH values below match what was confirmed
+# live on a real server today: "!" on submission (587) requires TLS before AUTH is even
+# advertised (correct — that's the one thing worth protecting even on an otherwise-relaxed
+# mail setup); "-" on smtp (25) matches this fleet's existing convention there, where
+# spamdyke's own anti-spam checks apply instead of client AUTH. ───────────────────────────
+mkdir -p /var/qmail/supervise/smtp/log/supervise /var/qmail/supervise/submission/log/supervise /var/qmail/supervise/send/log/supervise 2>/dev/null || true
+
+cat > /var/qmail/supervise/smtp/run << 'EOF'
+#!/bin/sh
+QMAILDUID=`id -u vpopmail`
+NOFILESGID=`id -g vpopmail`
+MAXSMTPD=`cat /var/qmail/control/concurrencyincoming 2>/dev/null || echo 20`
+SPAMDYKE="/usr/bin/spamdyke"
+SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"
+SMTPD="/var/qmail/bin/qmail-smtpd"
+TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
+HOSTNAME=`hostname`
+VCHKPW="/home/vpopmail/bin/vchkpw"
+export SMTPAUTH="-"
+
+exec /usr/bin/softlimit -m 256000000 \
+     /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
+     -u "$QMAILDUID" -g "$NOFILESGID" 0 smtp \
+     $SPAMDYKE --config-file $SPAMDYKE_CONF \
+     $SMTPD $VCHKPW /bin/true 2>&1
+EOF
+chmod 755 /var/qmail/supervise/smtp/run
+
+cat > /var/qmail/supervise/submission/run << 'EOF'
+#!/bin/sh
+QMAILDUID=`id -u vpopmail`
+NOFILESGID=`id -g vpopmail`
+MAXSMTPD=`cat /var/qmail/control/concurrencyincoming 2>/dev/null || echo 20`
+SMTPD="/var/qmail/bin/qmail-smtpd"
+TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
+HOSTNAME=`hostname`
+VCHKPW="/home/vpopmail/bin/vchkpw"
+export SMTPAUTH="!"
+
+exec /usr/bin/softlimit -m 128000000 \
+    /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
+    -u "$QMAILDUID" -g "$NOFILESGID" 0 587 \
+    $SMTPD $VCHKPW /bin/true 2>&1
+EOF
+chmod 755 /var/qmail/supervise/submission/run
+
+# tcp.smtp source + compiled .cdb — previously provided by the QMT "qmail" RPM we no
+# longer install; ucspi-tcp (still RPM-installed, unchanged) provides the `tcprules`
+# binary but not this default ruleset. Only created if missing, so an existing real
+# ruleset (e.g. one already customized by the panel) is never overwritten.
+mkdir -p /etc/tcprules.d
+if [ ! -f /etc/tcprules.d/tcp.smtp ]; then
+  cat > /etc/tcprules.d/tcp.smtp << 'EOF'
+127.:allow,RELAYCLIENT="",RBLSMTPD="",NOP0FCHECK="1"
+:allow,BADMIMETYPE="",BADLOADERTYPE="M",CHKUSER_RCPTLIMIT="50",CHKUSER_WRONGRCPTLIMIT="10",QMAILQUEUE="/var/qmail/bin/simscan",NOP0FCHECK="1"
+EOF
+fi
+command -v tcprules >/dev/null 2>&1 && tcprules /etc/tcprules.d/tcp.smtp.cdb /etc/tcprules.d/tcp.smtp.tmp < /etc/tcprules.d/tcp.smtp 2>/dev/null || warn "tcprules not found — SMTP will refuse all connections until /etc/tcprules.d/tcp.smtp.cdb exists"
 
 # Configure qmail (chkconfig not available on EL10 — managed via systemd units below)
 if [ -f /var/qmail/supervise/smtp/run ]; then
@@ -1096,7 +1269,13 @@ systemctl start fail2ban 2>/dev/null || warn "Fail2ban failed to start"
 
 # vpopmail database
 if command -v mysql &>/dev/null && systemctl is-active --quiet mariadb; then
-  if rpm -q vpopmail &>/dev/null; then
+  # NOT "rpm -q vpopmail" — vpopmail is source-built now (see the notqmail/vpopmail build
+  # block above), not RPM-installed, so that check would never be true and this whole block
+  # would silently never run. Confirmed live: this exact bug shipped a "successful" install
+  # where vpopmail's binaries existed and linked correctly but had no real database, MySQL
+  # user, or vpopmail.mysql config at all — vadduser/vadddomain failed with "no
+  # authentication database connection" despite every service reporting healthy.
+  if [[ -x /home/vpopmail/bin/vadddomain ]]; then
     info "Setting up vpopmail database in MariaDB..."
     VPOPMAIL_DB_PASS=$(openssl rand -hex 8 2>/dev/null || echo "vpopmail123")
     mysql -u root -p"${MYSQL_ROOT_PASS}" <<EOSQL 2>/dev/null || warn "vpopmail database setup failed"
