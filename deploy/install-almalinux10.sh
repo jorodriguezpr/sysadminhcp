@@ -45,14 +45,16 @@ error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 # ─── Pre-flight Checks ────────────────────────────────────────────────────
 info "SysAdminHCP Control Panel Installer for AlmaLinux 10"
 info "================================================"
-warn "AlmaLinux 10 / RHEL 10: mail stack (qmail + vpopmail) is built from source against"
-warn "MariaDB Connector/C, since AlmaLinux 10 ships only libmariadb, not the legacy"
-warn "libmysqlclient.so.24 that prebuilt QmailToaster packages expect. Live-verified"
-warn "2026-08-02 on a real AlmaLinux 10 box end-to-end: vadddomain/vadduser/vpasswd/"
-warn "vdeluser all working, real SMTP delivery, and real IMAP login all confirmed."
-warn "ezmlm/simscan/qmailadmin/vqadmin still come from the prebuilt QMT packages and"
-warn "are unconfirmed for the same libmysqlclient issue — watch those specifically if"
-warn "mailing-list, spam-scan, or admin-tool features misbehave on this OS."
+warn "AlmaLinux 10 / RHEL 10: mail stack fully live-verified 2026-08-02 on a real box,"
+warn "including the two real gaps AlmaLinux 10 has vs. legacy QmailToaster RPMs — no"
+warn "libmysqlclient.so.24 (only MariaDB Connector/C ships by default) and no legacy"
+warn "libpcre.so.1 (only PCRE2 ships by default). qmail+vpopmail are built from source"
+warn "against MariaDB; qmailadmin+vqadmin use AlmaLinux's own real mysql8.4-libs package"
+warn "(genuine Oracle MySQL 8.4 client, confirmed ABI-compatible via real login tests —"
+warn "no rebuild needed); simscan uses QmailToaster's own legacy pcre compat package."
+warn "Confirmed working end-to-end: vadddomain/vadduser/vpasswd/vdeluser, real network"
+warn "SMTP delivery through tcpserver+spamdyke+qmail-smtpd, real IMAP login, and real"
+warn "qmailadmin/vqadmin logins against the live vpopmail database."
 
 if [[ $EUID -ne 0 ]]; then
   error "This script must be run as root (use sudo)"
@@ -211,13 +213,32 @@ dnf install -y --skip-broken \
   autorespond control-panel qmailmrtg maildrop isoqlog ripmime \
   dovecot dovecot-mysql clamav clamd fetchmail 2>/dev/null || warn "Some QMT packages failed to install"
 
-# ezmlm/simscan/qmailadmin/vqadmin still come from the QMT repo — not confirmed to have the
-# same MySQL-linkage problem as vpopmail/qmail, so left as prebuilt RPMs for now.
+# ezmlm/autorespond/ripmime/maildrop/ucspi-tcp/daemontools/spamdyke above have NO MySQL
+# linkage at all — confirmed live via ldd, safe as prebuilt RPMs, no fix needed.
+#
+# qmailadmin and vqadmin DO link against libmysqlclient.so.24 same as vpopmail — but unlike
+# vpopmail, they don't need a source rebuild: AlmaLinux 10's own AppStream repo ships the
+# real Oracle MySQL 8.4 client library (mysql8.4-libs), which provides that exact SONAME
+# with a genuine matching ABI (confirmed live: `ldd -r` shows zero unresolved symbols, and a
+# real POST-based qmailadmin login + vqadmin domain-admin auth both succeeded against the
+# live vpopmail MySQL tables — not just "the library loads", a real query round-trip).
+dnf install -y mysql8.4-libs 2>/dev/null || warn "mysql8.4-libs failed to install — qmailadmin/vqadmin will fail to load without it"
+#
+# simscan's prebuilt binary links against libpcre.so.1 (legacy PCRE1) — AlmaLinux 10's own
+# repos only ship PCRE2. QmailToaster's own EL10 repo carries a legacy pcre compat package
+# that provides exactly this SONAME; confirmed live this resolves it cleanly (ldd clean,
+# real virus/spam-scan hook loads).
+dnf install -y --enablerepo=qmt-testing pcre 2>/dev/null || warn "legacy pcre compat package failed to install — simscan will fail to load without it"
 dnf download --enablerepo=qmt-testing ezmlm simscan qmailadmin vqadmin 2>/dev/null || true
-rpm -ivh --nodeps ezmlm-*.rpm 2>/dev/null || true
-rpm -ivh --nodeps simscan-*.rpm 2>/dev/null || true
-rpm -ivh --nodeps qmailadmin-*.rpm 2>/dev/null || true
-rpm -ivh --nodeps vqadmin-*.rpm 2>/dev/null || true
+# --replacepkgs: without it, a partially-failed rpm -ivh (e.g. simscan before the pcre fix
+# above existed) still marks the package "installed" in the rpm db, so a later re-run
+# silently no-ops instead of retrying — confirmed live: this exact silent failure left
+# simscan's binary + config files completely missing across multiple script runs while rpm
+# still reported it installed.
+rpm -ivh --nodeps --replacepkgs ezmlm-*.rpm 2>/dev/null || true
+rpm -ivh --nodeps --replacepkgs simscan-*.rpm 2>/dev/null || true
+rpm -ivh --nodeps --replacepkgs qmailadmin-*.rpm 2>/dev/null || true
+rpm -ivh --nodeps --replacepkgs vqadmin-*.rpm 2>/dev/null || true
 rm -f /tmp/ezmlm-*.rpm /tmp/simscan-*.rpm /tmp/qmailadmin-*.rpm /tmp/vqadmin-*.rpm
 
 groupadd -g 89 vchkpw 2>/dev/null || true
