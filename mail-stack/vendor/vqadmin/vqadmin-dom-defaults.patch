@@ -1,0 +1,51 @@
+--- vqadmin-2.3.7/html/add_domain.html	2014-01-02 17:00:18.245000165 -0700
++++ vqadmin-2.3.7-patched/html/add_domain.html	2014-01-02 17:21:28.910133685 -0700
+@@ -123,42 +123,42 @@
+               <td align="right" width="47%">#-015 (#-050)</td>
+               <td width="6%">&nbsp;</td>
+               <td align="left" width=47%"> 
+-		      <INPUT TYPE="TEXT" NAME="lusers" class="inputs" value="0" onFocus="pulisci_input_type(this)">
++		      <INPUT TYPE="TEXT" NAME="lusers" class="inputs" value="" onFocus="pulisci_input_type(this)">
+               </td>
+             </tr>
+             <tr> 
+               <td align="right" width="47%">#-016 (#-050)</td>
+               <td width="6%">&nbsp;</td>
+               <td align="left" width=47%"> 
+-		      <INPUT TYPE="TEXT" NAME="lfor" class="inputs" value="0" onFocus="pulisci_input_type(this)">
++		      <INPUT TYPE="TEXT" NAME="lfor" class="inputs" value="" onFocus="pulisci_input_type(this)">
+               </td>
+             </tr>
+             <tr> 
+               <td align="right" width="47%">#-017 (#-050)</td>
+               <td width="6%">&nbsp;</td>
+               <td align="left" width=47%"> 
+-		      <INPUT TYPE="TEXT" NAME="lalias" class="inputs" value="0" onFocus="pulisci_input_type(this)">
++		      <INPUT TYPE="TEXT" NAME="lalias" class="inputs" value="" onFocus="pulisci_input_type(this)">
+               </td>
+             </tr>
+             <tr> 
+               <td align="right" width="47%">#-018 (#-050)</td>
+               <td width="6%">&nbsp;</td>
+               <td align="left" width=47%"> 
+-		      <INPUT TYPE="TEXT" NAME="lresponder" class="inputs" value="0" onFocus="pulisci_input_type(this)">
++		      <INPUT TYPE="TEXT" NAME="lresponder" class="inputs" value="" onFocus="pulisci_input_type(this)">
+               </td>
+             </tr>
+             <tr> 
+               <td align="right" width="47%">#-019 (#-050)</td>
+               <td width="6%">&nbsp;</td>
+               <td align="left" width=47%"> 
+-		      <INPUT TYPE="TEXT" NAME="llists" class="inputs" value="0" onFocus="pulisci_input_type(this)">
++		      <INPUT TYPE="TEXT" NAME="llists" class="inputs" value="" onFocus="pulisci_input_type(this)">
+               </td>
+             </tr>
+             <tr> 
+               <td align="right" width="47%">#-039 (NOQUOTA for unlimited)</td>
+               <td width="6%">&nbsp;</td>
+               <td align="left" width=47%"> 
+-		      <INPUT TYPE="TEXT" NAME="quota" class="inputs" value="0" onFocus="pulisci_input_type(this)">
++		      <INPUT TYPE="TEXT" NAME="quota" class="inputs" value="NOQUOTA" onFocus="pulisci_input_type(this)">
+               </td>
+             </tr>
+             <tr> 

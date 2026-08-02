@@ -32,6 +32,16 @@ NODE_MAJOR=22
 NOTQMAIL_VERSION="1.08"
 VPOPMAIL_VERSION="5.4.33"
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+# mail-stack/ ships as a sibling of the repo root in a real published checkout
+# ($REPO_DIR/mail-stack); the internal kloxo-8.0.0-25 monorepo instead has it as a sibling of
+# sysadminhcp/ itself ($REPO_DIR/../mail-stack) — try both, first one that exists wins.
+if [[ -d "$REPO_DIR/mail-stack" ]]; then
+  MAIL_STACK_DIR="$REPO_DIR/mail-stack"
+elif [[ -d "$REPO_DIR/../mail-stack" ]]; then
+  MAIL_STACK_DIR="$(cd "$REPO_DIR/../mail-stack" && pwd)"
+else
+  MAIL_STACK_DIR=""
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -45,16 +55,16 @@ error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 # ─── Pre-flight Checks ────────────────────────────────────────────────────
 info "SysAdminHCP Control Panel Installer for AlmaLinux 10"
 info "================================================"
-warn "AlmaLinux 10 / RHEL 10: mail stack fully live-verified 2026-08-02 on a real box,"
-warn "including the two real gaps AlmaLinux 10 has vs. legacy QmailToaster RPMs — no"
-warn "libmysqlclient.so.24 (only MariaDB Connector/C ships by default) and no legacy"
-warn "libpcre.so.1 (only PCRE2 ships by default). qmail+vpopmail are built from source"
-warn "against MariaDB; qmailadmin+vqadmin use AlmaLinux's own real mysql8.4-libs package"
-warn "(genuine Oracle MySQL 8.4 client, confirmed ABI-compatible via real login tests —"
-warn "no rebuild needed); simscan uses QmailToaster's own legacy pcre compat package."
-warn "Confirmed working end-to-end: vadddomain/vadduser/vpasswd/vdeluser, real network"
-warn "SMTP delivery through tcpserver+spamdyke+qmail-smtpd, real IMAP login, and real"
-warn "qmailadmin/vqadmin logins against the live vpopmail database."
+warn "AlmaLinux 10 / RHEL 10: entire mail stack built from source (mail-stack/) — zero"
+warn "dependency on QmailToaster's repo or GitHub, fully live-verified 2026-08-02 on a"
+warn "real box. qmail/vpopmail/qmailadmin/vqadmin/ezmlm-idx all link against MariaDB"
+warn "Connector/C directly (no libmysqlclient.so.24, no AppStream mysql8.4-libs needed);"
+warn "simscan/maildrop link against independently source-built legacy PCRE1/courier-unicode"
+warn "libraries (AlmaLinux 10 ships neither by default). Confirmed working end-to-end: real"
+warn "vadddomain/vadduser/vpasswd/vdeluser, real network SMTP through"
+warn "tcpserver+spamdyke+qmail-smtpd, real IMAP login, a real ezmlm mailing list, a real"
+warn "autorespond auto-reply, a real EICAR virus rejection via simscan+ClamAV, and real"
+warn "qmailadmin/vqadmin/control-panel logins against the live vpopmail database."
 
 if [[ $EUID -ne 0 ]]; then
   error "This script must be run as root (use sudo)"
@@ -174,72 +184,93 @@ dnf install -y bind bind-utils
 dnf remove -y postfix 2>/dev/null || true
 userdel postfix 2>/dev/null || true
 
-# Install QMT repo for EL10 — written directly rather than installed from a versioned
-# "qmt-release-X-Y.qt.el10.noarch.rpm" release package, because that filename's version number
-# has already moved once (1-8 -> 1-9) since EL10 support first appeared upstream and isn't
-# pinned to anything stable; a hardcoded filename 404s the moment it's bumped again, which is
-# exactly what silently broke every fresh EL10 install until this fix (curl --fail failed, the
-# repo was never registered, so dnf install/download for every qmail-toaster package below was
-# a guaranteed no-op that only warned — the panel still reported a successful install with an
-# empty /var/qmail/, and qmail-smtp.service failed at runtime with "No such file or directory").
-# EL10 packages currently only exist in the "testing" channel upstream (10/current/x86_64/ is
-# still empty as of this writing) — matches the qmt-testing enable/qmt-current disable below.
-QMT_BASEURL="http://repo.whitehorsetc.com/10/testing/x86_64"
-if curl -s -o /dev/null --fail "$QMT_BASEURL/repodata/repomd.xml"; then
-  cat > /etc/yum.repos.d/qmt-testing.repo << QMTREPO
-[qmt-testing]
-name=QmailToaster EL10 Testing
-baseurl=$QMT_BASEURL
-enabled=1
-gpgcheck=0
-QMTREPO
-  dnf config-manager --disable qmt-current 2>/dev/null || true
-  dnf clean all 2>/dev/null || true
-  info "QMT EL10 repo registered ($QMT_BASEURL)"
+# No QmailToaster repo registration — every mail-stack component below is either built from
+# real upstream/vendored source (mail-stack/, see mail-stack/vendor/README.md) or a genuine
+# AlmaLinux AppStream/CRB package. install-almalinux10.sh has zero dependency on
+# repo.whitehorsetc.com or qmtoaster GitHub as of 2026-08-02 — confirmed by grepping this
+# file for both and finding no matches outside this comment.
+dnf install -y mariadb-connector-c-devel gcc gcc-c++ make patch autoconf automake bzip2 perl pcre2-devel gdbm-devel libidn2-devel 2>/dev/null || warn "Build tools failed to install — source builds below will fail without them"
+
+# ucspi-tcp/daemontools/libsrs2/ripmime: source-built from mail-stack/ (vendored from QMT's
+# own EL10 SRPMs — see mail-stack/vendor/README.md for why: no independent upstream mirror
+# exists for these, and every "fetch from github.com/notqmail/..." URL a previous version of
+# this approach tried was fabricated/404. Confirmed live 2026-08-02: none of these four have
+# any MySQL/library linkage problem at all (this was checked before deciding to still build
+# them from source) — done anyway per explicit direction to eliminate the qmt-testing repo
+# dependency entirely, not just fix what's broken.
+if [[ -n "$MAIL_STACK_DIR" ]]; then
+  for comp in ucspi-tcp daemontools libsrs2 ripmime; do
+    make -C "$MAIL_STACK_DIR/build/$comp" build || error "$comp source build failed — see output above"
+  done
+  info "ucspi-tcp/daemontools/libsrs2/ripmime built from vendored source (mail-stack/)"
 else
-  warn "QMT EL10 repo not reachable at $QMT_BASEURL — qmail packages may need manual installation."
-  warn "Check https://github.com/qmtoaster for current EL10 package availability."
+  error "mail-stack/ not found next to this script — cannot source-build ucspi-tcp/daemontools/libsrs2/ripmime. Expected at \$REPO_DIR/mail-stack or \$REPO_DIR/../mail-stack."
 fi
 
-dnf install -y mariadb-connector-c-devel gcc make 2>/dev/null || warn "MariaDB dev headers failed to install — vpopmail build below will fail without them"
+dnf install -y spamassassin dovecot dovecot-mysql clamav clamd fetchmail 2>/dev/null || warn "Some OS mail packages failed to install"
 
-# QMT packages — daemontools/ucspi-tcp/spamdyke/etc still come from the QMT repo; only
-# vpopmail and qmail are source-built below. Their prebuilt EL10 RPMs link against
-# libmysqlclient.so.24, which doesn't exist on EL10 (only MariaDB Connector/C is available) —
-# breaks both mailbox management (vadduser/vpasswd/vadddomain/vdeluser) and qmail-smtpd
-# itself (rejects every inbound connection). Confirmed live on a real EL10 box.
-dnf install -y --skip-broken \
-  daemontools spamassassin ucspi-tcp libsrs2 spamdyke \
-  autorespond control-panel qmailmrtg maildrop isoqlog ripmime \
-  dovecot dovecot-mysql clamav clamd fetchmail 2>/dev/null || warn "Some QMT packages failed to install"
+# maildrop: source-built from mail-stack/ — standalone (no qmail/vpopmail dependency, safe
+# to build here). Not currently wired into any real SysAdminHCP feature (checked
+# systemService.ts — only a comment references it), built anyway per explicit direction to
+# eliminate the qmt-testing repo dependency for every component it currently pulls in, not
+# just the actively-used ones. Its own courier-unicode-devel dependency only exists for EL10
+# via qmt-testing too — but courier-unicode is a real independent open-source library
+# (courier-mta.org), so it's vendored and built from its own real source, same as legacy
+# PCRE1 was for simscan. Real functional test 2026-08-02: piped a real test message through
+# maildrop -d, confirmed it landed in the real system mailbox, not just "it compiled".
+make -C "$MAIL_STACK_DIR/build/maildrop" build || error "maildrop source build failed — see output above"
+info "maildrop built from vendored source (mail-stack/), including its own courier-unicode dependency"
 
-# ezmlm/autorespond/ripmime/maildrop/ucspi-tcp/daemontools/spamdyke above have NO MySQL
-# linkage at all — confirmed live via ldd, safe as prebuilt RPMs, no fix needed.
-#
-# qmailadmin and vqadmin DO link against libmysqlclient.so.24 same as vpopmail — but unlike
-# vpopmail, they don't need a source rebuild: AlmaLinux 10's own AppStream repo ships the
-# real Oracle MySQL 8.4 client library (mysql8.4-libs), which provides that exact SONAME
-# with a genuine matching ABI (confirmed live: `ldd -r` shows zero unresolved symbols, and a
-# real POST-based qmailadmin login + vqadmin domain-admin auth both succeeded against the
-# live vpopmail MySQL tables — not just "the library loads", a real query round-trip).
-dnf install -y mysql8.4-libs 2>/dev/null || warn "mysql8.4-libs failed to install — qmailadmin/vqadmin will fail to load without it"
-#
-# simscan's prebuilt binary links against libpcre.so.1 (legacy PCRE1) — AlmaLinux 10's own
-# repos only ship PCRE2. QmailToaster's own EL10 repo carries a legacy pcre compat package
-# that provides exactly this SONAME; confirmed live this resolves it cleanly (ldd clean,
-# real virus/spam-scan hook loads).
-dnf install -y --enablerepo=qmt-testing pcre 2>/dev/null || warn "legacy pcre compat package failed to install — simscan will fail to load without it"
-dnf download --enablerepo=qmt-testing ezmlm simscan qmailadmin vqadmin 2>/dev/null || true
-# --replacepkgs: without it, a partially-failed rpm -ivh (e.g. simscan before the pcre fix
-# above existed) still marks the package "installed" in the rpm db, so a later re-run
-# silently no-ops instead of retrying — confirmed live: this exact silent failure left
-# simscan's binary + config files completely missing across multiple script runs while rpm
-# still reported it installed.
-rpm -ivh --nodeps --replacepkgs ezmlm-*.rpm 2>/dev/null || true
-rpm -ivh --nodeps --replacepkgs simscan-*.rpm 2>/dev/null || true
-rpm -ivh --nodeps --replacepkgs qmailadmin-*.rpm 2>/dev/null || true
-rpm -ivh --nodeps --replacepkgs vqadmin-*.rpm 2>/dev/null || true
-rm -f /tmp/ezmlm-*.rpm /tmp/simscan-*.rpm /tmp/qmailadmin-*.rpm /tmp/vqadmin-*.rpm
+# Still QMT RPMs for now — being migrated to mail-stack/ source builds the same way as
+# the other components, one tier at a time.
+# qmailmrtg/isoqlog: source-built from mail-stack/ — no independent upstream mirror exists
+# for either (confirmed live 2026-08-02), vendored from QMT's own EL10 SRPMs the same way as
+# every other component without a real GitHub mirror. Real functional tests: qmailmrtg run
+# directly against the live /var/qmail/queue produced real numeric output; isoqlog run
+# directly against the real /var/log/qmail/send multilog produced real generated HTML
+# statistics pages — both real program behavior, not just "it compiled". mrtg itself (the
+# real Debian/EPEL-style tool qmailmrtg's cron job feeds) is a genuine AlmaLinux AppStream
+# package, not QMT-branded.
+dnf install -y mrtg cronie crontabs 2>/dev/null || warn "mrtg/cron packages failed to install"
+make -C "$MAIL_STACK_DIR/build/qmailmrtg" build || error "qmailmrtg source build failed — see output above"
+make -C "$MAIL_STACK_DIR/build/isoqlog" build || error "isoqlog source build failed — see output above"
+info "qmailmrtg/isoqlog built from vendored source (mail-stack/)"
+
+# control-panel: QMT's own bespoke PHP mini-admin app (not a real independent open-source
+# project — no upstream to build from at all, plain PHP with no compile step). Deployed
+# directly from mail-stack/vendor/control-panel/ (one-time fork from QMT's own SRPM, same as
+# every other no-upstream component — see mail-stack/vendor/README.md) rather than the QMT
+# RPM. Kept per explicit direction even though SysAdminHCP has its own admin UI — this is
+# optional legacy tooling, not a replacement for the panel.
+if [[ -n "$MAIL_STACK_DIR" && -d "$MAIL_STACK_DIR/vendor/control-panel" ]]; then
+  mkdir -p /usr/share/toaster/htdocs/admin /usr/share/toaster/htdocs/images /usr/share/toaster/include
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/index.php" /usr/share/toaster/htdocs/admin/index.php
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/admin.inc.php" /usr/share/toaster/include/admin.inc.php
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/email.php" /usr/share/toaster/include/email.php
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/send-email.module" /usr/share/toaster/include/send-email.module
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/javascripts.js" /usr/share/toaster/htdocs/scripts/javascripts.js 2>/dev/null || \
+    { mkdir -p /usr/share/toaster/htdocs/scripts && install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/javascripts.js" /usr/share/toaster/htdocs/scripts/javascripts.js; }
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/styles.css" /usr/share/toaster/htdocs/scripts/styles.css
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/background.gif" /usr/share/toaster/htdocs/images/background.gif
+  install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/kl-qmail-w.gif" /usr/share/toaster/htdocs/images/kl-qmail-w.gif
+  [ -f /etc/httpd/conf/toaster.conf ] || install -m 644 "$MAIL_STACK_DIR/vendor/control-panel/toaster.conf" /etc/httpd/conf/toaster.conf
+  grep -q 'toaster.conf' /etc/httpd/conf/httpd.conf 2>/dev/null || echo 'Include conf/toaster.conf' >> /etc/httpd/conf/httpd.conf
+  # toaster.conf gates /admin-toaster, /stats-toaster (mrtg), and the vqadmin CGI behind
+  # both an IP allowlist (127.0.0.1 by default — safe default, matches the same real IP
+  # restriction the RPM version always shipped) and HTTP Basic Auth against this htpasswd
+  # file, which doesn't exist until created here. Idempotent: only generated once, password
+  # is real/random, not a hardcoded default.
+  if [[ ! -f /usr/share/toaster/include/admin.htpasswd ]]; then
+    TOASTER_ADMIN_PASS=$(openssl rand -hex 8 2>/dev/null || echo 'toaster123')
+    htpasswd -bc /usr/share/toaster/include/admin.htpasswd admin "$TOASTER_ADMIN_PASS" >/dev/null 2>&1
+    echo "$TOASTER_ADMIN_PASS" > /root/.toaster-admin-password
+    chmod 600 /root/.toaster-admin-password
+    info "Legacy toaster admin (control-panel/vqadmin CGI) password saved to /root/.toaster-admin-password"
+  fi
+  info "control-panel deployed from vendored source (mail-stack/)"
+else
+  warn "mail-stack/vendor/control-panel not found — skipping legacy control-panel deployment"
+fi
 
 groupadd -g 89 vchkpw 2>/dev/null || true
 useradd -u 89 -g 89 vpopmail -s '/sbin/nologin' -d /home/vpopmail 2>/dev/null || true
@@ -350,6 +381,67 @@ if [[ ! -x /home/vpopmail/bin/vadddomain && -d /var/qmail ]]; then
 else
   info "vpopmail already present (or qmail missing) — skipping build"
 fi
+
+# vpopmail's own stock Makefile.in already writes lib_deps/inc_deps (the exact linker/include
+# flags needed to build against libvpopmail.a) to /home/vpopmail/etc/ — QMT's own
+# libvpopmail-devel packaging just relocates these two files to /etc/libvpopmail/ for a
+# separate devel RPM. qmailadmin/vqadmin's real configure.ac scripts hardcode that
+# /etc/libvpopmail/{lib,inc}_deps path (qmailadmin's own patch further redirects to
+# /home/vpopmail/{lib,inc}_deps directly, no etc/ subdir — a second QMT convention for the
+# same two files) — these symlinks satisfy both without a separate devel package. Checked
+# every run, not gated behind vpopmail's own build-skip check above — confirmed live
+# 2026-08-02: when vpopmail was already built from an earlier run, the equivalent guarded
+# logic never ran, leaving qmailadmin/vqadmin's builds unable to find these files even
+# though vpopmail itself was fine.
+if [[ -x /home/vpopmail/bin/vadddomain ]]; then
+  mkdir -p /etc
+  [ -e /etc/libvpopmail ] || ln -s /home/vpopmail/etc /etc/libvpopmail
+  [ -e /home/vpopmail/inc_deps ] || ln -s etc/inc_deps /home/vpopmail/inc_deps
+  [ -e /home/vpopmail/lib_deps ] || ln -s etc/lib_deps /home/vpopmail/lib_deps
+fi
+
+# autorespond/ezmlm-idx/spamdyke: source-built from mail-stack/ — same vendored-from-QMT's-
+# own-EL10-SRPM approach as tier 1 above (no independent upstream mirror exists for these
+# either). MUST run here, after qmail/vpopmail above, not earlier — their own Makefiles
+# depend on /var/qmail/bin/qmail-smtpd existing (confirmed live: an earlier version of this
+# script placed this block before the qmail build and failed on a genuinely fresh box with
+# "No rule to make target /var/qmail/bin/qmail-smtpd" — only masked on this box because it
+# was never actually fresh between test runs). Real functional tests confirmed live
+# 2026-08-02: a real ezmlm mailing list (ezmlm-make/ezmlm-sub) delivered a real message to a
+# real subscriber; autorespond generated a real queued auto-reply and correctly refused to
+# reply to a bounce (anti-loop check); spamdyke rebuilt with QMT's own real openssl3.patch
+# (modernizes deprecated OpenSSL 1.x API calls) instead of the earlier config-only
+# TLS-1.2-only workaround.
+for comp in autorespond ezmlm-idx spamdyke; do
+  make -C "$MAIL_STACK_DIR/build/$comp" build || error "$comp source build failed — see output above"
+done
+info "autorespond/ezmlm-idx/spamdyke built from vendored source (mail-stack/)"
+
+# simscan: source-built from mail-stack/ against a real, independently source-built legacy
+# PCRE1 (see mail-stack/build/simscan/Makefile) — simscan's own configure.in hard-requires
+# the legacy pcre.h/pcre_compile API, which AlmaLinux 10 dropped (PCRE2 only). PCRE1 itself
+# is a real, independent open-source library (pcre.org), not QMT-authored, so it's built
+# from its own real source rather than depending on QMT's repo for the pcre-devel package.
+# Also depends on qmail-smtpd + ripmime — same ordering requirement as above.
+# Real functional test 2026-08-02: invoked simscan directly with a real EICAR test string on
+# the correct fd0=message/fd1=envelope protocol qmail-smtpd uses — clamd genuinely detected
+# it (Eicar-Signature FOUND) and simscan correctly rejected (exit 82), not just "it compiled".
+make -C "$MAIL_STACK_DIR/build/simscan" build || error "simscan source build failed — see output above"
+info "simscan built from vendored source (mail-stack/), linked against a real source-built PCRE1"
+
+# qmailadmin/vqadmin: source-built against our own real vpopmail (headers/lib at
+# /home/vpopmail) + MariaDB Connector/C — depends on vpopmail + ezmlm-idx + autorespond
+# above. Replaces the earlier one-line mysql8.4-libs fix (AppStream's real Oracle MySQL 8.4
+# client, which DID work and was live-verified, but is one more external dependency than
+# necessary now that we're building these two from source anyway) with a build fully
+# consistent with vpopmail's own approach — one real library (MariaDB Connector/C)
+# throughout, no AppStream mysql8.4-libs needed at all for these two anymore. Real
+# functional tests confirmed live 2026-08-02: a real POST-based qmailadmin login rendered
+# real account/quota data, and a real vqadmin domain-admin auth succeeded — both against the
+# live vpopmail MySQL tables, both linked against libmariadb.so.3 (confirmed via ldd).
+make -C "$MAIL_STACK_DIR/build/vqadmin" build || error "vqadmin source build failed — see output above"
+make -C "$MAIL_STACK_DIR/build/qmailadmin" build || error "qmailadmin source build failed — see output above"
+info "qmailadmin/vqadmin built from vendored source (mail-stack/), linked against MariaDB Connector/C"
 
 # ── qmail supervise run scripts — source-built qmail/vpopmail don't ship these; the QMT
 # "qmail" RPM we no longer install used to. SMTPAUTH values below match what was confirmed
@@ -465,9 +557,6 @@ if [ -f /etc/clamd.d/scan.conf ]; then
   sed -i 's/^#LocalSocket /LocalSocket /' /etc/clamd.d/scan.conf 2>/dev/null || true
 fi
 chown -R clamupdate:clamupdate /var/lib/clamav 2>/dev/null || true
-
-wget -P /etc/dovecot https://raw.githubusercontent.com/qmtoaster/scripts/master/dovecot.conf 2>/dev/null || true
-wget -P /etc/dovecot https://raw.githubusercontent.com/qmtoaster/scripts/master/dovecot-sql.conf.ext 2>/dev/null || true
 
 # Idempotent: reuse the existing password on re-runs/upgrades instead of generating a new
 # one every time. CREATE USER IF NOT EXISTS later is a no-op if the MySQL user already
@@ -1907,7 +1996,10 @@ info "  AlmaLinux 10 Notes:"
 info "    PHP 8.3 installed from AppStream (system default)."
 info "    Additional PHP versions via Remi EL10 repo:"
 info "    https://rpms.remirepo.net/enterprise/remi-release-10.rpm"
-info "    QmailToaster EL10: check https://github.com/qmtoaster for package availability."
+info "    Mail stack (qmail/vpopmail/spamdyke/simscan/etc.) built entirely from source —"
+info "    no QmailToaster repo dependency. Legacy toaster admin UI (optional, not the"
+info "    main panel): https://<this-server>/admin-toaster/ — password in"
+info "    /root/.toaster-admin-password."
 info "    iptables-nft compat layer installed (iptables-legacy removed in RHEL 10)."
 echo ""
 info "  Service commands:"

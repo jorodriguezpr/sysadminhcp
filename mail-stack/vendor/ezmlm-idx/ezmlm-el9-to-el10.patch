@@ -1,0 +1,24 @@
+diff -Nuar ezmlm-0.53/ezmlm-cgi.c ezmlm-0.53.new/ezmlm-cgi.c
+--- ezmlm-0.53/ezmlm-cgi.c	1999-12-24 13:15:01.000000000 -0700
++++ ezmlm-0.53.new/ezmlm-cgi.c	2025-07-19 20:45:09.123068037 -0600
+@@ -899,7 +899,7 @@
+   return;
+ }
+ 
+-indexlinks(struct msginfo *infop)
++void indexlinks(struct msginfo *infop)
+ {
+   unsigned long tmpmsg;
+ 
+diff -Nuar ezmlm-0.53/sub_std/logmsg.c ezmlm-0.53.new/sub_std/logmsg.c
+--- ezmlm-0.53/sub_std/logmsg.c	2025-07-19 16:18:16.133825166 -0600
++++ ezmlm-0.53.new/sub_std/logmsg.c	2025-07-19 20:01:57.434568851 -0600
+@@ -6,7 +6,7 @@
+ #include "errtxt.h"
+ 
+ static stralloc logline = {0};
+-static strnum[FMT_ULONG];
++static int strnum[FMT_ULONG];
+ 
+ char *logmsg(dir,num,listno,subs,done)
+ char *dir;

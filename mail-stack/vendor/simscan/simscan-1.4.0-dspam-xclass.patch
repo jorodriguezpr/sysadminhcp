@@ -1,0 +1,37 @@
+--- simscan.c	2021-05-28 11:01:51.550399427 -0600
++++ simscan.c.new	2021-05-28 08:37:38.214785543 -0600
+@@ -1509,6 +1509,7 @@
+ 
+   int fret;
+   int readno = 0;
++  int xclass = 0;
+   InHeaders=1;
+   IsSpam = 0;
+   DSpamProbability = 0.0;
+@@ -1529,19 +1530,19 @@
+        break;
+     } 
+     readno++;
+-    if ( InHeaders == 1 ) {
+-      is_dspam(buffer);
+-    }
+-    /* dspam client called with arguments --stdout & --users x y z ...
++    if ( InHeaders == 1 ) is_dspam(buffer);
++    /* 
++       dspam client called with arguments --stdout & --users x y z ...
+        will dump the original email (dspam headers added) as many times
+        as users specified each delimited by 'X-Daemon-Classification'.
+     */
+-    if (strstr(buffer,"X-Daemon-Classification")) {
++    if ( !xclass && strstr(buffer,"X-Daemon-Classification") ) {
++      xclass = 1;
+       if ( DebugFlag > 0 ) {
+-        fprintf(stderr, "simscan:[%d]: Dspam multiple user break: X-Daemon-Classification\n",getppid());
++        fprintf(stderr, "simscan:[%d]: dspamc multiple user email classification break 'X-Daemon-Classification' found, will not read anymore from dspamc\n",getppid());
+       }
+-      break;
+     }
++    if ( xclass )  continue;
+     write(spam_fd, buffer,strlen(buffer));
+     memset(buffer,0,sizeof(buffer));
+     got_data = 1;

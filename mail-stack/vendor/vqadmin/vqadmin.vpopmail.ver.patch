@@ -1,0 +1,47 @@
+--- vqadmin-2.3.7/template.c	2002-08-08 16:39:12.000000000 -0700
++++ vqadmin-2.3.7-patched/template.c	2013-11-13 12:53:18.441004535 -0700
+@@ -28,7 +28,9 @@
+ #include <string.h>
+ #include "global.h"
+ #include "config.h"
++/*
+ #include "vpopmail_config.h"
++*/
+ 
+ extern char vqa_error[],
+             vqa_user[],
+@@ -40,8 +42,10 @@
+   switch(code) {
+    case 'V':
+     printf("<a href=http://www.inter7.com/vqadmin/>%s</a> %s<BR>\n", 
++/*
+       VQA_PACKAGE, VQA_VERSION);
+     printf("<a href=http://www.inter7.com/vpopmail/>%s</a> %s<BR>\n", 
++*/
+       PACKAGE, VERSION);
+     break;
+    case 'E':
+--- vqadmin-2.3.7/user.c	2005-01-11 14:10:35.000000000 -0700
++++ vqadmin-2.3.7-patched/user.c	2013-11-13 12:53:40.474016699 -0700
+@@ -32,7 +32,9 @@
+ #include <ctype.h>
+ #include "global.h"
+ #include "vpopmail.h"
++/*
+ #include "vpopmail_config.h"
++*/
+ #include "vauth.h"
+ #include "config.h"
+ 
+--- vqadmin-2.3.7/domain.c	2005-01-11 13:48:03.000000000 -0700
++++ vqadmin-2.3.7-patched/domain.c	2013-11-13 12:53:52.984011854 -0700
+@@ -29,7 +29,9 @@
+ #include "config.h"
+ #include "global.h"
+ #include "vpopmail.h"
++/*
+ #include "vpopmail_config.h"
++*/
+ #include "vauth.h"
+ 
+ #define TOKENS " :\t\n\r"

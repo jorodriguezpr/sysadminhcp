@@ -1,0 +1,30 @@
+# SysAdminHCP Dovecot vpopmail MySQL authentication — TEMPLATE.
+# __SYSADMINHCP_DB_PASS__ must be substituted by the installer with a real, persisted
+# password before this file is usable — see install-almalinux10.sh's existing
+# idempotency logic (reads the current password back out of an already-deployed copy of
+# this exact file before regenerating one, so re-running the installer never desyncs
+# Dovecot's stored credential from the real MySQL password and breaks every mailbox's
+# IMAP/POP3/webmail login at once).
+driver = mysql
+connect = host=127.0.0.1 dbname=vpopmail user=sysadminhcp password=__SYSADMINHCP_DB_PASS__
+
+default_pass_scheme = CRYPT
+
+password_query = \
+  SELECT pw_passwd AS password, \
+  CONCAT('/home/vpopmail/domains/', pw_domain, '/', pw_name) AS userdb_home, \
+  89 AS userdb_uid, \
+  89 AS userdb_gid, \
+  CONCAT('maildir:/home/vpopmail/domains/', pw_domain, '/', pw_name, '/Maildir') AS userdb_mail \
+  FROM vpopmail \
+  WHERE pw_name = '%n' AND pw_domain = '%d'
+
+user_query = \
+  SELECT CONCAT('/home/vpopmail/domains/', pw_domain, '/', pw_name) AS home, \
+  CONCAT('maildir:/home/vpopmail/domains/', pw_domain, '/', pw_name, '/Maildir') AS mail, \
+  89 AS uid, \
+  89 AS gid \
+  FROM vpopmail \
+  WHERE pw_name = '%n' AND pw_domain = '%d'
+
+iterate_query = SELECT CONCAT(pw_name, '@', pw_domain) AS user FROM vpopmail

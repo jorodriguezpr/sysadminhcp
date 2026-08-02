@@ -1,0 +1,20 @@
+#!/bin/sh
+# SysAdminHCP mail-stack — port 25 (public MX). SMTPAUTH="-" matches this fleet's existing
+# convention: no client AUTH offered here at all (spamdyke's own anti-spam checks apply
+# instead) — confirmed live on a real server today, this is deliberate, not an oversight.
+QMAILDUID=`id -u vpopmail`
+NOFILESGID=`id -g vpopmail`
+MAXSMTPD=`cat /var/qmail/control/concurrencyincoming 2>/dev/null || echo 20`
+SPAMDYKE="/usr/bin/spamdyke"
+SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"
+SMTPD="/var/qmail/bin/qmail-smtpd"
+TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
+HOSTNAME=`hostname`
+VCHKPW="/home/vpopmail/bin/vchkpw"
+export SMTPAUTH="-"
+
+exec /usr/bin/softlimit -m 256000000 \
+     /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
+     -u "$QMAILDUID" -g "$NOFILESGID" 0 smtp \
+     $SPAMDYKE --config-file $SPAMDYKE_CONF \
+     $SMTPD $VCHKPW /bin/true 2>&1

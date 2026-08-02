@@ -1,0 +1,21 @@
+#!/bin/sh
+# SysAdminHCP mail-stack — port 587 (authenticated submission). SMTPAUTH="!" requires TLS
+# before AUTH is even advertised — confirmed live today: this is the one setting that must
+# NOT be relaxed, even on an otherwise deliberately-permissive mail setup (e.g. legacy
+# Thunderbird profiles using "Connection security: None" for IMAP). Changing this to "-"
+# (matching smtp/run's value) was tried live and made things WORSE: AUTH became unavailable
+# entirely, even after a successful STARTTLS handshake — not just "less secure", genuinely
+# broken. Do not change this value without re-verifying live against a real server.
+QMAILDUID=`id -u vpopmail`
+NOFILESGID=`id -g vpopmail`
+MAXSMTPD=`cat /var/qmail/control/concurrencyincoming 2>/dev/null || echo 20`
+SMTPD="/var/qmail/bin/qmail-smtpd"
+TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
+HOSTNAME=`hostname`
+VCHKPW="/home/vpopmail/bin/vchkpw"
+export SMTPAUTH="!"
+
+exec /usr/bin/softlimit -m 128000000 \
+    /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
+    -u "$QMAILDUID" -g "$NOFILESGID" 0 587 \
+    $SMTPD $VCHKPW /bin/true 2>&1

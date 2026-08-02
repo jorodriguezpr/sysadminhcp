@@ -1,0 +1,73 @@
+--- ezmlm-0.53/ezmlm-get.c	1999-12-24 13:15:00.000000000 -0700
++++ ezmlm-0.53.new/ezmlm-get.c	2022-09-01 21:34:45.066593493 -0600
+@@ -87,7 +87,7 @@
+ unsigned long msgsize = 0L;	/* for digest accounting */
+ datetime_sec digwhen;		/* last digest */
+ 
+-char strnum[FMT_ULONG];
++extern char strnum[FMT_ULONG];
+ char szmsgnum[FMT_ULONG];
+ char date[DATE822FMT];
+ char boundary[COOKIE];
+@@ -121,7 +121,7 @@
+ 
+ int act = AC_NONE;		/* Action we do */
+ int flageditor = 0;		/* if we're invoked for within dir/editor */
+-struct stat st;
++extern struct stat st;
+ 
+ int flaglocked = 0;		/* if directory is locked */
+ int flagarchived;		/* if list is archived */
+@@ -166,7 +166,7 @@
+ substdio ssindex;
+ char indexbuf[1024];
+ 
+-int fdlock;
++extern int fdlock;
+ 
+ void lockup()
+ /* lock unless locked */
+--- ezmlm-0.53/ezmlm-store.c	1999-12-24 13:15:01.000000000 -0700
++++ ezmlm-0.53.new/ezmlm-store.c	2022-09-01 21:35:15.831648520 -0600
+@@ -60,7 +60,7 @@
+ int pid;
+ int match;
+ 
+-char strnum[FMT_ULONG];
++extern char strnum[FMT_ULONG];
+ char date[DATE822FMT];
+ char hash[COOKIE];
+ char boundary[COOKIE];
+--- ezmlm-0.53/ezmlm-manage.c	1999-12-24 13:15:01.000000000 -0700
++++ ezmlm-0.53.new/ezmlm-manage.c	2022-09-01 21:35:38.499689065 -0600
+@@ -108,7 +108,7 @@
+ int match;
+ unsigned int max;
+ 
+-char strnum[FMT_ULONG];
++extern char strnum[FMT_ULONG];
+ char date[DATE822FMT];
+ char hash[COOKIE];
+ char boundary[COOKIE];
+--- ezmlm-0.53/ezmlm-send.c	1999-12-24 13:15:00.000000000 -0700
++++ ezmlm-0.53.new/ezmlm-send.c	2022-09-01 21:35:57.910723784 -0600
+@@ -50,7 +50,7 @@
+ substdio ssindexn;
+ char indexnbuf[1024];
+ 
+-char strnum[FMT_ULONG];
++extern char strnum[FMT_ULONG];
+ char szmsgnum[FMT_ULONG];
+ char hash[HASHLEN];
+ 
+--- ezmlm-0.53/ezmlm-list.c	1999-12-24 13:15:00.000000000 -0700
++++ ezmlm-0.53.new/ezmlm-list.c	2022-09-01 21:36:16.011756163 -0600
+@@ -16,7 +16,7 @@
+ 
+ void *psql = (void *) 0;
+ 
+-char strnum[FMT_ULONG];
++extern char strnum[FMT_ULONG];
+ 
+ void die_write()
+ {

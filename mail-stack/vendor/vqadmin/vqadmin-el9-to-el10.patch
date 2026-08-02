@@ -1,0 +1,57 @@
+--- vqadmin-2.3.7/configure.in	2025-07-21 15:09:04.654115782 -0600
++++ vqadmin-2.3.7.new/configure.in	2025-07-21 15:10:25.757278545 -0600
+@@ -65,6 +65,8 @@
+ #include <stdio.h>
+ #include <pwd.h>
+ #include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
+ 
+ int main()
+ {
+--- vqadmin-2.3.7/user.c      2025-09-12 17:18:53.904733976 -0600
++++ vqadmin-2.3.7/user.c.new  2025-09-12 17:18:34.233693279 -0600
+@@ -47,8 +47,8 @@
+ void del_user()
+ {
+  char *eaddr = NULL;
+- static char user[156];
+- static char domain[156];
++ static char user[5000];
++ static char domain[5000];
+  int   ret;
+
+   if (!(acl_features & ACL_USER_DELETE)) {
+@@ -81,8 +81,8 @@
+ void view_user()
+ {
+  char *eaddr = NULL;
+- static char user[156];
+- static char domain[156];
++ static char user[5000];
++ static char domain[5000];
+  struct vqpasswd *vpw;
+
+   if (!(acl_features & ACL_USER_VIEW)) {
+@@ -114,8 +114,8 @@
+ void mod_user()
+ {
+  char *eaddr = NULL;
+- static char user[156];
+- static char domain[156];
++ static char user[5000];
++ static char domain[5000];
+  char *gecos;
+  char *passwd;
+  char *shell;
+@@ -573,8 +573,8 @@
+ void add_user()
+ {
+  char *eaddr = NULL;
+- static char user[156];
+- static char domain[156];
++ static char user[5000];
++ static char domain[5000];
+  char *gecos;
+  char *passwd;
+  char *shell;

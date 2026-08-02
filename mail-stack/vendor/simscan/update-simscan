@@ -1,0 +1,28 @@
+#!/bin/sh
+# script to update simscan cdb files
+# invoked when clamav, spamassassin are updated
+# 03/25/12 shubes - created from qmailctl script
+
+me=${0##*/}
+myver=v0.1
+bindir=/var/qmail/bin
+ctldir=/var/qmail/control
+simscanmk=$bindir/simscanmk
+simcontrol=$ctldir/simcontrol
+
+if [ -f $simscanmk ]; then
+  $simscanmk -g 2>/dev/null
+# echo "$me $myver - reloaded $ctldir/simversions.cdb"
+  if [ -f $simcontrol ] ; then
+    $simscanmk
+#   echo "$me $myver - reloaded $simcontrol.cdb"
+  else
+    echo "$me $myver - $simcontrol not found"
+    exit 2
+  fi
+else
+  echo "$me $myver - $simscanmk not found"
+  exit 1
+fi
+
+exit 0 

@@ -1,0 +1,43 @@
+diff -Nuar simscan-1.4.0/simscan.c simscan-1.4.0.new/simscan.c
+--- simscan-1.4.0/simscan.c	2025-07-21 17:22:40.721313488 -0600
++++ simscan-1.4.0.new/simscan.c	2025-07-21 17:25:31.833659154 -0600
+@@ -1507,7 +1507,7 @@
+     return(0);
+   }
+ 
+-  int fret;
++  char *fret;
+   int readno = 0;
+   int xclass = 0;
+   InHeaders=1;
+--- simscan-1.4.0/simscan.c     2025-08-29 10:26:21.694954042 -0600
++++ simscan-1.4.0.new/simscan.c 2025-08-29 10:20:48.362387835 -0600
+@@ -1312,7 +1312,7 @@
+     return(-1);
+   }
+   if ( DebugFlag > 0 ) {
+-    fprintf(stderr, " simscan:[%d]: rspamc done\n",getppid());
++    fprintf(stderr, "simscan:[%d]: rspamc done\n",getppid());
+   }
+
+   /* check if the child died on a signal */
+@@ -2786,16 +2786,16 @@
+     reqhits = ReqHits;
+     if ( PerDomainHits == 1 && filter == 'S' ) reqhits = PDHits;
+     if ( filter != 'D' )
+-       fprintf(stderr, "simscan:[%d]:%s (%.2f/%.2f):%3.4fs:%s:%s:%s:%s",
++       fprintf(stderr, "simscan:[%d]: %s (%.2f/%.2f):%3.4fs:%s:%s:%s:%s",
+          getppid(), state, SpamHits,reqhits, utime, subject,
+          getenv("TCPREMOTEIP"), MailFrom, RcptTo[0]);
+     else
+-      fprintf(stderr, "simscan:[%d]:%s (%.4f/%.4f):%3.4fs:%s:%s:%s:%s",
++      fprintf(stderr, "simscan:[%d]: %s (%.4f/%.4f):%3.4fs:%s:%s:%s:%s",
+         getppid(), state, DSpamProbability,DSpamConf, utime, subject,
+         getenv("TCPREMOTEIP"), MailFrom, RcptTo[0]);
+ #endif
+   } else {
+-    fprintf(stderr, "simscan:[%d]:%s:%3.4fs:%s:%s:%s:%s",
++    fprintf(stderr, "simscan:[%d]: %s:%3.4fs:%s:%s:%s:%s",
+       getppid(),state,utime,subject,getenv("TCPREMOTEIP"),MailFrom,RcptTo[0]);
+   }
+

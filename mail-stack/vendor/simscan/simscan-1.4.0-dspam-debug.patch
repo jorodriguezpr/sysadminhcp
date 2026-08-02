@@ -1,0 +1,137 @@
+--- simscan-1.4.0.final/simscan.c	2021-05-21 09:49:05.979945000 -0600
++++ simscan-1.4.0.final/simscan.new.2.c	2021-05-21 12:42:19.069219413 -0600
+@@ -778,7 +778,7 @@
+ #ifdef ENABLE_PER_DOMAIN
+   if ( PerDomainDSpam == 1 ) {
+     if ( DebugFlag > 0 ) {
+-      fprintf(stderr, "simscan:[%d]: prepare for dspamc: %s\n",getppid(), message_name);
++      fprintf(stderr, "simscan:[%d]: prepare for dspam %s\n",getppid(), message_name);
+     }
+ #endif /* ENABLE_PER_DOMAIN */
+     /* re-open the file read only */
+@@ -1439,24 +1439,19 @@
+   }
+ 
+   if ( DebugFlag > 0 ) {
+-    fprintf(stderr, "simscan:[%d]: calling dspamc\n",getppid());
++    fprintf(stderr, "simscan:[%d]: calling dspam\n",getppid());
+   }
+ 
+   tmpbuf = malloc(strlen(DSPAM_ARGS)+1);
+   strcpy(tmpbuf, DSPAM_ARGS);
+ 
+-  /* setup the dspam args 
+-  dspam_args[0] = "dspam";
+-  dspam_args[1] = "--stdout";
+-  tmpstr = strtok(tmpbuf," ");
+-
+-  for(i=1;i<MAX_DSPAM_ARGS-1&&tmpstr!=NULL;++i,tmpstr=strtok(NULL," ")) {
+-    dspam_args[i] = tmpstr;
+-  }
+-  */
+-
+   i = 0;
+-  dspam_args[i++] = "dspamc";
++  if ( getenv("DSPAM_BIN")) {
++     dspam_args[i++] =  getenv("DSPAM_BIN");
++  }
++  else {
++     dspam_args[i++] = DSPAM;
++  }
+ 
+ #ifdef ENABLE_DSPAM_USER
+   if ( MaxRcptTo > 0 && strlen(dspamuser) == 0) {
+@@ -1479,7 +1474,7 @@
+   dspam_args[i++] = NULL;
+ 
+   if ( DebugFlag > 0 ) {
+-    fprintf(stderr, "simscan:[%d]: calling %s ",getppid(), DSPAM);
++    fprintf(stderr, "simscan:[%d]: calling %s ",getppid(), dspam_args[0]);
+     i=0;
+     while(dspam_args[i] != NULL){
+       fprintf(stderr, " %s", dspam_args[i]);
+@@ -1500,7 +1495,7 @@
+         close(pim[0]);
+         dup2(pim[1],1);
+         close(pim[1]);
+-        i = execve(DSPAM, dspam_args, 0);
++        i = execve(dspam_args[0], dspam_args, 0);
+ 	fprintf(stderr, "simscan:[%d]: execve returned %d/%d\n",getppid(), i, errno);
+         _exit(-1);
+     }
+@@ -1527,7 +1522,10 @@
+   while(1) {
+     fret = fgets(buffer,sizeof(buffer)-1,spamfs);
+     if (fret == NULL ) {
+-       if ( DebugFlag > 0 && readno == 0 ) fprintf(stderr, "simscan:[%d]: dspam (check_dspam) reading header line: %d, check dspam.conf perms\n",getppid(),readno);
++       if ( DebugFlag > 0 ) {
++          if ( readno == 0 ) fprintf(stderr, "simscan:[%d]: dspam (check_dspam) reading header line: %d, check dspam.conf perms\n",getppid(),readno);
++          else fprintf(stderr, "simscan:[%d]: dspam (check_dspam) finished reading email, lines: %d\n",getppid(),readno);
++       }
+        break;
+     } 
+     readno++;
+@@ -1538,7 +1536,12 @@
+        will dump the original email (dspam headers added) as many times
+        as users specified each delimited by 'X-Daemon-Classification'.
+     */
+-    if (strstr(buffer,"X-Daemon-Classification")) break;
++    if (strstr(buffer,"X-Daemon-Classification")) {
++      if ( DebugFlag > 0 ) {
++        fprintf(stderr, "simscan:[%d]: Dspam multiple user break: X-Daemon-Classification\n",getppid());
++      }
++      break;
++    }
+     write(spam_fd, buffer,strlen(buffer));
+     memset(buffer,0,sizeof(buffer));
+     got_data = 1;
+@@ -1548,21 +1551,30 @@
+   /* wait for dspam to finish */
+   if (waitpid(pid,&rmstat, 0) == -1) {
+     if ( DebugFlag > 0 ) {
+-      fprintf(stderr, "simscan:[%d]: Error waiting for dspamc\n",getppid());
++      fprintf(stderr, "simscan:[%d]: Error waiting for dspam\n",getppid());
+     }
+     return(-1);
+   }
+ 
++  if ( DebugFlag > 0 ) {
++    fprintf(stderr, "simscan:[%d]: Dspam finished\n",getppid());
++  }
++
+   /* check if the child died on a signal */
+   if ( WIFSIGNALED(rmstat) ) {
+     if ( DebugFlag > 0 ) {
+-      fprintf(stderr, "simscan:[%d]: dspamc child died on a signal\n",getppid());
++      fprintf(stderr, "simscan:[%d]: dspam child died on a signal\n",getppid());
+     }    
+     return(-1);
+   }
++
++  if ( DebugFlag > 0 ) {
++    fprintf(stderr, "simscan:[%d]: Dspam child did not die on signal\n",getppid());
++  }
++
+   if ( got_data == 0 ) {
+     if ( DebugFlag > 0 ) {
+-      fprintf(stderr, "simscan:[%d]: dspamc got no data from dspam\n",getppid());
++      fprintf(stderr, "simscan:[%d]: dspam got no data from dspam\n",getppid());
+     }
+     return(-1);
+   }
+@@ -2368,12 +2368,12 @@
+     }
+   } else if ( strncmp(spambuf, "X-DSPAM-Probability:", 19 ) == 0 ) {
+     DSpamProbability = atof(&spambuf[20]);
+-    fprintf(stderr,"simscan:[%d]: dspam (is_dspam) Probability:%f\n",getppid(),DSpamProbability);
++    if ( DebugFlag > 0 ) fprintf(stderr,"simscan:[%d]: dspam (is_dspam) Probability:%f\n",getppid(),DSpamProbability);
+   } else if ( strncmp(spambuf, "X-DSPAM-Confidence:", 19 ) == 0 ) {
+     DSpamConf = atof(&spambuf[19]);
+-    fprintf(stderr,"simscan:[%d]: dspam (is_dspam) Confidence:%f\n",getppid(),DSpamConf);
++    if ( DebugFlag > 0 ) fprintf(stderr,"simscan:[%d]: dspam (is_dspam) Confidence:%f\n",getppid(),DSpamConf);
+   } else if ( strncmp(spambuf, "Subject:", 8 ) == 0 ) {
+-    fprintf(stderr,"simscan:[%d]: dspam (is_dspam) Subject:%s\n",getppid(),Subject);
++    if ( DebugFlag > 0 ) fprintf(stderr,"simscan:[%d]: dspam (is_dspam) Subject:%s\n",getppid(),Subject);
+     strncpy(Subject, &spambuf[9], sizeof(Subject)-1);
+
+     /* replace : char with _ and null terminate on

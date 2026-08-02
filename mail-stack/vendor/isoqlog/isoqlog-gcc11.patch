@@ -1,0 +1,284 @@
+--- isoqlog/Dir.h	2004-04-08 15:34:37.000000000 -0600
++++ isoqlog/Dir.h	2022-08-04 08:17:10.298653279 -0600
+@@ -6,7 +6,7 @@
+ #define DIR_MODE 0755
+ 
+ 
+-int cur_year, cur_month, cur_day, cur_hour, cur_min, cur_sec;
++extern int cur_year, cur_month, cur_day, cur_hour, cur_min, cur_sec;
+ void openlogdir(char *);
+ int timeconvert(char *, int, int, int, int, int *);
+ void readSpecialLogFile(char *fn, int year, int month, int day);
+--- isoqlog/Global.h	2005-02-23 14:26:44.000000000 -0700
++++ isoqlog/Global.h	2022-08-04 08:10:11.081985940 -0600
+@@ -12,9 +12,9 @@
+         VALSIZE = 256
+ };
+ 
+-time_t secs;
+-time_t today ;
+-struct tm *t2;
++extern time_t secs;
++extern time_t today ;
++extern struct tm *t2;
+ 
+ 
+ 
+--- isoqlog/main.c	2004-09-22 10:56:34.000000000 -0600
++++ isoqlog/main.c	2022-08-04 08:30:54.115950326 -0600
+@@ -11,9 +11,9 @@
+ #include "Store.h"
+ #include "config.h" /* to use variables created by configure */
+ 
+-extern char langfile[VALSIZE]; 
+-extern char logtype[VALSIZE]; 
+-extern char logstore[VALSIZE]; 
++char langfile[VALSIZE]; 
++//char logtype[VALSIZE]; 
++char logstore[VALSIZE]; 
+ 
+ 
+ int main(int argc, char **argv)
+--- isoqlog/Parser.c	2005-02-22 10:16:24.000000000 -0700
++++ isoqlog/Parser.c	2022-08-04 08:28:53.908759563 -0600
+@@ -11,8 +11,8 @@
+ #include "loadconfig.h"
+ #include "Parser.h"
+ 
+-extern char hostname[VALSIZE];
+-extern char outputdir[VALSIZE];
++char hostname[VALSIZE];
++char outputdir[VALSIZE];
+ extern int cur_year, cur_month, cur_day;
+ char *months[13] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", NULL};
+ 
+--- isoqlog/Data.h	2003-02-04 01:35:42.000000000 -0700
++++ isoqlog/Data.h	2022-08-04 08:12:49.074242559 -0600
+@@ -21,7 +21,7 @@
+ };
+ 
+ /* Common Errors	*/
+-int errors[10];
++extern int errors[10];
+ 
+ typedef struct domain {
+ 	char domain[DOMAINSIZ];
+@@ -45,11 +45,11 @@
+ } globuser;
+ 
+ 
+-domain *domains[MAXDOMAIN];
+-globuser * globusers[MAXUSERS];
++extern domain *domains[MAXDOMAIN];
++extern globuser * globusers[MAXUSERS];
+ 
+ /* Total Stats - Mail Server Stats	*/
+-domain general;
++extern domain general;
+ 
+ int addDomain(char *);
+ int addUserToSortTab(user *);
+@@ -90,21 +90,19 @@
+ unsigned int hash(char *);
+ 
+ 
+-struct DomainsTab {
++extern struct DomainsTab {
+ 	int nval;
+ 	int max;
+ 	domain *alldomains;
+ } DomainsTab;
+ 
+-struct UsersTab {
++extern struct UsersTab {
+ 	int nval;
+ 	int max;
+ 	int *allusers;
+ } UsersTab;
+ 
+-
+-
+-struct SortDomain {
++extern struct SortDomain {
+ 	int nval;
+ 	int max;
+ 	int *allusers;
+--- isoqlog/Data.c	2004-04-10 03:00:30.000000000 -0600
++++ isoqlog/Data.c	2022-08-04 11:30:35.625275990 -0600
+@@ -6,6 +6,9 @@
+ 
+ #include "Data.h"
+ 
++domain general;
++globuser * globusers[MAXUSERS];
++
+ unsigned int hash(char *str)
+ {
+ 	unsigned int h;
+--- isoqlog/Store.h	2003-02-04 01:35:42.000000000 -0700
++++ isoqlog/Store.h	2022-08-04 08:15:23.606485530 -0600
+@@ -16,8 +16,8 @@
+ } hist;
+ 
+ 
+-struct hist mhist[MAXMONTHS];
+-struct hist dhist[MAXDAYS];
++extern struct hist mhist[MAXMONTHS];
++extern struct hist dhist[MAXDAYS];
+ 
+ /* Functions	*/
+ void storeHistData(char *, hist *, size_t);
+--- isoqlog/Store.c	2004-04-10 03:00:30.000000000 -0600
++++ isoqlog/Store.c	2022-08-04 08:26:09.395500898 -0600
+@@ -11,7 +11,9 @@
+ #include "Dir.h"
+ 
+ 
+-extern char logtype[128];
++char logtype[128];
++
++int cur_year, cur_month, cur_day, cur_hour, cur_min, cur_sec;
+ 
+ /* write hist[] array to the specified file	*/
+ void storeHistData(char *f, hist *h, size_t size)
+--- isoqlog/loadconfig.h	2004-04-08 15:34:38.000000000 -0600
++++ isoqlog/loadconfig.h	2022-08-04 08:14:10.099369958 -0600
+@@ -5,17 +5,17 @@
+ 
+ /* Configuration File - Specific Strings */
+ 
+-char outputdir[VALSIZE];
+-char logtype[VALSIZE];
+-char logstore[VALSIZE];
+-char domainsfile[VALSIZE];
+-char htmldir[VALSIZE];
+-char langfile[VALSIZE];
+-char hostname[VALSIZE];
+-int maxsender;
+-int maxreceiver;
+-int maxtotal;
+-int maxbyte;
++extern char outputdir[VALSIZE];
++extern char logtype[VALSIZE];
++extern char logstore[VALSIZE];
++extern char domainsfile[VALSIZE];
++extern char htmldir[VALSIZE];
++extern char langfile[VALSIZE];
++extern char hostname[VALSIZE];
++extern int maxsender;
++extern int maxreceiver;
++extern int maxtotal;
++extern int maxbyte;
+ 
+ int removespaces(char *, int);
+ void loadconfig(char *);
+--- isoqlog/loadconfig.c	2004-05-28 13:16:07.000000000 -0600
++++ isoqlog/loadconfig.c	2022-08-04 11:19:06.489116548 -0600
+@@ -14,6 +14,13 @@
+ #include "Dir.h"
+ #include "Parser.h"
+ 
++time_t today;
++char domainsfile[VALSIZE];
++char htmldir[VALSIZE];
++int maxtotal;
++int maxreceiver;
++int maxbyte;
++int maxsender;
+ 
+ void loadconfig(char *cfgfile)  /* load isoqlog configuration file */
+ {
+--- isoqlog/LangCfg.h	2003-02-04 01:35:42.000000000 -0700
++++ isoqlog/LangCfg.h	2022-08-04 08:19:30.779874170 -0600
+@@ -5,27 +5,27 @@
+ 
+ /* Language - Specific Strings	*/
+ 
+-char L_Average[VALSIZE];
+-char L_Creationtime[VALSIZE];
+-char L_Daily[VALSIZE];
+-char L_Day[VALSIZE];
+-char L_Domain[VALSIZE];
+-char L_Encoding[VALSIZE];
+-char L_Mail[VALSIZE];
+-char L_Main_Page[VALSIZE];
+-char L_Month[VALSIZE];
+-char L_Monthly[VALSIZE];
+-char L_Number[VALSIZE];
+-char L_Receiver[VALSIZE];
+-char L_Received[VALSIZE];
+-char L_Sender[VALSIZE];
+-char L_Sent[VALSIZE];
+-char L_Size[VALSIZE];
+-char L_Stats[VALSIZE];
+-char L_Top[VALSIZE];
+-char L_Total[VALSIZE];
+-char L_Yearly[VALSIZE];
+-char L_Year[VALSIZE];
++extern char L_Average[VALSIZE];
++extern char L_Creationtime[VALSIZE];
++extern char L_Daily[VALSIZE];
++extern char L_Day[VALSIZE];
++extern char L_Domain[VALSIZE];
++extern char L_Encoding[VALSIZE];
++extern char L_Mail[VALSIZE];
++extern char L_Main_Page[VALSIZE];
++extern char L_Month[VALSIZE];
++extern char L_Monthly[VALSIZE];
++extern char L_Number[VALSIZE];
++extern char L_Receiver[VALSIZE];
++extern char L_Received[VALSIZE];
++extern char L_Sender[VALSIZE];
++extern char L_Sent[VALSIZE];
++extern char L_Size[VALSIZE];
++extern char L_Stats[VALSIZE];
++extern char L_Top[VALSIZE];
++extern char L_Total[VALSIZE];
++extern char L_Yearly[VALSIZE];
++extern char L_Year[VALSIZE];
+ 
+ void loadLang(char *);
+ 
+--- isoqlog/LangCfg.c	2004-05-28 03:01:15.000000000 -0600
++++ isoqlog/LangCfg.c	2022-08-04 11:51:44.664411099 -0600
+@@ -10,7 +10,27 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ 
+-
++char L_Average[VALSIZE];
++char L_Creationtime[VALSIZE];
++char L_Daily[VALSIZE];
++char L_Day[VALSIZE];
++char L_Domain[VALSIZE];
++char L_Encoding[VALSIZE];
++char L_Mail[VALSIZE];
++char L_Main_Page[VALSIZE];
++char L_Month[VALSIZE];
++char L_Monthly[VALSIZE];
++char L_Number[VALSIZE];
++char L_Receiver[VALSIZE];
++char L_Received[VALSIZE];
++char L_Sender[VALSIZE];
++char L_Sent[VALSIZE];
++char L_Size[VALSIZE];
++char L_Stats[VALSIZE];
++char L_Top[VALSIZE];
++char L_Total[VALSIZE];
++char L_Yearly[VALSIZE];
++char L_Year[VALSIZE];
+ 
+ void loadLang(char *langfile) 
+ {
+--- isoqlog/Html.c	2004-05-28 15:49:27.000000000 -0600
++++ isoqlog/Html.c	2022-08-04 11:48:26.364077464 -0600
+@@ -46,6 +46,9 @@
+ extern char L_Year[VALSIZE];
+ extern char L_Encoding[VALSIZE];
+ 
++struct SortDomain SortDomain;
++struct DomainsTab DomainsTab;
++
+ void addFooter(FILE *fp)
+ {
+ 	fprintf(fp, "<p><font face='Verdana, Arial, Helvetica, sans-serif' size='2' color='#666600'>"

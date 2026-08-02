@@ -1,0 +1,134 @@
+--- rblsmtpd.c	2007-01-14 12:42:22.000000000 +0100
++++ ../ucspi-tcp-0.88/rblsmtpd.c	2007-01-14 12:48:10.000000000 +0100
+@@ -55,6 +55,7 @@
+ 
+ int decision = 0; /* 0 undecided, 1 accept, 2 reject, 3 bounce */
+ static stralloc text; /* defined if decision is 2 or 3 */
++char *lastrbl;
+ 
+ static stralloc tmp;
+ 
+@@ -153,10 +154,25 @@
+ , { 0, reject, 0 }
+ } ;
+ 
++void put_log(char *s, int len) {
++  int i;
++  buffer_puts(buffer_2,"rblsmtpd: ");
++  buffer_puts(buffer_2,ip_env);
++  buffer_puts(buffer_2," pid ");
++  buffer_put(buffer_2,strnum,fmt_ulong(strnum,getpid()));
++  buffer_puts(buffer_2,": ");
++  for (i = 0;i < len;++i)
++    if ((s[i] < 32) || (s[i] > 126))
++      s[i] = '?';
++  buffer_put(buffer_2,s,len);
++  buffer_puts(buffer_2,"\n");
++  buffer_flush(buffer_2);
++}
++
++
+ void rblsmtpd(void)
+ {
+   int i;
+-
+   if (flagmustnotbounce || (decision == 2)) {
+     if (!stralloc_copys(&message,"451 ")) nomem();
+   }
+@@ -165,19 +181,8 @@
+ 
+   if (text.len > 500) text.len = 500;
+   if (!stralloc_cat(&message,&text)) nomem();
+-  for (i = 0;i < message.len;++i)
+-    if ((message.s[i] < 32) || (message.s[i] > 126))
+-      message.s[i] = '?';
+-  
+-  buffer_puts(buffer_2,"rblsmtpd: ");
+-  buffer_puts(buffer_2,ip_env);
+-  buffer_puts(buffer_2," pid ");
+-  buffer_put(buffer_2,strnum,fmt_ulong(strnum,getpid()));
+-  buffer_puts(buffer_2,": ");
+-  buffer_put(buffer_2,message.s,message.len);
+-  buffer_puts(buffer_2,"\n");
+-  buffer_flush(buffer_2);
+ 
++  put_log(message.s,message.len);
+   if (!stralloc_cats(&message,"\r\n")) nomem();
+ 
+   if (!timeout)
+@@ -191,11 +196,27 @@
+   _exit(0);
+ }
+ 
++int ARGC;   char **ARGV;  char **ENVP;
++
++void run() {
++ pathexec_run(*ARGV,ARGV,ENVP);
++ strerr_die4sys(111,FATAL,"unable to run ",*ARGV,": ");
++}
++
++void timeout_run() {
++	static stralloc log_text;
++    	if (!stralloc_copys(&log_text,"timeout while waiting for : ")) nomem();
++    	if (!stralloc_cats(&log_text,lastrbl)) nomem();
++	put_log(log_text.s,log_text.len);
++	run();
++}
++
+ main(int argc,char **argv,char **envp)
+ {
+   int flagwantdefaultrbl = 1;
+   char *x;
+   int opt;
++  unsigned long Timeout=0;
+ 
+   ip_init();
+ 
+@@ -212,6 +233,25 @@
+       decision = 2;
+     }
+   }
++  if (!decision) {
++    x = env_get("RBLTIMEOUT");
++   if (x) scan_ulong(x,&Timeout);
++  }
++  ARGC=argc;   ARGV=argv;   ENVP=envp;
++
++
++  while ((opt = getopt(ARGC,ARGV,"bBcCt:r:a:")) != opteof)
++    switch(opt) {
++      case 'b': case 'B': case 'c': case 'C':
++     case 't': case 'r': case 'a': break;
++     default: usage();
++   }
++
++  ARGV += optind;
++  if (!*ARGV) usage();
++
++  if (Timeout) { sig_catch(sig_alarm,timeout_run); alarm(Timeout); }
++  optind = 1;
+ 
+   while ((opt = getopt(argc,argv,"bBcCt:r:a:")) != opteof)
+     switch(opt) {
+@@ -220,17 +260,14 @@
+       case 'c': flagfailclosed = 1; break;
+       case 'C': flagfailclosed = 0; break;
+       case 't': scan_ulong(optarg,&timeout); break;
+-      case 'r': rbl(optarg); flagwantdefaultrbl = 0; break;
+-      case 'a': antirbl(optarg); break;
++      case 'r': lastrbl=optarg;rbl(optarg); flagwantdefaultrbl = 0; break;
++      case 'a': lastrbl=optarg;antirbl(optarg); break;
+       default: usage();
+     }
+ 
+-  argv += optind;
+-  if (!*argv) usage();
+ 
++  if (Timeout) { alarm(0); sig_uncatch(sig_alarm); }
+   if (flagwantdefaultrbl) rbl("rbl.maps.vix.com");
+   if (decision >= 2) rblsmtpd();
+-
+-  pathexec_run(*argv,argv,envp);
+-  strerr_die4sys(111,FATAL,"unable to run ",*argv,": ");
++  run();
+ }

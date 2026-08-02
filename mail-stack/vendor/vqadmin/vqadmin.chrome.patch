@@ -1,0 +1,23 @@
+--- lang-old.c	2012-08-04 01:09:12.788299596 +0000
++++ lang.c	2012-08-04 02:02:47.791755439 +0000
+@@ -25,6 +25,9 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++
++#include <vpopmail.h>
++
+ #include "global.h"
+ #include "vauth.h"
+ 
+@@ -70,6 +73,10 @@
+  char tmpfile[MAX_TMPBUF];
+  struct stat mystat;
+ 
++  /* Lowercase the language name to fix a bug where chrome users can't access
++   * the page. */
++  lowerit(lang);
++
+   /* only open files in the local directory */
+   if ( strstr(lang, ".") != NULL || strstr(lang, "/") != NULL ) {
+     global_error("invalid language file",1,0); 

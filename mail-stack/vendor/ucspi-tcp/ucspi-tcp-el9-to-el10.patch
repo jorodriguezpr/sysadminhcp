@@ -1,0 +1,618 @@
+diff -Nuar ucspi-tcp-0.88/addcr.c ucspi-tcp-0.88.new/addcr.c
+--- ucspi-tcp-0.88/addcr.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/addcr.c	2025-07-12 17:36:10.748496992 -0600
+@@ -1,7 +1,8 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ #include "exit.h"
+ 
+-main()
++int main()
+ {
+   register int n;
+   register char *x;
+diff -Nuar ucspi-tcp-0.88/alloc.c ucspi-tcp-0.88.new/alloc.c
+--- ucspi-tcp-0.88/alloc.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/alloc.c	2025-07-11 20:03:05.731971926 -0600
+@@ -1,6 +1,6 @@
+ #include "alloc.h"
+ #include "error.h"
+-extern char *malloc();
++extern void *malloc();
+ extern void free();
+ 
+ #define ALIGNMENT 16 /* XXX: assuming that this alignment is enough */
+@@ -12,7 +12,7 @@
+ static unsigned int avail = SPACE; /* multiple of ALIGNMENT; 0<=avail<=SPACE */
+ 
+ /*@null@*//*@out@*/char *alloc(n)
+-unsigned int n;
++long unsigned int n;
+ {
+   char *x;
+   n = ALIGNMENT + n - (n & (ALIGNMENT - 1)); /* XXX: could overflow */
+diff -Nuar ucspi-tcp-0.88/argv0.c ucspi-tcp-0.88.new/argv0.c
+--- ucspi-tcp-0.88/argv0.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/argv0.c	2025-07-12 17:04:00.936858932 -0600
+@@ -1,7 +1,7 @@
+ #include "pathexec.h"
+ #include "strerr.h"
+ 
+-main(int argc,char **argv,char **envp)
++int main(int argc,char **argv,char **envp)
+ {
+   if (argc < 3)
+     strerr_die1x(100,"argv0: usage: argv0 realname program [ arg ... ]");
+diff -Nuar ucspi-tcp-0.88/auto-str.c ucspi-tcp-0.88.new/auto-str.c
+--- ucspi-tcp-0.88/auto-str.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/auto-str.c	2025-07-12 19:38:03.771897808 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ #include "readwrite.h"
+ #include "exit.h"
+@@ -10,7 +11,7 @@
+   if (buffer_puts(&b,s) == -1) _exit(111);
+ }
+ 
+-main(int argc,char **argv)
++int main(int argc,char **argv)
+ {
+   char *name;
+   char *value;
+diff -Nuar ucspi-tcp-0.88/buffer_0.c ucspi-tcp-0.88.new/buffer_0.c
+--- ucspi-tcp-0.88/buffer_0.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer_0.c	2025-07-12 16:15:50.739737738 -0600
+@@ -1,7 +1,8 @@
++#include <sys/types.h>
+ #include "readwrite.h"
+ #include "buffer.h"
+ 
+-int buffer_0_read(fd,buf,len) int fd; char *buf; int len;
++ssize_t  buffer_0_read(fd,buf,len) int fd; char *buf; int len;
+ {
+   if (buffer_flush(buffer_1) == -1) return -1;
+   return read(fd,buf,len);
+diff -Nuar ucspi-tcp-0.88/buffer_1.c ucspi-tcp-0.88.new/buffer_1.c
+--- ucspi-tcp-0.88/buffer_1.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer_1.c	2025-07-12 16:17:59.944057907 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "readwrite.h"
+ #include "buffer.h"
+ 
+diff -Nuar ucspi-tcp-0.88/buffer_2.c ucspi-tcp-0.88.new/buffer_2.c
+--- ucspi-tcp-0.88/buffer_2.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer_2.c	2025-07-12 16:18:13.241090859 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "readwrite.h"
+ #include "buffer.h"
+ 
+diff -Nuar ucspi-tcp-0.88/buffer.c ucspi-tcp-0.88.new/buffer.c
+--- ucspi-tcp-0.88/buffer.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer.c	2025-07-11 08:26:24.759618012 -0600
+@@ -1,6 +1,7 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ 
+-void buffer_init(buffer *s,int (*op)(),int fd,char *buf,unsigned int len)
++void buffer_init(buffer *s,ssize_t(*op)(),int fd,char *buf,unsigned int len)
+ {
+   s->x = buf;
+   s->fd = fd;
+diff -Nuar ucspi-tcp-0.88/buffer_copy.c ucspi-tcp-0.88.new/buffer_copy.c
+--- ucspi-tcp-0.88/buffer_copy.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer_copy.c	2025-07-12 16:21:15.769543173 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ 
+ int buffer_copy(buffer *bout,buffer *bin)
+diff -Nuar ucspi-tcp-0.88/buffer_get.c ucspi-tcp-0.88.new/buffer_get.c
+--- ucspi-tcp-0.88/buffer_get.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer_get.c	2025-07-12 16:25:26.977162519 -0600
+@@ -1,8 +1,9 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ #include "byte.h"
+ #include "error.h"
+ 
+-static int oneread(int (*op)(),int fd,char *buf,unsigned int len)
++static int oneread(ssize_t (*op)(),int fd,char *buf,unsigned int len)
+ {
+   int r;
+ 
+diff -Nuar ucspi-tcp-0.88/buffer.h ucspi-tcp-0.88.new/buffer.h
+--- ucspi-tcp-0.88/buffer.h	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer.h	2025-07-11 08:27:49.135773896 -0600
+@@ -6,14 +6,14 @@
+   unsigned int p;
+   unsigned int n;
+   int fd;
+-  int (*op)();
++  ssize_t (*op)();
+ } buffer;
+ 
+ #define BUFFER_INIT(op,fd,buf,len) { (buf), 0, (len), (fd), (op) }
+ #define BUFFER_INSIZE 8192
+ #define BUFFER_OUTSIZE 8192
+ 
+-extern void buffer_init(buffer *,int (*)(),int,char *,unsigned int);
++extern void buffer_init(buffer *,ssize_t (*)(),int,char *,unsigned int);
+ 
+ extern int buffer_flush(buffer *);
+ extern int buffer_put(buffer *,char *,unsigned int);
+diff -Nuar ucspi-tcp-0.88/buffer_put.c ucspi-tcp-0.88.new/buffer_put.c
+--- ucspi-tcp-0.88/buffer_put.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/buffer_put.c	2025-07-12 16:26:48.535362723 -0600
+@@ -1,9 +1,10 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ #include "str.h"
+ #include "byte.h"
+ #include "error.h"
+ 
+-static int allwrite(int (*op)(),int fd,char *buf,unsigned int len)
++static int allwrite(ssize_t (*op)(),int fd,char *buf,unsigned int len)
+ {
+   int w;
+ 
+diff -Nuar ucspi-tcp-0.88/cdb_make.c ucspi-tcp-0.88.new/cdb_make.c
+--- ucspi-tcp-0.88/cdb_make.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/cdb_make.c	2025-07-11 08:19:57.531902608 -0600
+@@ -1,5 +1,7 @@
+ /* Public domain. */
+ 
++#include <sys/types.h>
++#include <unistd.h>
+ #include "readwrite.h"
+ #include "seek.h"
+ #include "error.h"
+diff -Nuar ucspi-tcp-0.88/chkshsgr.c ucspi-tcp-0.88.new/chkshsgr.c
+--- ucspi-tcp-0.88/chkshsgr.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/chkshsgr.c	2025-07-12 16:36:23.629774415 -0600
+@@ -1,8 +1,10 @@
++#include <unistd.h>
++#include <grp.h>
+ #include "exit.h"
+ 
+-main()
++int main()
+ {
+-  short x[4];
++  gid_t x[4];
+ 
+   x[0] = x[1] = 0;
+   if (getgroups(1,x) == 0) if (setgroups(1,x) == -1) _exit(1);
+diff -Nuar ucspi-tcp-0.88/commands.c ucspi-tcp-0.88.new/commands.c
+--- ucspi-tcp-0.88/commands.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/commands.c	2025-07-12 19:21:11.645229834 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ #include "stralloc.h"
+ #include "str.h"
+diff -Nuar ucspi-tcp-0.88/delcr.c ucspi-tcp-0.88.new/delcr.c
+--- ucspi-tcp-0.88/delcr.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/delcr.c	2025-07-12 19:16:19.309525741 -0600
+@@ -1,7 +1,8 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ #include "exit.h"
+ 
+-main()
++int main()
+ {
+   register int n;
+   register char *x;
+diff -Nuar ucspi-tcp-0.88/dns_random.c ucspi-tcp-0.88.new/dns_random.c
+--- ucspi-tcp-0.88/dns_random.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/dns_random.c	2025-07-11 08:21:53.006115947 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include "dns.h"
+ #include "taia.h"
+ #include "uint32.h"
+diff -Nuar ucspi-tcp-0.88/dns_rcrw.c ucspi-tcp-0.88.new/dns_rcrw.c
+--- ucspi-tcp-0.88/dns_rcrw.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/dns_rcrw.c	2025-07-11 08:22:22.270170010 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include "taia.h"
+ #include "env.h"
+ #include "byte.h"
+diff -Nuar ucspi-tcp-0.88/dns_transmit.c ucspi-tcp-0.88.new/dns_transmit.c
+--- ucspi-tcp-0.88/dns_transmit.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/dns_transmit.c	2025-07-11 08:24:59.561460604 -0600
+@@ -1,3 +1,5 @@
++#include <unistd.h>
++#include <sys/socket.h>
+ #include "socket.h"
+ #include "alloc.h"
+ #include "error.h"
+diff -Nuar ucspi-tcp-0.88/fd_copy.c ucspi-tcp-0.88.new/fd_copy.c
+--- ucspi-tcp-0.88/fd_copy.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/fd_copy.c	2025-07-12 16:28:50.016660925 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include <fcntl.h>
+ #include "fd.h"
+ 
+diff -Nuar ucspi-tcp-0.88/fd_move.c ucspi-tcp-0.88.new/fd_move.c
+--- ucspi-tcp-0.88/fd_move.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/fd_move.c	2025-07-12 16:29:13.061717493 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include "fd.h"
+ 
+ int fd_move(int to,int from)
+diff -Nuar ucspi-tcp-0.88/fixcrio.c ucspi-tcp-0.88.new/fixcrio.c
+--- ucspi-tcp-0.88/fixcrio.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/fixcrio.c	2025-07-12 19:19:12.387942606 -0600
+@@ -1,3 +1,6 @@
++#include <unistd.h>
++#include <sys/types.h>
++#include "fd.h"
+ #include "sig.h"
+ #include "buffer.h"
+ #include "strerr.h"
+@@ -126,7 +129,7 @@
+   _exit(0);
+ }
+ 
+-main(int argc,char **argv,char **envp)
++int main(int argc,char **argv,char **envp)
+ {
+   int piin[2];
+   int piout[2];
+diff -Nuar ucspi-tcp-0.88/getln2.c ucspi-tcp-0.88.new/getln2.c
+--- ucspi-tcp-0.88/getln2.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/getln2.c	2025-07-12 16:30:58.236975666 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "byte.h"
+ #include "getln.h"
+ 
+diff -Nuar ucspi-tcp-0.88/getln.c ucspi-tcp-0.88.new/getln.c
+--- ucspi-tcp-0.88/getln.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/getln.c	2025-07-12 16:30:15.790871474 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "byte.h"
+ #include "getln.h"
+ 
+diff -Nuar ucspi-tcp-0.88/hier.c ucspi-tcp-0.88.new/hier.c
+--- ucspi-tcp-0.88/hier.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/hier.c	2025-07-12 19:34:27.352215302 -0600
+@@ -1,5 +1,9 @@
+ #include "auto_home.h"
+ 
++void c(char *home,char *subdir,char *file,int uid,int gid,int mode);
++void h(char *home,int uid,int gid,int mode);
++void d(char *home,char *subdir,int uid,int gid,int mode);
++
+ void hier()
+ {
+   h(auto_home,-1,-1,02755);
+diff -Nuar ucspi-tcp-0.88/install.c ucspi-tcp-0.88.new/install.c
+--- ucspi-tcp-0.88/install.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/install.c	2025-07-12 19:23:54.521622121 -0600
+@@ -1,3 +1,6 @@
++#include <sys/stat.h>
++#include <sys/types.h>
++#include <unistd.h>
+ #include "buffer.h"
+ #include "strerr.h"
+ #include "error.h"
+@@ -137,7 +140,7 @@
+     strerr_die6sys(111,FATAL,"unable to chmod .../",subdir,"/",file,": ");
+ }
+ 
+-main()
++int main()
+ {
+   fdsourcedir = open_read(".");
+   if (fdsourcedir == -1)
+diff -Nuar ucspi-tcp-0.88/instcheck.c ucspi-tcp-0.88.new/instcheck.c
+--- ucspi-tcp-0.88/instcheck.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/instcheck.c	2025-07-12 19:37:09.081725337 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include "strerr.h"
+@@ -101,7 +102,7 @@
+   perm("",home,"/",file,S_IFREG,uid,gid,mode);
+ }
+ 
+-main()
++int main()
+ {
+   hier();
+   _exit(0);
+diff -Nuar ucspi-tcp-0.88/mconnect-io.c ucspi-tcp-0.88.new/mconnect-io.c
+--- ucspi-tcp-0.88/mconnect-io.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/mconnect-io.c	2025-07-12 17:35:21.858382769 -0600
+@@ -1,3 +1,5 @@
++#include <signal.h>
++#include <sys/types.h>
+ #include "sig.h"
+ #include "wait.h"
+ #include "fork.h"
+@@ -12,13 +14,13 @@
+ char inbuf[512];
+ buffer bin;
+ 
+-int myread(int fd,char *buf,int len)
++ssize_t myread(int fd,char *buf,int len)
+ {
+   buffer_flush(&bout);
+   return read(fd,buf,len);
+ }
+ 
+-main()
++int main()
+ {
+   int pid;
+   int wstat;
+diff -Nuar ucspi-tcp-0.88/pathexec_run.c ucspi-tcp-0.88.new/pathexec_run.c
+--- ucspi-tcp-0.88/pathexec_run.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/pathexec_run.c	2025-07-12 16:32:08.427147965 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include "error.h"
+ #include "stralloc.h"
+ #include "str.h"
+diff -Nuar ucspi-tcp-0.88/prot.c ucspi-tcp-0.88.new/prot.c
+--- ucspi-tcp-0.88/prot.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/prot.c	2025-07-12 16:37:34.366948051 -0600
+@@ -1,3 +1,5 @@
++#include <grp.h>
++#include <unistd.h>
+ #include "hasshsgr.h"
+ #include "prot.h"
+ 
+diff -Nuar ucspi-tcp-0.88/rblsmtpd.c ucspi-tcp-0.88.new/rblsmtpd.c
+--- ucspi-tcp-0.88/rblsmtpd.c	2025-07-10 17:14:13.445219840 -0600
++++ ucspi-tcp-0.88.new/rblsmtpd.c	2025-07-12 19:20:29.009127146 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include "byte.h"
+ #include "str.h"
+ #include "scan.h"
+@@ -211,7 +212,7 @@
+ 	run();
+ }
+ 
+-main(int argc,char **argv,char **envp)
++int main(int argc,char **argv,char **envp)
+ {
+   int flagwantdefaultrbl = 1;
+   char *x;
+diff -Nuar ucspi-tcp-0.88/readclose.c ucspi-tcp-0.88.new/readclose.c
+--- ucspi-tcp-0.88/readclose.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/readclose.c	2025-07-12 16:38:59.091156028 -0600
+@@ -1,3 +1,5 @@
++#include <unistd.h>
++#include <sys/types.h>
+ #include "readwrite.h"
+ #include "error.h"
+ #include "readclose.h"
+diff -Nuar ucspi-tcp-0.88/readwrite.h ucspi-tcp-0.88.new/readwrite.h
+--- ucspi-tcp-0.88/readwrite.h	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/readwrite.h	2025-07-10 20:37:04.110434626 -0600
+@@ -1,7 +1,7 @@
+ #ifndef READWRITE_H
+ #define READWRITE_H
+ 
+-extern int read();
+-extern int write();
++extern ssize_t read();
++extern ssize_t write();
+ 
+ #endif
+diff -Nuar ucspi-tcp-0.88/recordio.c ucspi-tcp-0.88.new/recordio.c
+--- ucspi-tcp-0.88/recordio.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/recordio.c	2025-07-12 17:07:08.018310503 -0600
+@@ -1,3 +1,6 @@
++#include <unistd.h>
++#include <sys/types.h>
++#include "fd.h"
+ #include "sig.h"
+ #include "buffer.h"
+ #include "strerr.h"
+@@ -141,7 +144,7 @@
+   _exit(0);
+ }
+ 
+-main(int argc,char **argv,char **envp)
++int main(int argc,char **argv,char **envp)
+ {
+   int piin[2];
+   int piout[2];
+diff -Nuar ucspi-tcp-0.88/remoteinfo.c ucspi-tcp-0.88.new/remoteinfo.c
+--- ucspi-tcp-0.88/remoteinfo.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/remoteinfo.c	2025-07-11 08:19:02.474800888 -0600
+@@ -1,3 +1,5 @@
++#include <sys/types.h>
++#include <unistd.h>
+ #include "fmt.h"
+ #include "buffer.h"
+ #include "socket.h"
+@@ -9,7 +11,7 @@
+ static struct taia now;
+ static struct taia deadline;
+ 
+-static int mywrite(int fd,char *buf,int len)
++static ssize_t mywrite(int fd,char *buf,int len)
+ {
+   iopause_fd x;
+ 
+@@ -27,7 +29,7 @@
+   return write(fd,buf,len);
+ }
+ 
+-static int myread(int fd,char *buf,int len)
++static ssize_t  myread(int fd,char *buf,int len)
+ {
+   iopause_fd x;
+ 
+diff -Nuar ucspi-tcp-0.88/seek_set.c ucspi-tcp-0.88.new/seek_set.c
+--- ucspi-tcp-0.88/seek_set.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/seek_set.c	2025-07-12 16:40:00.685307222 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include <sys/types.h>
+ #include "seek.h"
+ 
+diff -Nuar ucspi-tcp-0.88/sgetopt.c ucspi-tcp-0.88.new/sgetopt.c
+--- ucspi-tcp-0.88/sgetopt.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/sgetopt.c	2025-07-12 16:41:07.606472749 -0600
+@@ -10,6 +10,7 @@
+ Documentation in sgetopt.3.
+ */
+ 
++#include <sys/types.h>
+ #include "buffer.h"
+ #define SGETOPTNOSHORT
+ #include "sgetopt.h"
+diff -Nuar ucspi-tcp-0.88/sig_pause.c ucspi-tcp-0.88.new/sig_pause.c
+--- ucspi-tcp-0.88/sig_pause.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/sig_pause.c	2025-07-12 16:45:45.210162736 -0600
+@@ -4,11 +4,7 @@
+ 
+ void sig_pause(void)
+ {
+-#ifdef HASSIGPROCMASK
+   sigset_t ss;
+   sigemptyset(&ss);
+   sigsuspend(&ss);
+-#else
+-  sigpause(0);
+-#endif
+ }
+diff -Nuar ucspi-tcp-0.88/socket_tcp.c ucspi-tcp-0.88.new/socket_tcp.c
+--- ucspi-tcp-0.88/socket_tcp.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/socket_tcp.c	2025-07-12 16:46:23.725258468 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/param.h>
+ #include <sys/socket.h>
+diff -Nuar ucspi-tcp-0.88/socket_udp.c ucspi-tcp-0.88.new/socket_udp.c
+--- ucspi-tcp-0.88/socket_udp.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/socket_udp.c	2025-07-12 16:46:53.621332776 -0600
+@@ -1,3 +1,4 @@
++#include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/param.h>
+ #include <sys/socket.h>
+diff -Nuar ucspi-tcp-0.88/strerr_die.c ucspi-tcp-0.88.new/strerr_die.c
+--- ucspi-tcp-0.88/strerr_die.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/strerr_die.c	2025-07-12 16:47:37.997443073 -0600
+@@ -1,3 +1,4 @@
++#include <sys/types.h>
+ #include "buffer.h"
+ #include "exit.h"
+ #include "strerr.h"
+diff -Nuar ucspi-tcp-0.88/tcpclient.c ucspi-tcp-0.88.new/tcpclient.c
+--- ucspi-tcp-0.88/tcpclient.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/tcpclient.c	2025-07-12 17:09:58.921723020 -0600
+@@ -1,6 +1,7 @@
+ #include <sys/types.h>
+ #include <sys/param.h>
+ #include <netdb.h>
++#include <unistd.h>
+ #include "sig.h"
+ #include "exit.h"
+ #include "sgetopt.h"
+@@ -65,7 +66,9 @@
+ 
+ char seed[128];
+ 
+-main(int argc,char **argv)
++int socket_tcpnodelay(int s);
++
++int main(int argc,char **argv)
+ {
+   unsigned long u;
+   int opt;
+diff -Nuar ucspi-tcp-0.88/tcprules.c ucspi-tcp-0.88.new/tcprules.c
+--- ucspi-tcp-0.88/tcprules.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/tcprules.c	2025-07-12 17:00:43.215381677 -0600
+@@ -1,3 +1,6 @@
++#include <stdio.h>
++#include <unistd.h>
++#include <sys/types.h>
+ #include "strerr.h"
+ #include "stralloc.h"
+ #include "getln.h"
+@@ -42,6 +45,7 @@
+ 
+ char strnum[FMT_ULONG];
+ stralloc sanum = {0};
++unsigned int scan_ulong(register char *s,register unsigned long *u);
+ 
+ void getnum(char *buf,int len,unsigned long *u)
+ {
+@@ -87,7 +91,9 @@
+   if (cdb_make_add(&c,address.s,address.len,data.s,data.len) == -1) die_write();
+ }
+ 
+-main(int argc,char **argv)
++int open_trunc(char *fn);
++
++int main(int argc,char **argv)
+ {
+   int colon;
+   char *x;
+diff -Nuar ucspi-tcp-0.88/tcprulescheck.c ucspi-tcp-0.88.new/tcprulescheck.c
+--- ucspi-tcp-0.88/tcprulescheck.c	2000-03-18 08:18:42.000000000 -0700
++++ ucspi-tcp-0.88.new/tcprulescheck.c	2025-07-12 17:03:26.842776633 -0600
+@@ -1,3 +1,6 @@
++#include <unistd.h>
++#include <sys/types.h>
++#include "open.h"
+ #include "byte.h"
+ #include "buffer.h"
+ #include "strerr.h"
+@@ -31,7 +34,7 @@
+   _exit(0);
+ }
+ 
+-main(int argc,char **argv)
++int main(int argc,char **argv)
+ {
+   char *fnrules;
+   int fd;
+diff -Nuar ucspi-tcp-0.88/tcpserver.c ucspi-tcp-0.88.new/tcpserver.c
+--- ucspi-tcp-0.88/tcpserver.c	2025-07-10 17:14:19.542234120 -0600
++++ ucspi-tcp-0.88.new/tcpserver.c	2025-07-11 07:48:27.302397605 -0600
+@@ -6,6 +6,7 @@
+ #include <sys/param.h>
+ #include <netdb.h>
+ #include <stdlib.h>
++#include <unistd.h>
+ #ifdef NO_GETLOADAVG
+ #include <unistd.h>
+ #endif
+@@ -105,6 +106,9 @@
+ long maxconnc = -1;
+ char *diemsg = "";
+ 
++int socket_ipoptionskill(int s);
++int socket_tcpnodelay(int s);
++
+ void drop_nomem(void)
+ {
+   strerr_die2sys(111,DROP,"out of memory");
+@@ -421,7 +425,7 @@
+   }
+ }
+ 
+-main(int argc,char **argv)
++int main(int argc,char **argv)
+ {
+   char *hostname;
+   char *portname;

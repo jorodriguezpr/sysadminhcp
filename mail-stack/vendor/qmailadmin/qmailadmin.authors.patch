@@ -1,0 +1,12 @@
+--- qmailadmin-1.2.16/AUTHORS	2011-02-22 20:45:48.000000000 -0700
++++ qmailadmin-1.2.16/AUTHORS.new	2020-05-14 08:28:36.466903222 -0600
+@@ -3,6 +3,9 @@
+ 
+   <http://sourceforge.net/projects/qmailadmin/>
+ 
++"Muhammad Tahnan Al Anas" <tahnan@gmail.com> https://hostingta.com
++  - New Qmailadmin interface
++
+ "Ken Jones" <kbo@inter7.com>  
+   QmailAdmin maintainer 
+ 

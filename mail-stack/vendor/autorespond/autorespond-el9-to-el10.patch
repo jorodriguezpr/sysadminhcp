@@ -1,0 +1,36 @@
+diff -Nuar autorespond-2.0.5/autorespond.c autorespond-2.0.5.new/autorespond.c
+--- autorespond-2.0.5/autorespond.c	2003-09-18 14:17:57.000000000 -0600
++++ autorespond-2.0.5.new/autorespond.c	2025-07-17 08:07:37.215880954 -0600
+@@ -371,12 +371,12 @@
+ 	}
+ }
+ 
+-
++char *strcasestr1( char *_s1, char *_s2 );
+ 
+ /*********************************************************
+ ** find string in string - ignore case **/
+ 
+-char *strcasestr( char *_s1, char *_s2 )
++char *strcasestr1( char *_s1, char *_s2 )
+ {
+ 	char *s1;
+ 	char *s2;
+@@ -419,7 +419,7 @@
+ 			if ( ss == (char *)NULL )
+ 				return act_header->content;
+ 
+-			if ( strcasestr( act_header->content, ss ) != (char *)NULL )
++			if ( strcasestr1( act_header->content, ss ) != (char *)NULL )
+ 				return act_header->content;
+ 
+ 			return (char *)NULL;
+@@ -440,7 +440,7 @@
+ 	if ( (s = inspect_headers( "Content-Type", (char *)NULL )) == (char *)NULL) 
+ 		return (char *)NULL;
+ 
+-	if ( (r = strcasestr( s, "boundary=" )) == (char *)NULL)
++	if ( (r = strcasestr1( s, "boundary=" )) == (char *)NULL)
+ 		return (char *)NULL;
+ 	
+ 	*(r+strlen(r)-2) = '\0'; /* delete quote at the end */

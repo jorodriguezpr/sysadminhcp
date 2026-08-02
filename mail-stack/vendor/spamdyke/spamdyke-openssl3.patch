@@ -1,0 +1,334 @@
+--- spamdyke-5.0.1/spamdyke/configuration.c	2015-04-29 18:53:36.000000000 -0600
++++ spamdyke-5.0.1.newer/spamdyke/configuration.c	2024-04-27 13:17:07.301287736 -0600
+@@ -2958,6 +2958,24 @@
+       " Ignored if \"tls-level\" is none. Default: " DEFAULT_TLS_CIPHER_LIST
+     },
+     {
++      CONFIG_TYPE_OPTION_SINGLETON,
++      CONFIG_ACCESS_NONE,
++      CONFIG_LOCATION_CMDLINE | CONFIG_LOCATION_GLOBAL_FILE,
++      { "tls-ciphersuites", required_argument, NULL, -1 },
++      { .string_value = DEFAULT_TLS_CIPHERSUITES },
++      { .string_value = DEFAULT_TLS_CIPHERSUITES },
++      { .get_string = CONFIG_ACCESSOR_STRING(tls_ciphersuites) },
++      { .max_strlen = 0 },
++      FILTER_DECISION_UNDECIDED,
++      FILTER_GRACE_NONE,
++      NULL,
++      NULL,
++      NULL,
++      "STRING",
++      "Sets the list of supported TLS ciphersuits in the OpenSSL3 library before accepting any TLS connections. For most situations, the default cipher list is acceptable."
++      " Ignored if \"tls-level\" is none. Default: " DEFAULT_TLS_CIPHERSUITES
++    },
++    {
+       CONFIG_TYPE_FILE_SINGLETON,
+       CONFIG_ACCESS_READ_ONLY,
+       CONFIG_LOCATION_CMDLINE | CONFIG_LOCATION_GLOBAL_FILE,
+--- spamdyke-5.0.1/spamdyke/configure	2015-04-29 18:53:36.000000000 -0600
++++ spamdyke-5.0.1.newer/spamdyke/configure	2024-04-27 13:17:07.302287795 -0600
+@@ -3988,9 +3988,9 @@
+ See \`config.log' for more details" "$LINENO" 5; }
+ fi
+ 
+-                         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing SSL_library_init" >&5
+-$as_echo_n "checking for library containing SSL_library_init... " >&6; }
+-if ${ac_cv_search_SSL_library_init+:} false; then :
++                         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing OPENSSL_init_ssl" >&5
++$as_echo_n "checking for library containing OPENSSL_init_ssl... " >&6; }
++if ${ac_cv_search_OPENSSL_init_ssl+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+   ac_func_search_save_LIBS=$LIBS
+@@ -4003,11 +4003,11 @@
+ #ifdef __cplusplus
+ extern "C"
+ #endif
+-char SSL_library_init ();
++char OPENSSL_init_ssl ();
+ int
+ main ()
+ {
+-return SSL_library_init ();
++return OPENSSL_init_ssl ();
+   ;
+   return 0;
+ }
+@@ -4020,25 +4020,25 @@
+     LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+   fi
+   if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_search_SSL_library_init=$ac_res
++  ac_cv_search_OPENSSL_init_ssl=$ac_res
+ fi
+ rm -f core conftest.err conftest.$ac_objext \
+     conftest$ac_exeext
+-  if ${ac_cv_search_SSL_library_init+:} false; then :
++  if ${ac_cv_search_OPENSSL_init_ssl+:} false; then :
+   break
+ fi
+ done
+-if ${ac_cv_search_SSL_library_init+:} false; then :
++if ${ac_cv_search_OPENSSL_init_ssl+:} false; then :
+ 
+ else
+-  ac_cv_search_SSL_library_init=no
++  ac_cv_search_OPENSSL_init_ssl=no
+ fi
+ rm conftest.$ac_ext
+ LIBS=$ac_func_search_save_LIBS
+ fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SSL_library_init" >&5
+-$as_echo "$ac_cv_search_SSL_library_init" >&6; }
+-ac_res=$ac_cv_search_SSL_library_init
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_OPENSSL_init_ssl" >&5
++$as_echo "$ac_cv_search_OPENSSL_init_ssl" >&6; }
++ac_res=$ac_cv_search_OPENSSL_init_ssl
+ if test "$ac_res" != no; then :
+   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+    LIBS="$LIBS -lssl"
+--- spamdyke-5.0.1/spamdyke/configure.ac	2015-04-29 18:53:36.000000000 -0600
++++ spamdyke-5.0.1.newer/spamdyke/configure.ac	2024-04-27 13:17:07.302287795 -0600
+@@ -149,7 +149,7 @@
+                        [
+                          AC_MSG_RESULT([yes])
+                          AC_SEARCH_LIBS([RSA_sign], [ssl crypto], [], [ AC_MSG_FAILURE([--enable-tls was given but OpenSSL was not found]) ])
+-                         AC_SEARCH_LIBS([SSL_library_init],
++                         AC_SEARCH_LIBS([OPENSSL_init_ssl],
+                                         [ssl crypto],
+                                         [ LIBS="$LIBS -lssl"
+                                           AC_DEFINE([HAVE_LIBSSL], [1])
+--- spamdyke-5.0.1/spamdyke/spamdyke.c	2015-04-29 18:53:36.000000000 -0600
++++ spamdyke-5.0.1.newer/spamdyke/spamdyke.c	2024-04-27 13:17:07.303287854 -0600
+@@ -860,7 +860,7 @@
+         return_value = FILTER_FLAG_INTERCEPT | FILTER_FLAG_CHILD_QUIT;
+ 
+         for (i = 0; i < current_settings->num_recipients; i++)
+-          SPAMDYKE_LOG_INFO(current_settings, "%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s",
++          SPAMDYKE_LOG_INFO(current_settings, "[%s]:%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s","1st call",
+             (current_settings->current_options->transient_rejection != NULL) ? current_settings->current_options->transient_rejection->short_reject_message : ((current_settings->current_options->rejection != NULL) ? current_settings->current_options->rejection->short_reject_message : SHORT_SUCCESS),
+             reassemble_address(current_settings->sender_username, current_settings->sender_domain, LOG_MISSING_DATA, tmp_sender_address, MAX_ADDRESS, NULL),
+             current_settings->allowed_recipients[i],
+@@ -1701,7 +1701,7 @@
+         return_value = FILTER_FLAG_PASS | FILTER_FLAG_RCPT_CAPTURE;
+       else
+         {
+-        SPAMDYKE_LOG_INFO(current_settings, "%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s",
++        SPAMDYKE_LOG_INFO(current_settings, "[%s]:%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s","2nd call",
+           (current_settings->current_options->transient_rejection != NULL) ? current_settings->current_options->transient_rejection->short_reject_message : ((current_settings->current_options->rejection != NULL) ? current_settings->current_options->rejection->short_reject_message : SHORT_SUCCESS),
+           reassemble_address(current_settings->sender_username, current_settings->sender_domain, LOG_MISSING_DATA, tmp_sender_address, MAX_ADDRESS, NULL),
+           reassemble_address(current_settings->recipient_username, current_settings->recipient_domain, LOG_MISSING_DATA, tmp_recipient_address, MAX_ADDRESS, NULL),
+@@ -1978,7 +1978,7 @@
+       discard_childinput_all = 1;
+       child_response_needed = 0;
+ 
+-      SPAMDYKE_LOG_INFO(current_settings, "%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s",
++      SPAMDYKE_LOG_INFO(current_settings, "[%s]:%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s","3rd call",
+         current_settings->current_options->rejection->short_reject_message,
+         reassemble_address(current_settings->sender_username, current_settings->sender_domain, LOG_MISSING_DATA, tmp_sender_address, MAX_ADDRESS, NULL),
+         reassemble_address(current_settings->recipient_username, current_settings->recipient_domain, LOG_MISSING_DATA, tmp_recipient_address, MAX_ADDRESS, NULL),
+@@ -2190,7 +2190,7 @@
+ 
+                 if ((current_settings->current_options->transient_rejection != NULL) ||
+                     (current_settings->current_options->rejection != NULL))
+-                  SPAMDYKE_LOG_INFO(current_settings, "%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s",
++                  SPAMDYKE_LOG_INFO(current_settings, "[%s]:%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s","4th call",
+                     (current_settings->current_options->transient_rejection != NULL) ? current_settings->current_options->transient_rejection->short_reject_message : ((current_settings->current_options->rejection != NULL) ? current_settings->current_options->rejection->short_reject_message : SHORT_SUCCESS),
+                     reassemble_address(current_settings->sender_username, current_settings->sender_domain, LOG_MISSING_DATA, tmp_sender_address, MAX_ADDRESS, NULL),
+                     reassemble_address(current_settings->recipient_username, current_settings->recipient_domain, LOG_MISSING_DATA, tmp_recipient_address, MAX_ADDRESS, NULL),
+@@ -2484,7 +2484,7 @@
+                 line_terminator = '\0';
+                 buf_childinput[strlen_buf_childinput] = '\0';
+ 
+-                SPAMDYKE_LOG_INFO(current_settings, "%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s",
++                SPAMDYKE_LOG_INFO(current_settings, "[%s]:%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s","5th call",
+                   SHORT_TLS_PASSTHROUGH,
+                   LOG_MISSING_DATA,
+                   LOG_MISSING_DATA,
+@@ -2505,7 +2505,7 @@
+                   output_writeln(current_settings, LOG_ACTION_CHILD_FROM, STDOUT_FD, start_buf_childinput, next_terminator - start_buf_childinput);
+ 
+                   for (i = 0; i < current_settings->num_recipients; i++)
+-                    SPAMDYKE_LOG_INFO(current_settings, "%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s",
++                    SPAMDYKE_LOG_INFO(current_settings, "[%s]:%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s","6th call",
+                       SHORT_SUCCESS,
+                       reassemble_address(current_settings->sender_username, current_settings->sender_domain, LOG_MISSING_DATA, tmp_sender_address, MAX_ADDRESS, NULL),
+                       current_settings->allowed_recipients[i],
+@@ -2528,7 +2528,7 @@
+                   output_writeln(current_settings, LOG_ACTION_CHILD_FROM, STDOUT_FD, start_buf_childinput, next_terminator - start_buf_childinput);
+ 
+                   for (i = 0; i < current_settings->num_recipients; i++)
+-                    SPAMDYKE_LOG_INFO(current_settings, "%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s",
++                    SPAMDYKE_LOG_INFO(current_settings, "[%s]:%s from: %s to: %s origin_ip: %s origin_rdns: %s auth: %s encryption: %s reason: %s","7th call",
+                       (current_settings->current_options->transient_rejection != NULL) ? current_settings->current_options->transient_rejection->short_reject_message : ((current_settings->current_options->rejection != NULL) ? current_settings->current_options->rejection->short_reject_message : SHORT_SUCCESS),
+                       reassemble_address(current_settings->sender_username, current_settings->sender_domain, LOG_MISSING_DATA, tmp_sender_address, MAX_ADDRESS, NULL),
+                       current_settings->allowed_recipients[i],
+--- spamdyke-5.0.1/spamdyke/spamdyke.h	2015-04-29 18:53:36.000000000 -0600
++++ spamdyke-5.0.1.newer/spamdyke/spamdyke.h	2024-04-27 13:17:07.303287854 -0600
+@@ -111,6 +111,7 @@
+ #define DEFAULT_NIHDNS_ATTEMPTS_PRIMARY 1
+ #define DEFAULT_NIHDNS_ATTEMPTS_TOTAL   3
+ #define DEFAULT_TLS_CIPHER_LIST         "DEFAULT"
++#define DEFAULT_TLS_CIPHERSUITES        "TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_CCM_SHA256:TLS_AES_128_CCM_8_SHA256"
+ #define DEFAULT_QMAIL_MORERCPTHOSTS_CDB "/var/qmail/control/morercpthosts.cdb"
+ #define DEFAULT_QMAIL_RCPTHOSTS_FILE    "/var/qmail/control/rcpthosts"
+ 
+@@ -1153,8 +1154,10 @@
+ #define LOG_DEBUGX_TLS_PRIVATEKEY_SEPARATE      "EXCESSIVE(%s()@%s:%d): loaded TLS private key from separate file: %s"
+ #define LOG_DEBUGX_TLS_PRIVATEKEY_CERTIFICATE   "EXCESSIVE(%s()@%s:%d): loaded TLS private key from certificate file: %s"
+ #define LOG_DEBUGX_TLS_CERT_CHECK               "EXCESSIVE(%s()@%s:%d): verified TLS certificate and private key"
+-#define LOG_DEBUGX_TLS_CIPHER_LIST      "EXCESSIVE(%s()@%s:%d): set TLS cipher list: %s"
+-#define LOG_DEBUGX_TLS_OPTIONS          "EXCESSIVE(%s()@%s:%d): set TLS option: %s"
++#define LOG_DEBUGX_TLS_CIPHER_LIST      "VERBOSE(%s()@%s:%d): set TLS cipher list: %s"
++#define LOG_DEBUGX_TLS_CIPHERSUITES     "VERBOSE(%s()@%s:%d): set TLS ciphersuites: %s"
++#define LOG_DEBUGX_TLS_OPTIONS          "VERBOSE(%s()@%s:%d): set TLS option: %s"
++#define LOG_DEBUGX_TLS_VERSION          "VERBOSE(%s()@%s:%d): TLS Version: %s"
+ #define LOG_DEBUGX_TLS_DHPARAMS         "EXCESSIVE(%s()@%s:%d): loaded TLS DH params from file: %s"
+ #define LOG_DEBUGX_TLS_SET_DHPARAMS     "EXCESSIVE(%s()@%s:%d): set TLS DH params"
+ #define LOG_DEBUGX_ENVIRONMENT_FOUND    "EXCESSIVE(%s()@%s:%d): found environment variable %.*s: %s"
+@@ -1719,6 +1722,7 @@
+ 
+   char *test_smtp_auth_username;
+   char *test_smtp_auth_password;
++  char *tls_ciphersuites;
+   };
+ 
+ struct integer_string
+--- spamdyke-5.0.1/spamdyke/tls.c	2015-04-29 18:53:36.000000000 -0600
++++ spamdyke-5.0.1.newer/spamdyke/tls.c	2024-04-27 21:07:59.324394830 -0600
+@@ -186,8 +186,7 @@
+ 
+   if (!initialized)
+     {
+-    SSL_library_init();
+-
++    OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS,NULL);
+     if (!RAND_status())
+       {
+       srand(time(NULL));
+@@ -213,7 +212,7 @@
+ 
+   if (initialized)
+     {
+-    if ((*target_tls_context = SSL_CTX_new(SSLv23_server_method())) != NULL)
++    if ((*target_tls_context = SSL_CTX_new(TLS_server_method())) != NULL)
+       {
+       error_occurred = 0;
+ 
+@@ -272,66 +271,44 @@
+           }
+         }
+ 
+-      if (!error_occurred &&
+-          (current_settings->current_options->tls_dhparams_file != NULL))
++      if (!error_occurred)
+         {
+-        if ((SSL_CTX_set_options(*target_tls_context, SSL_OP_SINGLE_DH_USE) & SSL_OP_SINGLE_DH_USE) == SSL_OP_SINGLE_DH_USE)
+-          {
+-          SPAMDYKE_LOG_EXCESSIVE(current_settings, LOG_DEBUGX_TLS_OPTIONS, "SSL_OP_SINGLE_DH_USE");
+-
+-          if ((tmp_file = fopen(current_settings->current_options->tls_dhparams_file, "r")) != NULL)
+-            {
+-            if ((tmp_dh = PEM_read_DHparams(tmp_file, NULL, NULL, NULL)) != NULL)
+-              {
+-              SPAMDYKE_LOG_EXCESSIVE(current_settings, LOG_DEBUGX_TLS_DHPARAMS, current_settings->current_options->tls_dhparams_file);
+-
+-              if ((tls_return = SSL_CTX_set_tmp_dh(*target_tls_context, tmp_dh)) == 1)
+-                SPAMDYKE_LOG_EXCESSIVE(current_settings, LOG_DEBUGX_TLS_SET_DHPARAMS, NULL);
+-              else
+-                {
+-                SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_SET_DHPARAMS ": %s", tls_error(current_settings, tls_return));
+-                error_occurred = 1;
+-                }
+-              }
+-            else
+-              {
+-              SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_DHPARAMS "%s", current_settings->current_options->tls_dhparams_file);
+-              error_occurred = 1;
+-              }
+-
+-            fclose(tmp_file);
+-            }
+-          else
+-            {
+-            SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_OPEN "%s: %s", current_settings->current_options->tls_dhparams_file, strerror(errno));
+-            error_occurred = 1;
+-            }
+-          }
++        if (SSL_CTX_set_min_proto_version(*target_tls_context,0))
++          SPAMDYKE_LOG_VERBOSE(current_settings, LOG_DEBUGX_TLS_OPTIONS ":%d","TLS Minimum Set",SSL_CTX_get_min_proto_version(*target_tls_context));
+         else
+-          {
+-          SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_OPTIONS "SSL_OP_SINGLE_DH_USE", NULL);
+-          error_occurred = 1;
+-          }
++          SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_OPTIONS "TLS Minimum Not Set", NULL);
++        if (SSL_CTX_set_max_proto_version(*target_tls_context,0))
++          SPAMDYKE_LOG_VERBOSE(current_settings, LOG_DEBUGX_TLS_OPTIONS ":%d", "TLS Maximum Set",SSL_CTX_get_min_proto_version(*target_tls_context));
++        else
++          SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_OPTIONS "TLS Maximum Not Set", NULL);
+         }
+ 
+       if (!error_occurred)
+         {
+-        if ((tls_return = SSL_CTX_set_cipher_list(*target_tls_context, current_settings->current_options->tls_cipher_list)) == 1)
+-          SPAMDYKE_LOG_EXCESSIVE(current_settings, LOG_DEBUGX_TLS_CIPHER_LIST, current_settings->current_options->tls_cipher_list);
++        if ( SSL_CTX_set_ciphersuites(*target_tls_context, current_settings->current_options->tls_ciphersuites) )
++          SPAMDYKE_LOG_VERBOSE(current_settings,LOG_DEBUGX_TLS_CIPHERSUITES,current_settings->current_options->tls_ciphersuites);
+         else
+           {
+-          SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_CIPHER_LIST "%s: %s", current_settings->current_options->tls_cipher_list, tls_error(current_settings, tls_return));
++          SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_CIPHER_LIST "%s: %s", current_settings->current_options->tls_ciphersuites, tls_error(current_settings, tls_return));
+           error_occurred = 1;
+           }
++        if ( SSL_CTX_set_cipher_list(*target_tls_context, current_settings->current_options->tls_cipher_list))
++          SPAMDYKE_LOG_VERBOSE(current_settings, LOG_DEBUGX_TLS_CIPHER_LIST, current_settings->current_options->tls_cipher_list);
++        else
++          {
++          SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_CIPHER_LIST "%s: %s", current_settings->current_options->tls_cipher_list, tls_error(current_settings, tls_return));
++          error_occurred += 1;
++          }
+         }
+ 
+-      if (!error_occurred &&
+-          ((*target_tls_session = SSL_new(*target_tls_context)) != NULL))
++      if ( error_occurred < 2 && ((*target_tls_session = SSL_new(*target_tls_context)) != NULL))
++        {
++        SPAMDYKE_LOG_VERBOSE(current_settings, LOG_DEBUGX_TLS_VERSION, SSL_get_version(*target_tls_session)); 
+         return_value = 1;
++        }
+       else
+         {
+         SPAMDYKE_LOG_ERROR(current_settings, LOG_ERROR_TLS_INIT, NULL);
+-
+         SSL_CTX_free(*target_tls_context);
+         *target_tls_context = NULL;
+         }
+@@ -410,6 +387,10 @@
+             ((time(NULL) - current_settings->connection_start) < current_settings->current_options->timeout_connection)))
+       if ((tls_return = SSL_accept(current_settings->tls_session)) == 1)
+         {
++        SSL_set_options(current_settings->tls_session, SSL_OP_ALL);
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++        SSL_set_options(current_settings->tls_session, SSL_OP_IGNORE_UNEXPECTED_EOF);
++#endif
+         SSL_set_mode(current_settings->tls_session, SSL_MODE_ENABLE_PARTIAL_WRITE);
+         SSL_set_mode(current_settings->tls_session, SSL_MODE_AUTO_RETRY);
+         current_settings->tls_state = TLS_STATE_ACTIVE_SPAMDYKE;
+@@ -617,14 +598,14 @@
+             select(0, NULL, NULL, NULL, &tmp_timeval);
+             break;
+           default:
+-            SPAMDYKE_LOG_VERBOSE(current_settings, LOG_VERBOSE_TLS_READ ": %s", tls_error(current_settings, return_value));
++            SPAMDYKE_LOG_VERBOSE(current_settings, LOG_VERBOSE_TLS_READ ": %s:%s", tls_error(current_settings, return_value),"1st call TLS read error");
+             continue_looping = 0;
+             break;
+           }
+ 
+     if (continue_looping &&
+         (return_value <= 0))
+-      SPAMDYKE_LOG_VERBOSE(current_settings, LOG_VERBOSE_TLS_READ ": %s", tls_error(current_settings, return_value));
++      SPAMDYKE_LOG_VERBOSE(current_settings, LOG_VERBOSE_TLS_READ ": %s:%s", tls_error(current_settings, return_value),"2nd call TLS read error");
+     }
+   else
+     return_value = read(target_fd, target_buf, num_bytes);

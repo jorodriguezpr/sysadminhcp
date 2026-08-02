@@ -1,0 +1,35 @@
+diff -Nuar ../qmailmrtg7-4.2/checkq.c ../qmailmrtg7-4.2.new/checkq.c
+--- ../qmailmrtg7-4.2/checkq.c	2004-02-29 02:54:02.000000000 -0700
++++ ../qmailmrtg7-4.2.new/checkq.c	2025-07-20 13:22:59.546905630 -0600
+@@ -21,8 +21,9 @@
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <dirent.h>
++#include <string.h>
+ 
+-int main(int argc, char *argv)
++int main(int argc, char *argv[])
+ {
+  FILE *fs;
+  DIR *mydir;
+diff -Nuar ../qmailmrtg7-4.2/qmailmrtg7.c ../qmailmrtg7-4.2.new/qmailmrtg7.c
+--- ../qmailmrtg7-4.2/qmailmrtg7.c	2025-07-20 13:18:33.459375600 -0600
++++ ../qmailmrtg7-4.2.new/qmailmrtg7.c	2025-07-20 13:37:01.145566811 -0600
+@@ -383,7 +383,7 @@
+   printf("for q option dir is the qmail queue dir\n");
+ }
+ 
+-get_size(diri)
++int get_size(diri)
+  char *diri;
+ {
+  DIR *mydir;
+@@ -398,7 +398,7 @@
+   return(count);
+ }
+ 
+-count_files(char *diri)
++int count_files(char *diri)
+ {
+  DIR *mydir;
+  int count;

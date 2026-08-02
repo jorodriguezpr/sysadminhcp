@@ -1,0 +1,408 @@
+diff -Naur ./domain.c ../vqadmin-2.3.4.patched/domain.c
+--- ./domain.c	2002-09-27 18:12:10.000000000 -0500
++++ ../vqadmin-2.3.4.patched/domain.c	2003-11-23 18:46:33.000000000 -0600
+@@ -446,11 +446,53 @@
+   strncpy( face, get_lang_code("057"), 30);
+   strncpy( size, get_lang_code("058"), 30);
+ 
+-  printf("<HTML><HEAD><TITLE>List Domains</TITLE></HEAD>\n");
++/*  printf("<HTML><HEAD><TITLE>List Domains</TITLE></HEAD>\n");
+   printf("<body bgcolor=%s vlink=%s link=%s alink=%s>\n",
+     bgcolor, fgcolor, fgcolor, fgcolor);
+   printf("<FONT face=\"%s\" SIZE=\"%s\" color=\"%s\">\n",
+     face, size, fgcolor);
++*/
++
++  printf("<html>\n");
++  printf("<head>\n");
++  printf("<title>Qmail Toaster Admin</title>\n");
++  printf("<meta http-equiv=\"content-type\" content=\"text/html; charset=ISO-8859-1\">\n");
++  printf("<link rel=\"stylesheet\" href=\"/scripts/styles.css\" type=\"text/css\" />\n");
++  printf("<script language=\"JavaScript\" src=\"/scripts/javascripts.js\"></script>\n");
++  printf("</head>\n");
++  printf("<body text=\"#000000\" vlink=\"#004400\" alink=\"#ff0000\" link=\"#007700\" bgcolor=\"#ffffff\" leftmargin=\"0\" topmargin=\"0\" marginwidth=\"0\" marginheight=\"0\" background=\"/images-toaster/background.gif\">\n");
++  printf("<FORM METHOD=\"POST\" ACTION=\"/mail/vqadmin/toaster.vqadmin\">\n");
++  printf("<center>\n");
++  printf("<table width=\"750\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
++  printf("<tbody> \n");
++  printf("<tr> \n");
++  printf("<td width=\"203\"><a href=\"http://www.qmail.org/\"><img height=\"163\" alt=\"logo\" src=\"/images-toaster/kl-qmail-w.gif\" width=\"200\" border=\"0\"></a> \n");
++  printf("</td>\n");
++  printf("<td align=\"center\" valign=\"middle\"> \n");
++  printf("<table width=\"100%c\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n", 37);
++  printf("<tbody> \n");
++  printf("<tr align=\"center\" valign=\"middle\"> \n");
++  printf("<td> \n");
++  printf("<h1><font color=\"#006600\"><b>Qmail Toaster Admin</b></font></h1>\n");
++  printf("</td>\n");
++  printf("</tr>\n");
++  printf("</tbody> \n");
++  printf("</table>\n");
++  printf("</td>\n");
++  printf("</tr>\n");
++  printf("<tr align=\"right\"> \n");
++  printf("<td colspan=\"2\"><b><a href=\"/mail/vqadmin/toaster.vqadmin\">VQADMIN</a> | <a href=\"/admin-toaster/\">TOASTER \n");
++  printf("ADMIN</a></b></td>\n");
++  printf("     </tr>\n");
++  printf("     <tr> \n");
++  printf("       <td colspan=\"2\">&nbsp;</td>\n");
++  printf("     </tr>\n");
++  printf("     <tr> \n");
++  printf("       <td colspan=\"2\" bgcolor=\"#007700\"><b><font color=\"#ffffff\">List Domains:</font></b> \n");
++  printf("       </td>\n");
++  printf("     </tr>\n");
++  printf("     <tr> \n");
++  printf("       <td colspan=\"2\" align=left><br>\n");
+ 
+   if ( matchit == 1 ) printf("<B>Domains containing %s</B><BR>\n", domain);
+   else printf("<B>All domains</B><BR>\n");
+@@ -473,22 +515,38 @@
+     if ( matchit == 1 && strstr(assign_domain, domain) == NULL ) continue;
+ 
+     if ( strcmp(assign_domain, assign_alias_domain) == 0 ) {
+-      printf("<a href=vqadmin.cgi?nav=view_domain&dname=%s>%s</a><BR>\n",
++/*      printf("<a href=vqadmin.cgi?nav=view_domain&dname=%s>%s</a><BR>\n", */
++	printf("<a href=/mail/vqadmin/toaster.vqadmin?nav=view_domain&dname=%s>%s</a><BR>\n",
+         assign_alias_domain, assign_alias_domain);
+     } else {
+       printf(
+-"<a href=vqadmin.cgi?nav=view_domain&dname=%s>%s</a> Aliased to %s<BR>\n",
++/*      "<a href=vqadmin.cgi?nav=view_domain&dname=%s>%s</a> Aliased to %s<BR>\n", */
++"<a href=\"/mail/vqadmin/toaster.vqadmin?nav=view_domain&dname=%s\">%s</a><BR>\n",
+         assign_alias_domain, assign_domain, assign_alias_domain);
+     }
+   }
+   fclose(fs);
+     
+-  printf("<HR>\n");
++/*  printf("<HR>\n");
+   printf("<a href=\"/cgi-bin/vqadmin/vqadmin.cgi\">Main VqAdmin Menu</a><BR><BR>\n");
+   printf("<a href=http://www.inter7.com/vqadmin/>%s</a> %s<BR>\n", 
+     VQA_PACKAGE, VQA_VERSION);
+   printf("<a href=http://www.inter7.com/vpopmail/>%s</a> %s<BR>\n", 
+     PACKAGE, VERSION);
++*/
++
++  printf("<br>\n");
++  printf("      </td>\n");
++  printf("    </tr>\n");
++  printf("    </tbody> \n");
++  printf("  </table>\n");
++  printf("  <br>\n");
++  printf("  <i><a href=\"http://www.qmailtoaster.com\" target=\"_blank\">Qmail Toaster \n");
++  printf("  &copy 2004</a></i><br>\n");
++  printf(" </center>\n");
++  printf("</form>\n");
++  printf("</body>\n");
++  printf("</html>\n");
+ 
+   free(tmpbuf);
+   vexit(0);
+diff -Naur ./user.c ../vqadmin-2.3.4.patched/user.c
+--- ./user.c	2002-08-08 18:37:51.000000000 -0500
++++ ../vqadmin-2.3.4.patched/user.c	2003-11-23 18:47:21.000000000 -0600
+@@ -315,26 +315,73 @@
+   strncpy( face, get_lang_code("057"), 29);
+   strncpy( size, get_lang_code("058"), 29);
+ 
+-  printf("<HTML><HEAD><TITLE>Show Users</TITLE></HEAD>\n");
++  /* printf("<HTML><HEAD><TITLE>Show Users</TITLE></HEAD>\n");
+   printf("<body bgcolor=%s vlink=%s link=%s alink=%s>\n",
+     bgcolor, fgcolor, fgcolor, fgcolor);
+   printf("<FONT face=\"%s\" SIZE=\"%s\" color=\"%s\">\n",
+     face, size, fgcolor);
++  */
++  printf("<html>\n");
++  printf("<head>\n");
++  printf("<title>Qmail Toaster Admin</title>\n");
++  printf("<meta http-equiv=\"content-type\" content=\"text/html; charset=ISO-8859-1\">\n");
++  printf("<link rel=\"stylesheet\" href=\"/scripts/styles.css\" type=\"text/css\" />\n");
++  printf("<script language=\"JavaScript\" src=\"/scripts/javascripts.js\"></script>\n");
++  printf("</head>\n");
++  printf("<body text=\"#000000\" vlink=\"#004400\" alink=\"#ff0000\" link=\"#007700\" bgcolor=\"#ffffff\" leftmargin=\"0\" topmargin=\"0\" marginwidth=\"0\" marginheight=\"0\" background=\"/images-toaster/background.gif\">\n");
++  printf("<FORM METHOD=\"POST\" ACTION=\"/mail/vqadmin/toaster.vqadmin\">\n");
++  printf("<center>\n");
++  printf("<table width=\"750\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
++  printf("<tbody> \n");
++  printf("<tr> \n");
++  printf("<td width=\"203\"><a href=\"http://www.qmail.org/\"><img height=\"163\" alt=\"logo\" src=\"/images-toaster/kl-qmail-w.gif\" width=\"200\" border=\"0\"></a> \n");
++  printf("</td>\n");
++  printf("<td align=\"center\" valign=\"middle\"> \n");
++  printf("<table width=\"100%c\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n", 37);
++  printf("<tbody> \n");
++  printf("<tr align=\"center\" valign=\"middle\"> \n");
++  printf("<td> \n");
++  printf("<h1><font color=\"#006600\"><b>Qmail Toaster Admin</b></font></h1>\n");
++  printf("</td>\n");
++  printf("</tr>\n");
++  printf("</tbody> \n");
++  printf("</table>\n");
++  printf("</td>\n");
++  printf("</tr>\n");
++  printf("<tr align=\"right\"> \n");
++  printf("<td colspan=\"2\"><b><a href=\"/mail/vqadmin/toaster.vqadmin\">QVADMIN</a> | <a href=\"/admin-toaster/\">TOASTER \n");
++  printf("ADMIN</a></b></td>\n");
++  printf("     </tr>\n");
++  printf("     <tr> \n");
++  printf("       <td colspan=\"2\">&nbsp;</td>\n");
++  printf("     </tr>\n");
++  printf("     <tr> \n");
++  printf("       <td colspan=\"2\" bgcolor=\"#007700\"><b><font color=\"#ffffff\">Users for %s:</font></b> \n", domain);
++  printf("       </td>\n");
++  printf("     </tr>\n");
++  printf("     <tr> \n");
++  printf("       <td colspan=\"2\" align=left><br>\n");
+ 
+-  printf("<B>Users for %s</B>\n", domain);
+-  printf("<table cellspacing=5>\n"); 
++  /* printf("<B>Users for %s</B>\n", domain);
++  printf("<table cellspacing=5>\n"); */
++
++  printf("  <table border=\"0\" cellspacing=\"0\" cellpadding=\"3\" width=\"100%c\">\n", 37 ) ;
++  
+   vpw = vauth_getall(domain,1,0);
+   if ( vpw == NULL ) {
+-    printf("<tr><td><FONT face=%s color=\"%s\">Domain %s does not exist</FONT></td></tr></table>\n", face, fgcolor,
+-          domain);
++/*    printf("<tr><td><FONT face=%s color=\"%s\">Domain %s does not exist</FONT></td></tr></table>\n", face, fgcolor,
++          domain); */
++      printf("<tr><td>Domain %s does not exist</td></tr></table>\n", domain);
+   } else {
+-    printf("<tr><th align=left><FONT face=%s color=\"%s\">User</FONT></th>\n",
+-          face, fgcolor);
++/*    printf("<tr><th align=left><FONT face=%s color=\"%s\">User</FONT></th>\n", 	  
++          face, fgcolor); */
++      printf("<tr><th align=left>User</th>\n");
+ #ifdef CLEAR_PASS
+-    printf("<th><FONT face=%s color=\"%s\">Password</FONT></th>\n",
+-          face, fgcolor);
++/*    printf("<th><FONT face=%s color=\"%s\">Password</FONT></th>\n",
++          face, fgcolor); */
++      printf("<th>Password</th>\n");
+ #endif
+-    printf("<th><FONT face=%s color=\"%s\">Forward</FONT></th>\n",
++/*    printf("<th><FONT face=%s color=\"%s\">Forward</FONT></th>\n",
+           face, fgcolor);
+     printf("<th><FONT face=%s color=\"%s\">Vacation</FONT></th>\n",
+           face, fgcolor);
+@@ -344,22 +391,34 @@
+           face, fgcolor);
+     printf("<th><FONT face=%s color=\"%s\">Last Logon</FONT></th></tr><BR>\n",
+ 	  face, fgcolor);
++*/
++    printf("<th>Forward</th>\n");
++    printf("<th>Vacation</th>\n");
++    printf("<th>Quota</th>\n");
++    printf("<th>Administrator</th>\n");
++    printf("<th>Last Logon</th></tr>\n");
++    
+   }
+   count = 0;
+   while(vpw != NULL && count < 128000 ){
+       ++count;
+ 
+-      printf("<tr><td><FONT face=%s color=\"%s\">", face, fgcolor);
+-      printf("<a href=vqadmin.cgi?nav=view_user&eaddr=%s@%s>",
++/*      printf("<tr><td><FONT face=%s color=\"%s\">", face, fgcolor);
++      printf("<a href=vqadmin.cgi?nav=view_user&eaddr=%s@%s>", */
++        printf("<tr><td>");
++	printf("<a href=/mail/vqadmin/toaster.vqadmin?nav=view_user&eaddr=%s@%s>",
+         vpw->pw_name, domain);
+-      printf("%s</a></FONT></td>\n", vpw->pw_name);
++/*      printf("%s</a></FONT></td>\n", vpw->pw_name); */
++	printf("%s</a></td>\n", vpw->pw_name);
+ 
+ #ifdef CLEAR_PASS
+-      printf("<td align=middle><FONT face=%s color=\"%s\">%s</FONT></td>\n", 
+-          face, fgcolor, vpw->pw_clear_passwd);
++/*      printf("<td align=middle><FONT face=%s color=\"%s\">%s</FONT></td>\n", 
++          face, fgcolor, vpw->pw_clear_passwd); */
++	printf("<td align=middle>%s</td>\n", vpw->pw_clear_passwd);
+ #endif
+ 
+-      printf("<td align=middle><FONT face=%s color=\"%s\">", face, fgcolor );
++/*      printf("<td align=middle><FONT face=%s color=\"%s\">", face, fgcolor ); */
++      printf("<td align=middle>" );
+       snprintf(workdir, 156, "%s/.qmail", vpw->pw_dir);
+       fs=fopen(workdir,"r");
+       if ( fs == NULL ) {
+@@ -376,9 +435,11 @@
+         printf("No");
+          }
+       }
+-      printf("</FONT></td>\n");
++/*      printf("</FONT></td>\n"); */
++      printf("</td>\n");
+ 
+-      printf("<td align=middle><FONT face=%s color=\"%s\">", face, fgcolor); 
++/*      printf("<td align=middle><FONT face=%s color=\"%s\">", face, fgcolor); */
++      printf("<td align=middle>");
+       if ( fs == NULL ) {
+           printf("No");
+       } else {
+@@ -396,35 +457,49 @@
+              printf("No");
+          }
+       }
+-      printf("</FONT></td>\n");
++/*      printf("</FONT></td>\n"); */
++      printf("</td>\n");
+       if ( fs!=NULL) fclose(fs);
+ 
+ 
+-      printf("<td align=middle><FONT face=%s color=\"%s\">%s</FONT></td>", 
++/*      printf("<td align=middle><FONT face=%s color=\"%s\">%s</FONT></td>", 
+     face, fgcolor, vpw->pw_shell);
+-
++*/
++      printf("<td align=middle>%s</td>", vpw->pw_shell);
+       if (vpw->pw_gid & QA_ADMIN) {
+-        printf("<td align=middle><FONT face=%s color=%s><B>Yes</B></FONT></td>\n", face, fgcolor);
+-      }    else  printf("<td align=middle><FONT face=%s color=%s>No</FONT></td>\n", face, fgcolor);    
++	      /*
++        printf("<td align=middle><FONT face=%s color=%s><B>Yes</B></FONT></td>\n", face, fgcolor); */
++	      printf("<td align=middle><B>Yes</B></td>\n");
++      }    else  /* printf("<td align=middle><FONT face=%s color=%s>No</FONT></td>\n", face, fgcolor); */
++	      printf("<td align=middle>No</td>\n");
+ 
+ #ifdef ENABLE_AUTH_LOGGING
+   mytime = vget_lastauth(vpw, domain);
+-  if ( mytime == 0 ) printf("<td align=middle><FONT face=%s color=%s><B>NEVER LOGGED IN</B></font></td></tr>\n", face, fgcolor);
+-  else printf("<td align=middle><FONT face=%s color=%s>%s</font></td></tr>\n", face, fgcolor, asctime(localtime(&mytime)));
++/*  if ( mytime == 0 ) printf("<td align=middle><FONT face=%s color=%s><B>NEVER LOGGED IN</B></font></td></tr>\n", face, fgcolor);
++  else printf("<td align=middle><FONT face=%s color=%s>%s</font></td></tr>\n", face, fgcolor, asctime(localtime(&mytime))); */
++  if ( mytime == 0 ) printf("<td align=middle><B>NEVER LOGGED IN</B></td></tr>\n");
++  else printf("<td align=middle>%s</td></tr>\n", asctime(localtime(&mytime)));
+ #else
+-  printf("<td align=middle><FONT face=%s color=%s>* auth logging not enabled *</font></td></tr>\n", face, fgcolor);
++/*  printf("<td align=middle><FONT face=%s color=%s>* auth logging not enabled *</font></td></tr>\n", face, fgcolor); */
++  printf("<td align=middle>* auth logging not enabled *</td></tr>\n");
+ #endif
+ 
+       vpw = vauth_getall(domain,0,0);
+   }
+   printf("</table>\n");
+ 
+-  printf("<HR>\n");
++/*  printf("<HR>\n");
+   printf("<B>Alias/Forwards for %s</B>\n", domain);
+   printf("<table cellspacing=5>\n"); 
+   printf("<tr><th align=left><FONT face=%s color=\"%s\"><B>Name</B></FONT>\n",
+    face, fgcolor);
+-  printf("</th><th><FONT face=%s color=\"%s\"><B>Alias/Forward</B></FONT></th><BR></tr>\n", face, fgcolor);
++  printf("</th><th><FONT face=%s color=\"%s\"><B>Alias/Forward</B></FONT></th><BR></tr>\n", face, fgcolor); */
++  printf("<br></td>      </tr>      <tr> \n");
++  printf("   <td colspan=\"2\" bgcolor=\"#007700\"><b><font color=\"#ffffff\">Alias/Forwards for %s</font></b> ", domain );
++  printf("    </td>      </tr>      <tr>         <td colspan=\"2\"><br>\n");
++  printf("         <table border=\"0\" cellspacing=\"0\" cellpadding=\"3\" width=\"100%c\">", 37 );
++  printf("<tr><th align=left><B>Name</B>\n");
++  printf("</th><th><B>Alias/Forward</B></th><BR></tr>\n");
+   chdir(dir);
+   mydir = opendir(".");
+   count = 0;
+@@ -449,21 +524,24 @@
+           workdir[j] = 0;
+           ++count;
+ 
+-          printf("<tr><td align=left><FONT face=%s color=\"%s\">%s@%s</td>", 
+-          face, fgcolor, workdir, domain);
++/*          printf("<tr><td align=left><FONT face=%s color=\"%s\">%s@%s</td>", 
++          face, fgcolor, workdir, domain); */
++	  printf("<tr><td align=left>%s@%s</td>", workdir, domain);
+ 
+           printf("<td align=left>\n");
+           fs=fopen(mydirent->d_name,"r");
+       while ( fgets( tmpbuf, 156, fs ) != NULL ) {
+                 if ( tmpbuf[0] == '#' || isspace(tmpbuf[0]) ) {
+-            printf("<FONT face=%s color=\"%s\">&nbsp</FONT><BR>\n", 
+-            face, fgcolor);
++/*            printf("<FONT face=%s color=\"%s\">&nbsp</FONT><BR>\n", 
++            face, fgcolor); */
++	      printf("&nbsp<BR>\n");
+                 } else if ( strstr(tmpbuf, "@") != NULL ) {
+                     if ( tmpbuf[0] == '&' ) i = 1;
+                     else i = 0;
+ 
+-            printf("<FONT face=%s color=\"%s\">forward: %s</FONT><BR>\n", 
+-            face, fgcolor, &tmpbuf[i]);
++/*            printf("<FONT face=%s color=\"%s\">forward: %s</FONT><BR>\n", 
++            face, fgcolor, &tmpbuf[i]); */
++	      printf("forward: %s<BR>\n", &tmpbuf[i]);
+                 } else {
+             tmpstr = &tmpbuf[strlen(tmpbuf)-2];
+             *tmpstr = 0; 
+@@ -472,8 +550,9 @@
+                     while (*tmpstr!='/') --tmpstr;
+                     ++tmpstr;
+    
+-            printf("<FONT face=%s color=\"%s\">alias: %s</FONT><BR>\n", 
+-            face, fgcolor, tmpstr);
++/*            printf("<FONT face=%s color=\"%s\">alias: %s</FONT><BR>\n", 
++            face, fgcolor, tmpstr); */
++	      printf("alias: %s<BR>\n", tmpstr);
+                 }
+       }
+           printf("</td></tr>\n");
+@@ -482,13 +561,18 @@
+       }
+   }
+   closedir(mydir);
++/*  printf("</table>\n");
++  printf("<HR>\n"); */
+   printf("</table>\n");
+-  printf("<HR>\n");
+-
+-
+-
++  printf("<br></td>      </tr>      <tr> \n");
++  printf("<td colspan=\"2\" bgcolor=\"#007700\"><b><font color=\"#ffffff\">Mailing lists for for %s</font></b> ", domain );
++  printf("    </td>      </tr>      <tr>         <td colspan=\"2\"><br>\n");
++  printf("         <table border=\"0\" cellspacing=\"0\" cellpadding=\"3\" width=\"100%c\">", 37 );
++  
++/*
+   printf("<B>Mailing lists for %s</B><BR>\n", domain);
+-  printf("<table>\n"); 
++  printf("<table>\n"); */
++  
+   chdir(dir);
+   mydir = opendir(".");
+   count = 0;
+@@ -503,22 +587,35 @@
+               workdir[j] = 0;
+               ++count;
+ 
+-              printf("<tr><td><FONT face=%s color=\"%s\">%s@%s</td></tr>", 
+-        face, fgcolor, workdir, domain);
++/*              printf("<tr><td><FONT face=%s color=\"%s\">%s@%s</td></tr>", 
++        face, fgcolor, workdir, domain); */
++	        printf("<tr><td>%s@%s</td></tr>", workdir, domain);
+           } 
+           fclose(fs);
+       }
+   }
+   closedir(mydir);
+   printf("</table>\n");
+-  printf("<HR>\n");
++/*  printf("<HR>\n");
+ 
+   printf("<a href=\"/cgi-bin/vqadmin/vqadmin.cgi\">Main VqAdmin Menu</a><BR><BR>\n");
+   printf("<a href=http://www.inter7.com/vqadmin/>%s</a> %s<BR>\n", 
+     VQA_PACKAGE, VQA_VERSION);
+   printf("<a href=http://www.inter7.com/vpopmail/>%s</a> %s<BR>\n", 
+     PACKAGE, VERSION);
+-
++*/
++  printf("<br>\n");
++  printf("      </td>\n");
++  printf("    </tr>\n");
++  printf("    </tbody> \n");
++  printf("  </table>\n");
++  printf("  <br>\n");
++  printf("  <i><a href=\"http://www.qmailtoaster.com\" target=\"_blank\">Qmail Toaster \n");
++  printf("  &copy 2004</a></i><br>\n");
++  printf(" </center>\n");
++  printf("</form>\n");
++  printf("</body>\n");
++  printf("</html>\n");
+   vexit(0);
+ }

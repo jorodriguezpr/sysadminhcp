@@ -1,0 +1,12 @@
+diff -Naur ../BUILD/qmailmrtg7-4.2/qmailmrtg7.c ../BUILD/qmailmrtg7-4.2.new/qmailmrtg7.c
+--- qmailmrtg7.c	2004-11-05 09:37:11.000000000 -0700
++++ qmailmrtg7.c.new	2019-02-20 08:16:53.494707154 -0700
+@@ -68,7 +68,7 @@
+     usage();
+     exit(-1);
+   }
+-  snprintf(TheDir, sizeof(TheDir), argv[2]);
++  snprintf(TheDir, sizeof(TheDir), "%s", argv[2]);
+   TheType = *argv[1];
+ 
+   switch (TheType) {

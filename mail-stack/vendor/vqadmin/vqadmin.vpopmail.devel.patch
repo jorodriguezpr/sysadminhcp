@@ -1,0 +1,117 @@
+--- vqadmin-2.3.7/configure.in	2013-11-13 10:14:54.259000009 -0700
++++ vqadmin-2.3.7-patched/configure.in	2013-11-13 10:24:57.500993504 -0700
+@@ -72,24 +72,23 @@
+ char tmpbuf[100];
+ FILE *f;
+ 
+-        unlink("vpopmail.dir");
+-        unlink("vpopmail.uid");
+-        unlink("vpopmail.gid");
+-
+         f=fopen("vpopusername","r+");
+         fgets(tmpbuf,100,f);
+         fclose(f);
+         tmpbuf[strlen(tmpbuf)-1] = 0;
+ 
+         if (( pw=getpwnam(tmpbuf)) != 0 ) {
++                unlink("vpopmail.dir");
+                 f=fopen("vpopmail.dir","a+");
+                 fprintf(f,"%s\n", pw->pw_dir);
+                 fclose(f);
+ 
++                unlink("vpopmail.uid");
+                 f=fopen("vpopmail.uid", "a+");
+                 fprintf(f,"%d\n", pw->pw_uid);
+                 fclose(f);
+ 
++                unlink("vpopmail.gid");
+                 f=fopen("vpopmail.gid", "a+");
+                 fprintf(f,"%d\n", pw->pw_gid);
+                 fclose(f);
+@@ -130,18 +130,18 @@
+ rm -f vpopmail.gid
+ rm -f vpopusername
+ 
+-if test ! -f $vpopmaildir/etc/lib_deps
++if test ! -f /etc/libvpopmail/lib_deps
+ then
+-        AC_MSG_ERROR(No vpopmail etc/lib_deps file. Upgrade to vpopmail-4.9.8 or above)
++        AC_MSG_ERROR(No vpopmail /etc/libvpopmail/lib_deps file. Install libvpopmail-devel package)
+ fi
+-lib_deps=`cat $vpopmaildir/etc/lib_deps`
++lib_deps=`cat /etc/libvpopmail/lib_deps`
+ AC_SUBST(lib_deps)
+ 
+-if test ! -f $vpopmaildir/etc/inc_deps
++if test ! -f /etc/libvpopmail/inc_deps
+ then
+-        AC_MSG_ERROR(No vpopmail etc/inc_deps file. Upgrade to vpopmail-4.9.8 or above)
++        AC_MSG_ERROR(No vpopmail /etc/libvpopmail/inc_deps file. Install libvpopmail-devel package)
+ fi
+-inc_deps=`cat $vpopmaildir/etc/inc_deps`
++inc_deps=`cat /etc/libvpopmail/inc_deps`
+ AC_SUBST(inc_deps)
+ 
+ cgibindir=""
+--- vqadmin-2.3.7/configure	2005-01-11 13:36:56.000000000 -0700
++++ vqadmin-2.3.7-patched/configure	2013-11-13 11:07:12.238002020 -0700
+@@ -3247,24 +3247,23 @@
+ char tmpbuf[100];
+ FILE *f;
+ 
+-        unlink("vpopmail.dir");
+-        unlink("vpopmail.uid");
+-        unlink("vpopmail.gid");
+-
+         f=fopen("vpopusername","r+");
+         fgets(tmpbuf,100,f);
+         fclose(f);
+         tmpbuf[strlen(tmpbuf)-1] = 0;
+ 
+         if (( pw=getpwnam(tmpbuf)) != 0 ) {
++                unlink("vpopmail.dir");
+                 f=fopen("vpopmail.dir","a+");
+                 fprintf(f,"%s\n", pw->pw_dir);
+                 fclose(f);
+ 
++                unlink("vpopmail.uid");
+                 f=fopen("vpopmail.uid", "a+");
+                 fprintf(f,"%d\n", pw->pw_uid);
+                 fclose(f);
+ 
++                unlink("vpopmail.gid");
+                 f=fopen("vpopmail.gid", "a+");
+                 fprintf(f,"%d\n", pw->pw_gid);
+                 fclose(f);
+@@ -3335,23 +3334,22 @@
+ rm -f vpopmail.gid
+ rm -f vpopusername
+ 
+-if test ! -f $vpopmaildir/etc/lib_deps
++if test ! -f /etc/libvpopmail/lib_deps
+ then
+-        { { echo "$as_me:$LINENO: error: No vpopmail etc/lib_deps file. Upgrade to vpopmail-4.9.8 or above" >&5
+-echo "$as_me: error: No vpopmail etc/lib_deps file. Upgrade to vpopmail-4.9.8 or above" >&2;}
++        { { echo "$as_me:$LINENO: error: No vpopmail /etc/libvpopmail/lib_deps file. Install libvpopmail-devel package" >&5
++echo "$as_me: error: No vpopmail /etc/libvpopmail/lib_deps file. Install libvpopmail-devel package" >&2;}
+    { (exit 1); exit 1; }; }
+ fi
+-lib_deps=`cat $vpopmaildir/etc/lib_deps`
++lib_deps=`cat /etc/libvpopmail/lib_deps`
+ 
+ 
+-if test ! -f $vpopmaildir/etc/inc_deps
++if test ! -f /etc/libvpopmail/inc_deps
+ then
+-        { { echo "$as_me:$LINENO: error: No vpopmail etc/inc_deps file. Upgrade to vpopmail-4.9.8 or above" >&5
+-echo "$as_me: error: No vpopmail etc/inc_deps file. Upgrade to vpopmail-4.9.8 or above" >&2;}
++        { { echo "$as_me:$LINENO: error: No vpopmail /etc/libvpopmail/inc_deps file. Install libvpopmail-devel package" >&5
++echo "$as_me: error: No vpopmail /etc/libvpopmail/inc_deps file. Install vpopmail-devel package" >&2;}
+    { (exit 1); exit 1; }; }
+ fi
+-inc_deps=`cat $vpopmaildir/etc/inc_deps`
+-
++inc_deps=`cat /etc/libvpopmail/inc_deps`
+ 
+ cgibindir=""
+ wwwroot=""

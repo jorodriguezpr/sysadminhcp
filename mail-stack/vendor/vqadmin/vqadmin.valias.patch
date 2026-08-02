@@ -1,0 +1,100 @@
+--- user.c.orig	2006-07-18 20:03:43.000000000 -0700
++++ user.c	2006-07-18 20:09:39.000000000 -0700
+@@ -488,79 +488,28 @@
+   }
+   printf("</table>\n");
+ 
+-/*  printf("<HR>\n");
+-  printf("<B>Alias/Forwards for %s</B>\n", domain);
+-  printf("<table cellspacing=5>\n"); 
+-  printf("<tr><th align=left><FONT face=%s color=\"%s\"><B>Name</B></FONT>\n",
+-   face, fgcolor);
+-  printf("</th><th><FONT face=%s color=\"%s\"><B>Alias/Forward</B></FONT></th><BR></tr>\n", face, fgcolor); */
+-  printf("<br></td>      </tr>      <tr> \n");
+-  printf("   <td colspan=\"2\" bgcolor=\"#007700\"><b><font color=\"#ffffff\">Alias/Forwards for %s</font></b> ", domain );
+-  printf("    </td>      </tr>      <tr>         <td colspan=\"2\"><br>\n");
+-  printf("         <table border=\"0\" cellspacing=\"0\" cellpadding=\"3\" width=\"100%c\">", 37 );
+-  printf("<tr><th align=left><B>Name</B>\n");
+-  printf("</th><th><B>Alias/Forward</B></th><BR></tr>\n");
+-  chdir(dir);
+-  mydir = opendir(".");
+-  count = 0;
+-  while( (mydirent=readdir(mydir)) != NULL ) {
+-      if ( strncmp(".qmail-", mydirent->d_name, 7) == 0 ) {
++ char Alias[256];
++ char *tmpalias;
+ 
+-          if ( strstr(mydirent->d_name, "-owner") != NULL ) continue;
+-          if ( strstr( mydirent->d_name, "-default") != NULL ) continue;
++ tmpalias = valias_select_all( Alias, domain );
+ 
+-          fs=fopen(mydirent->d_name,"r");
+-          memset(tmpbuf,0,sizeof(tmpbuf));
+-      if ( fgets( tmpbuf, 156, fs ) != NULL ) {
+-        if ( tmpbuf[0] == '|' ) {
+-            fclose(fs);
+-            continue;
+-        }
+-      }
+-
+-          for(i=7,j=0;j<156-1&&mydirent->d_name[i]!=0;++i,++j) {
+-              workdir[j] = mydirent->d_name[i];
+-          }
+-          workdir[j] = 0;
+-          ++count;
+-
+-/*          printf("<tr><td align=left><FONT face=%s color=\"%s\">%s@%s</td>", 
+-          face, fgcolor, workdir, domain); */
+-	  printf("<tr><td align=left>%s@%s</td>", workdir, domain);
++ if (tmpalias != NULL ) {
++      printf("<br></td>      </tr>      <tr> \n");
++      printf("   <td colspan=\"2\" bgcolor=\"#007700\"><b><font color=\"#ffffff\">Alias/Forwards for %s</font></b> ", domain );
++      printf("    </td>      </tr>      <tr>         <td colspan=\"2\"><br>\n");
++      printf("         <table border=\"0\" cellspacing=\"0\" cellpadding=\"3\" width=\"100%c\">", 37 );
++      printf("<tr><th align=left><B>Name</B>\n");
++      printf("</th><th><B>Alias/Forward</B></th><BR></tr>\n");
++
++ }
++ while (tmpalias != NULL ) {
++      printf("<tr><td align=left>%s@%s</td>", Alias, domain);
++      printf("<td align=left>\n");
++      printf("forward:&nbsp  %s</FONT><BR>\n", tmpalias);
++      printf("</td></tr>\n");
++      tmpalias = valias_select_all_next(Alias);
+ 
+-          printf("<td align=left>\n");
+-          fs=fopen(mydirent->d_name,"r");
+-      while ( fgets( tmpbuf, 156, fs ) != NULL ) {
+-                if ( tmpbuf[0] == '#' || isspace(tmpbuf[0]) ) {
+-/*            printf("<FONT face=%s color=\"%s\">&nbsp</FONT><BR>\n", 
+-            face, fgcolor); */
+-	      printf("&nbsp<BR>\n");
+-                } else if ( strstr(tmpbuf, "@") != NULL ) {
+-                    if ( tmpbuf[0] == '&' ) i = 1;
+-                    else i = 0;
+-
+-/*            printf("<FONT face=%s color=\"%s\">forward: %s</FONT><BR>\n", 
+-            face, fgcolor, &tmpbuf[i]); */
+-	      printf("forward: %s<BR>\n", &tmpbuf[i]);
+-                } else {
+-            tmpstr = &tmpbuf[strlen(tmpbuf)-2];
+-            *tmpstr = 0; 
+-                    while (*tmpstr!='/') --tmpstr;
+-            *tmpstr = 0;
+-                    while (*tmpstr!='/') --tmpstr;
+-                    ++tmpstr;
+-   
+-/*            printf("<FONT face=%s color=\"%s\">alias: %s</FONT><BR>\n", 
+-            face, fgcolor, tmpstr); */
+-	      printf("alias: %s<BR>\n", tmpstr);
+-                }
+-      }
+-          printf("</td></tr>\n");
+-
+-          fclose(fs);
+-      }
+   }
+-  closedir(mydir);
+ /*  printf("</table>\n");
+   printf("<HR>\n"); */
+   printf("</table>\n");
