@@ -1775,7 +1775,10 @@ info "Central ACME challenge directory created at /var/www/acme-challenge"
 # ─── Write revision.json (drives version number in sidebar + About page) ───
 # Without this file, GET /system/revision returns null fields and the panel
 # shows no version anywhere in the UI, even though the app itself runs fine.
-PANEL_VERSION=$(grep -m1 '"version"' "$REPO_DIR/package.json" | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' || true)
+# Reads version.json, NOT package.json — package.json's own "version" field is a stale,
+# separately-maintained value left over from before version.json became the single source
+# of truth (see scripts/deploy.js, which already reads version.json correctly).
+PANEL_VERSION=$(grep -m1 '"version"' "$REPO_DIR/version.json" 2>/dev/null | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' || true)
 [[ -z "$PANEL_VERSION" ]] && PANEL_VERSION="unknown"
 cat > "$SYSADMINHCP_ROOT/etc/revision.json" << REVEOF
 {
