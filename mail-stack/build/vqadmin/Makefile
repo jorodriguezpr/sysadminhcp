@@ -23,10 +23,19 @@ build: $(CGIDIR)/toaster.vqadmin
 $(CGIDIR)/toaster.vqadmin: $(VPOPMAIL_HOME)/bin/vadddomain
 	@echo "Building vqadmin $(VQADMIN_VERSION) from vendored source..."
 	rm -rf /tmp/$(SRCDIR) && cp $(VENDOR)/$(TARBALL) /tmp/ && cd /tmp && tar xzf $(TARBALL)
+	# The real vqadmin-2.3.7 tarball's html/*.html files are CRLF (old DJB-era templates), but
+	# vqadmin.html.patch's "old content" lines lose their CRLF somewhere in git checkout/deploy
+	# (confirmed: repo copy has them, server-deployed copy doesn't — depends on transfer path,
+	# not reliable to fix by preserving raw bytes through git). Normalize the extracted html
+	# files to LF here so they match whatever line-ending convention the patch actually carries
+	# at apply time, instead of depending on CRLF surviving the round trip intact.
+	cd /tmp/$(SRCDIR) && sed -i 's/\r$$//' html/*.html
 	cd /tmp/$(SRCDIR) && patch -p0 < $(CURDIR)/$(VENDOR)/vqadmin.template.patch
 	cd /tmp/$(SRCDIR) && patch -p0 < $(CURDIR)/$(VENDOR)/vqadmin.valias.patch
 	cd /tmp/$(SRCDIR) && patch -p0 < $(CURDIR)/$(VENDOR)/vqadmin.chrome.patch
-	cd /tmp/$(SRCDIR) && patch -p2 < $(CURDIR)/$(VENDOR)/vqadmin.html.patch
+	# Normalize the patch itself too (not just the extracted source above) — don't rely on
+	# either side's CRLF surviving whatever transfer path deployed this file to the build box.
+	cd /tmp/$(SRCDIR) && sed 's/\r$$//' $(CURDIR)/$(VENDOR)/vqadmin.html.patch | patch -p2
 	cd /tmp/$(SRCDIR) && patch -p1 < $(CURDIR)/$(VENDOR)/vqadmin.vpopmail.devel.patch
 	cd /tmp/$(SRCDIR) && patch -p1 < $(CURDIR)/$(VENDOR)/vqadmin.vpopmail.ver.patch
 	cd /tmp/$(SRCDIR) && patch -p1 < $(CURDIR)/$(VENDOR)/vqadmin-dom-defaults.patch
