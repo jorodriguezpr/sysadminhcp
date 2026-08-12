@@ -1794,10 +1794,14 @@ info "Central ACME challenge directory created at /var/www/acme-challenge"
 # ─── Write revision.json (drives version number in sidebar + About page) ───
 # Without this file, GET /system/revision returns null fields and the panel
 # shows no version anywhere in the UI, even though the app itself runs fine.
-# Reads version.json, NOT package.json — package.json's own "version" field is a stale,
-# separately-maintained value left over from before version.json became the single source
-# of truth (see scripts/deploy.js, which already reads version.json correctly).
-PANEL_VERSION=$(grep -m1 '"version"' "$REPO_DIR/version.json" 2>/dev/null | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' || true)
+# Reads the plain-text VERSION file at the repo root (line 1 = version string), NOT
+# version.json or package.json's own "version" field: version.json is a dev-repo-only file
+# used by scripts/deploy.js and is never shipped in the public GitHub release this installer
+# actually clones, so this always silently fell through to "unknown" on every real install
+# (confirmed live on a fresh Server 6 install, 2026-08-12) — package.json's "version" field is
+# ALSO stale/unrelated (separately maintained, frozen at 8.0.26). scripts/gitdeploy-build.js
+# is what writes the real, current version into VERSION at release-build time.
+PANEL_VERSION=$(head -1 "$REPO_DIR/VERSION" 2>/dev/null | tr -d '[:space:]' || true)
 [[ -z "$PANEL_VERSION" ]] && PANEL_VERSION="unknown"
 cat > "$SYSADMINHCP_ROOT/etc/revision.json" << REVEOF
 {
