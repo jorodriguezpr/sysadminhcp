@@ -1700,8 +1700,17 @@ cat > /etc/httpd/conf.d/webmail.conf << 'WMEOF'
 </VirtualHost>
 
 <VirtualHost *:443>
+    # No "ServerAlias webmail.*" here (unlike the plain-HTTP block above) - mod_ssl picks the
+    # SSLCertificateFile to present during the TLS handshake by matching SNI against every
+    # loaded vhost's ServerName/ServerAlias, and this file is written (and therefore registered
+    # with Apache) before the per-domain webmail_<domain>.conf vhosts each domain gets. A
+    # wildcard alias here intercepts SNI for every "webmail.<anything>" hostname ahead of the
+    # exact-match per-domain vhost that has the domain's real certificate, so every domain's
+    # webmail.<domain> silently got this box's generic self-signed cert instead - confirmed live
+    # on a real cPanel import (ssltrans.com) despite webmail_ssltrans.com.conf itself being
+    # correctly generated with the right cert paths the whole time. ServerName alone still
+    # answers a direct https://webmail/ hit for local/no-SNI-match fallback traffic.
     ServerName webmail
-    ServerAlias webmail.*
 
     DocumentRoot "/var/www/rainloop"
     <Directory "/var/www/rainloop">
