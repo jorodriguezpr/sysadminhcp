@@ -133,7 +133,7 @@ info "Step 1: Updating system packages..."
 # initscripts-Y"). Some AlmaLinux 9 cloud images ship it pre-installed even
 # though the OS no longer needs it for networking — NetworkManager stays
 # active either way — so remove it first if present, before the update runs.
-dnf remove -y network-scripts 2>/dev/null || true
+dnf remove -y network-scripts >/dev/null 2>&1 || true
 dnf update -y
 
 # ─── Step 2: Install EPEL Repository ────────────────────────────────────────
@@ -164,7 +164,7 @@ dnf install -y bind bind-utils
 
 # Mail (QmailToaster from official QMT repo)
 # Note: postfix is removed as it conflicts with qmail
-dnf remove -y postfix 2>/dev/null || true
+dnf remove -y postfix >/dev/null 2>&1 || true
 userdel postfix 2>/dev/null || true
 
 # Install QMT repo
@@ -1827,7 +1827,11 @@ info "Step 15: Verifying installation..."
 # Wait for SysAdminHCP to start (up to 30 seconds)
 HEALTH_OK=0
 for i in $(seq 1 30); do
-  if curl -s http://localhost:7778/health 2>/dev/null | grep -q '"ok"'; then
+  # -L -k: SYSADMINHCP_SSL=true (the default) makes the app 301-redirect plain HTTP to HTTPS
+  # before ever reaching /health's JSON body - a plain `curl http://.../health` gets the
+  # redirect page text every time and this check fails permanently, not just slowly. -L follows
+  # the redirect; -k accepts the install's own fresh self-signed cert.
+  if curl -sL -k http://localhost:7778/health 2>/dev/null | grep -q '"ok"'; then
     HEALTH_OK=1
     break
   fi

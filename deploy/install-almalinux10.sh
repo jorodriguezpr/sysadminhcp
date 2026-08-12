@@ -150,7 +150,7 @@ info "Step 1: Updating system packages..."
 # initscripts-Y"). Some AlmaLinux cloud images ship it pre-installed even
 # though the OS no longer needs it for networking — remove it first if
 # present, before the update runs.
-dnf remove -y network-scripts 2>/dev/null || true
+dnf remove -y network-scripts >/dev/null 2>&1 || true
 dnf update -y
 
 # ─── Step 2: Install EPEL Repository ────────────────────────────────────────
@@ -181,7 +181,7 @@ dnf install -y httpd httpd-devel mod_ssl
 dnf install -y bind bind-utils
 
 # Mail — remove postfix (conflicts with qmail)
-dnf remove -y postfix 2>/dev/null || true
+dnf remove -y postfix >/dev/null 2>&1 || true
 userdel postfix 2>/dev/null || true
 
 # No QmailToaster repo registration — every mail-stack component below is either built from
@@ -1593,7 +1593,7 @@ info "Step 14.6: Installing RainLoop webmail..."
 
 RAINLOOP_DIR="/var/www/rainloop"
 if [[ -f "$RAINLOOP_DIR/index.php" ]]; then
-  info "RainLoop already installed at $RAINLOOP_DIR ��� skipping"
+  info "RainLoop already installed at $RAINLOOP_DIR - skipping"
 else
   mkdir -p "$RAINLOOP_DIR/data/_data_/_default_/configs"
   mkdir -p "$RAINLOOP_DIR/data/_data_/_default_/domains"
@@ -1980,7 +1980,13 @@ info "Step 15: Verifying installation..."
 
 HEALTH_OK=0
 for i in $(seq 1 30); do
-  if curl -s http://localhost:7778/health 2>/dev/null | grep -q '"ok"'; then
+  # -L -k: SYSADMINHCP_SSL=true (the default) makes the app 301-redirect plain HTTP to HTTPS
+  # before ever reaching /health's JSON body - a plain `curl http://.../health` gets the
+  # redirect page text every time and this check fails permanently, not just slowly, no matter
+  # how long the loop runs. -L follows the redirect; -k accepts the install's own fresh
+  # self-signed cert. Confirmed live: without this, every SSL-enabled install (the default)
+  # reported "did not respond within 30s" even though the app was already up and healthy.
+  if curl -sL -k http://localhost:7778/health 2>/dev/null | grep -q '"ok"'; then
     HEALTH_OK=1; break
   fi
   sleep 1

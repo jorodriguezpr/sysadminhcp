@@ -1875,7 +1875,11 @@ info "Step 15: Verifying installation..."
 # Wait for SysAdminHCP to start (up to 30 seconds)
 HEALTH_OK=0
 for i in $(seq 1 30); do
-  if curl -s http://localhost:7778/health 2>/dev/null | grep -q '"ok"'; then
+  # -L -k: SYSADMINHCP_SSL=true (the default) makes the app 301-redirect plain HTTP to HTTPS
+  # before ever reaching /health's JSON body - a plain `curl http://.../health` gets the
+  # redirect page text every time and this check fails permanently, not just slowly. -L follows
+  # the redirect; -k accepts the install's own fresh self-signed cert.
+  if curl -sL -k http://localhost:7778/health 2>/dev/null | grep -q '"ok"'; then
     HEALTH_OK=1
     break
   fi
