@@ -923,6 +923,17 @@ SESSION_SECRET=$(reuse_or_generate SYSADMINHCP_SESSION_SECRET)
 COOKIE_SECRET=$(reuse_or_generate SYSADMINHCP_COOKIE_SECRET)
 TOTP_ENC_KEY=$(reuse_or_generate SYSADMINHCP_TOTP_ENC_KEY)
 MYSQL_ROOT_PASS=$(reuse_or_generate SYSADMINHCP_MYSQL_ROOT_PASS)
+# reuse_or_generate() only looks inside $SYSADMINHCP_ROOT/etc/sysadminhcp.env, which is exactly
+# what gets destroyed by a "remove and reinstall the panel" cycle (rm -rf /usr/local/sysadminhcp)
+# that deliberately leaves MariaDB itself untouched - the next run then has no record of the
+# actual root password already set in MariaDB, generates a brand new one, and every MySQL step
+# below (securing root, Pure-FTPd DB, vpopmail DB, the panel's own DB user) fails outright with
+# an auth mismatch. Confirmed live on Server 6. Mirror it to a location outside the panel's own
+# removable tree so it survives that specific, otherwise-reasonable operation.
+PERSISTENT_MYSQL_PASS_FILE="/root/.sysadminhcp-mysql-root-password"
+if [ -z "$(grep '^SYSADMINHCP_MYSQL_ROOT_PASS=' "$EXISTING_ENV" 2>/dev/null)" ] && [ -f "$PERSISTENT_MYSQL_PASS_FILE" ]; then
+  MYSQL_ROOT_PASS=$(cat "$PERSISTENT_MYSQL_PASS_FILE")
+fi
 
 cat > "$SYSADMINHCP_ROOT/etc/sysadminhcp.env" << EOF
 # SysAdminHCP Environment Configuration
@@ -1288,8 +1299,14 @@ if [[ $FRESH_INSTALL -eq 1 ]]; then
   done
 
   if mysqladmin ping -u root 2>/dev/null; then
-    info "Securing MariaDB installation..."
-    mysql -u root << EOSQL 2>/dev/null || warn "MariaDB secure install partially failed"
+    # A passwordless `mysql -u root` connection only succeeds on a genuinely never-secured
+    # MariaDB. If it fails, root already has a password from a prior run of this installer -
+    # blindly running the ALTER USER below as passwordless root would just fail (it did, live -
+    # see the comment on PERSISTENT_MYSQL_PASS_FILE above), leaving $MYSQL_ROOT_PASS pointing at
+    # a password MariaDB doesn't actually have and taking every downstream MySQL step with it.
+    if mysql -u root -e "SELECT 1" >/dev/null 2>&1; then
+      info "Securing MariaDB installation..."
+      mysql -u root << EOSQL 2>/dev/null || warn "MariaDB secure install partially failed"
 ALTER USER 'root'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('${MYSQL_ROOT_PASS}');
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
@@ -1297,10 +1314,17 @@ DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 EOSQL
+    elif mysql -u root -p"${MYSQL_ROOT_PASS}" -e "SELECT 1" >/dev/null 2>&1; then
+      info "MariaDB root is already secured with the known root password (recovered from $PERSISTENT_MYSQL_PASS_FILE) - nothing to do"
+    else
+      warn "MariaDB root already has a password this installer doesn't know (the panel directory was removed and reinstalled without $PERSISTENT_MYSQL_PASS_FILE surviving) - every step below needing database access will fail. Recover manually (restart mariadb with --skip-grant-tables, reset the root password, restart normally) then re-run this installer."
+    fi
     echo -n "${MYSQL_ROOT_PASS}" > /usr/local/sysadminhcp/etc/mysql-root-password
     chown sysadminhcp:sysadminhcp /usr/local/sysadminhcp/etc/mysql-root-password
     chmod 600 /usr/local/sysadminhcp/etc/mysql-root-password
-    info "MariaDB root password randomly generated and saved to /usr/local/sysadminhcp/etc/mysql-root-password"
+    echo -n "${MYSQL_ROOT_PASS}" > "$PERSISTENT_MYSQL_PASS_FILE"
+    chmod 600 "$PERSISTENT_MYSQL_PASS_FILE"
+    info "MariaDB root password saved to /usr/local/sysadminhcp/etc/mysql-root-password and $PERSISTENT_MYSQL_PASS_FILE"
   else
     warn "MariaDB not responding after 30s - skipping secure installation"
   fi
