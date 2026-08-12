@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog</title>
+<style>
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #333; background: #fafafa; }
+header { background: #fff; border-bottom: 1px solid #eee; padding: 20px; text-align: center; }
+header h1 { margin: 0; }
+.layout { max-width: 1000px; margin: 0 auto; padding: 40px 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 40px; }
+.post { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.post h2 { margin-top: 0; }
+.post .meta { color: #888; font-size: 0.85rem; margin-bottom: 12px; }
+.post .excerpt { color: #555; line-height: 1.6; }
+.post a.readmore { color: #2563eb; text-decoration: none; font-weight: bold; }
+.sidebar .box { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.sidebar h3 { margin-top: 0; }
+.sidebar ul { list-style: none; padding: 0; margin: 0; }
+.sidebar li { padding: 6px 0; border-bottom: 1px solid #eee; }
+.sidebar a { color: #555; text-decoration: none; }
+@media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>The Blog</h1>
+  <p>Thoughts, updates, and stories.</p>
+</header>
+<div class="layout">
+  <div class="posts">
+    <article class="post">
+      <h2>First Post Title</h2>
+      <div class="meta">Posted January 1, 2026 by Admin</div>
+      <p class="excerpt">A short excerpt from the blog post goes here, giving readers a preview of the full content before they click through to read more.</p>
+      <a class="readmore" href="#">Read more &rarr;</a>
+    </article>
+    <article class="post">
+      <h2>Second Post Title</h2>
+      <div class="meta">Posted January 5, 2026 by Admin</div>
+      <p class="excerpt">Another short excerpt goes here to demonstrate the blog layout with multiple posts stacked vertically.</p>
+      <a class="readmore" href="#">Read more &rarr;</a>
+    </article>
+  </div>
+  <div class="sidebar">
+    <div class="box"><h3>Categories</h3><ul><li><a href="#">News</a></li><li><a href="#">Updates</a></li><li><a href="#">Tutorials</a></li></ul></div>
+    <div class="box"><h3>Recent Posts</h3><ul><li><a href="#">First Post Title</a></li><li><a href="#">Second Post Title</a></li></ul></div>
+  </div>
+</div>
+</body>
+</html>

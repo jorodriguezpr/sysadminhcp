@@ -192,8 +192,18 @@
         <li><a href="#s22-4">API Access</a></li>
       </ol>
     </li>
-    <li><a href="#s23">Troubleshooting &amp; FAQ</a></li>
-    <li><a href="#s24">Getting Help</a></li>
+    <li><a href="#s23">Web Config</a>
+      <ol>
+        <li><a href="#s23-1">Redirects</a></li>
+        <li><a href="#s23-2">Custom Error Pages</a></li>
+        <li><a href="#s23-3">Directory Password Protection</a></li>
+        <li><a href="#s23-4">Custom MIME Types</a></li>
+      </ol>
+    </li>
+    <li><a href="#s24">Calendar &amp; Contacts <span class="pro-badge">Pro</span></a></li>
+    <li><a href="#s25">PHP Settings <span class="pro-badge">Pro</span></a></li>
+    <li><a href="#s26">Troubleshooting &amp; FAQ</a></li>
+    <li><a href="#s27">Getting Help</a></li>
   </ol>
 </div>
 
@@ -874,10 +884,129 @@
   at any time from its row; this never affects your account password.</p>
 </section>
 
-<!-- ============ 23. TROUBLESHOOTING ============ -->
+<!-- ============ 23. WEB CONFIG ============ -->
 <section id="s23">
   <h1 class="part">Chapter 23</h1>
-  <h2><span class="num">23.</span>Troubleshooting &amp; FAQ</h2>
+  <h2><span class="num">23.</span>Web Config</h2>
+  <p>Four small tools for controlling exactly how your web server handles requests to your domain, all generated
+  directly into your vhost configuration — not written as <code>.htaccess</code> files that could be lost or
+  tampered with.</p>
+
+  <h3 id="s23-1">23.1 Redirects</h3>
+  <p>Send visitors from one URL to another automatically.</p>
+  <ol class="steps">
+    <li>Go to <span class="ui">Redirects</span> in the sidebar.</li>
+    <li>Click <span class="ui">+ Add Redirect</span>.</li>
+    <li>Enter the <strong>Source Path</strong> (e.g. <code>/old-page</code>) and the <strong>Destination URL</strong>
+    it should send visitors to.</li>
+    <li>Choose <strong>301 (Permanent)</strong> if the old page is gone for good, or <strong>302 (Temporary)</strong>
+    if you'll restore it later — search engines treat these differently.</li>
+    <li>Click <span class="ui">Create</span>.</li>
+  </ol>
+
+  <h3 id="s23-2">23.2 Custom Error Pages</h3>
+  <p>Replace the default "404 Not Found" or "500 Server Error" page shown to visitors with your own branded page.</p>
+  <ol class="steps">
+    <li>Go to <span class="ui">Error Pages</span> in the sidebar.</li>
+    <li>Pick the error code you want to customize (404, 403, 500, etc.).</li>
+    <li>Enter the path to your own HTML file (upload it via <a href="#s13">File Manager</a> first), or paste HTML
+    directly if the editor supports it.</li>
+    <li>Click <span class="ui">Save</span>.</li>
+  </ol>
+
+  <h3 id="s23-3">23.3 Directory Password Protection</h3>
+  <p>Password-protect any folder under your domain with HTTP Basic Auth — a browser login prompt appears before
+  anyone can view that folder's contents.</p>
+  <ol class="steps">
+    <li>Go to <span class="ui">Directory Protection</span> in the sidebar.</li>
+    <li>Click <span class="ui">+ Protect Directory</span> and choose the folder (e.g. <code>/private</code>).</li>
+    <li>Add one or more users, each with their own username and password — these are separate from your portal
+    login.</li>
+    <li>Click <span class="ui">Save</span>.</li>
+  </ol>
+  <div class="box tip">
+    <span class="box-title">Multiple users per directory</span>
+    You can add several users to the same protected directory — useful for sharing access with a client or
+    contractor without giving out your own portal credentials.
+  </div>
+
+  <h3 id="s23-4">23.4 Custom MIME Types</h3>
+  <p>Tell the web server how to serve a file extension it doesn't recognize by default (for example, serving
+  <code>.webmanifest</code> files with the correct content type for a progressive web app).</p>
+  <ol class="steps">
+    <li>Go to <span class="ui">MIME Types</span> in the sidebar.</li>
+    <li>Click <span class="ui">+ Add Mapping</span>.</li>
+    <li>Enter the file <strong>Extension</strong> (e.g. <code>webmanifest</code>) and the <strong>MIME Type</strong>
+    it should be served as (e.g. <code>application/manifest+json</code>).</li>
+    <li>Click <span class="ui">Save</span>.</li>
+  </ol>
+</section>
+
+<!-- ============ 24. CALENDAR & CONTACTS ============ -->
+<section id="s24">
+  <h1 class="part">Chapter 24</h1>
+  <h2><span class="num">24.</span>Calendar &amp; Contacts <span class="pro-badge">Pro</span></h2>
+  <p>If your administrator has enabled it for your domain, every mailbox gets its own CalDAV/CardDAV calendar and
+  address book — sync-able with Apple Calendar/Contacts, iOS, Thunderbird, DAVx⁵, and Outlook. There may also be a
+  <strong>domain-shared</strong> calendar and address book that everyone on the domain can see.</p>
+
+  <h3>Connecting a device</h3>
+  <ol class="steps">
+    <li>Go to <span class="ui">Calendar &amp; Contacts</span> in the sidebar to find your DAV address — it looks
+    like <code>https://dav.yourdomain.com/you@yourdomain.com/</code>.</li>
+    <li>In your calendar/contacts app, add a new CalDAV or CardDAV account using that address.</li>
+    <li>Sign in with your normal mailbox email address and password — there's no separate DAV password to
+    remember.</li>
+  </ol>
+
+  <div class="box tip">
+    <span class="box-title">Works even if webmail is down</span>
+    Calendar &amp; Contacts authenticates directly against your mail account, not through webmail — so it keeps
+    working even during a webmail outage.
+  </div>
+
+  <h3>Domain-shared calendar &amp; contacts</h3>
+  <p>If your administrator turned this on, a shared calendar and/or shared address book is visible to everyone on
+  the domain, and may also be shared read-only outside the domain via a public link — check the Calendar &amp;
+  Contacts page for that link if one has been generated.</p>
+
+  <div class="box warn">
+    <span class="box-title">Not seeing this menu item?</span>
+    Calendar &amp; Contacts requires a Pro license and must be enabled per domain by your administrator — if it's
+    missing entirely, ask them to turn it on for your domain.
+  </div>
+</section>
+
+<!-- ============ 25. PHP SETTINGS ============ -->
+<section id="s25">
+  <h1 class="part">Chapter 25</h1>
+  <h2><span class="num">25.</span>PHP Settings <span class="pro-badge">Pro</span></h2>
+  <p>Tune your own domain's PHP-FPM process pool directly, without waiting on your administrator — separate from
+  <a href="#s15">PHP Version</a>, which controls which PHP version runs, not how its processes are configured.</p>
+
+  <ol class="steps">
+    <li>Go to <span class="ui">PHP Settings</span> in the sidebar and pick the domain to configure, if you have
+    more than one.</li>
+    <li>Adjust <strong>Memory Limit</strong> if your application reports running out of memory.</li>
+    <li>Adjust <strong>Max Children</strong> (how many simultaneous PHP requests the pool can handle) if your site
+    gets slow or unresponsive under traffic — higher values use more server RAM.</li>
+    <li>Adjust <strong>Request Timeout</strong> if a legitimately slow operation (a large import, a report) is
+    being cut off before it finishes.</li>
+    <li>Click <span class="ui">Save</span> — the change applies within a few seconds.</li>
+  </ol>
+
+  <div class="box warn">
+    <span class="box-title">Higher isn't always better</span>
+    Raising Max Children or Memory Limit too far can exhaust your account's overall resource limit and affect other
+    sites on a shared plan. Start with small increases and check whether the problem is actually resolved before
+    raising further.
+  </div>
+</section>
+
+<!-- ============ 26. TROUBLESHOOTING (was 23) ============ -->
+<section id="s26">
+  <h1 class="part">Chapter 26</h1>
+  <h2><span class="num">26.</span>Troubleshooting &amp; FAQ</h2>
 
   <h4>"I don't have permission" / a button doesn't do anything</h4>
   <p>Your administrator can restrict individual actions (adding domains, deleting mailboxes, managing DNS, etc.)
@@ -916,10 +1045,10 @@
   AI spam filtering enabled, there's no log to check yet; ask your administrator to enable it.</p>
 </section>
 
-<!-- ============ 24. GETTING HELP ============ -->
-<section id="s24">
-  <h1 class="part">Chapter 24</h1>
-  <h2><span class="num">24.</span>Getting Help</h2>
+<!-- ============ 27. GETTING HELP (was 24) ============ -->
+<section id="s27">
+  <h1 class="part">Chapter 27</h1>
+  <h2><span class="num">27.</span>Getting Help</h2>
   <p>If this manual doesn't answer your question:</p>
   <ul>
     <li>If your account has <strong>Support Tickets</strong> enabled, open a ticket from the

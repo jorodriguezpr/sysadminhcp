@@ -24,10 +24,11 @@
 # Rate limits config: /var/qmail/control/sysadminhcp-ratelimits
 #   One line per domain:  example.com 100    (0 or missing = unlimited)
 #
-# DKIM signing (Ubuntu/Debian only — see enableDkimUbuntu() in mailService.ts):
+# DKIM signing (all OS families — see enableDkim() in mailService.ts):
 #   Gated on /var/qmail/control/dkim-signing-enabled (global switch, panel Settings
 #   toggle) AND /var/qmail/control/domainkeys/<domain>/private (per-domain key, panel
-#   "Generate DKIM Keys" button). Requires python3-dkim (apt package).
+#   "Generate DKIM Keys" button). Requires the dkimpy Python module (apt: python3-dkim;
+#   RHEL/AlmaLinux: no distro package — installed via pip3 into a dedicated venv).
 #
 # SpamAssassin content scanning (see MailService.enableSpamAssassin() in mailService.ts):
 #   Gated on /var/qmail/control/spamassassin-scanning-enabled (panel Mail > Spam toggle).
@@ -105,10 +106,16 @@ increment_counter() {
   local tag; tag=$(date +%Y%m%d%H)
   local dir="${RATE_DIR}/${dom}"
   local cf="${dir}/${tag}"
+  # mkdir's mode depends on the calling process's umask, which differs between
+  # inbound SMTP delivery and outbound authenticated submission on some servers —
+  # chmod explicitly so the panel's own service user (not in the vpopmail/vchkpw
+  # group) can always read these back for the Email Stats page, regardless.
   mkdir -p "$dir" 2>/dev/null || true
+  chmod 755 "$dir" 2>/dev/null || true
   local cur
   cur=$(cat "$cf" 2>/dev/null || echo 0)
   echo $(( cur + 1 )) > "$cf" 2>/dev/null || true
+  chmod 644 "$cf" 2>/dev/null || true
   find "$dir" -type f -mmin +2880 -delete 2>/dev/null &
 }
 

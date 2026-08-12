@@ -49,8 +49,20 @@ RESULT=$($PHP "$FILTER_DIR/bin/sync-filter.php" "$TEMP_FILE" "$RECIPIENT" 2>/dev
 # Extract fields from JSON result
 IS_SPAM=$($PHP -r '$d=json_decode(file_get_contents("php://stdin"),true); echo ($d["is_spam"]??false) ? "true":"false";' <<< "$RESULT" 2>/dev/null)
 CONFIDENCE=$($PHP -r '$d=json_decode(file_get_contents("php://stdin"),true); echo round(($d["confidence"]??0)*100);' <<< "$RESULT" 2>/dev/null)
+SPAM_TYPE=$($PHP -r '$d=json_decode(file_get_contents("php://stdin"),true); echo $d["spam_type"]??"";' <<< "$RESULT" 2>/dev/null)
 IS_SPAM="${IS_SPAM:-false}"
 CONFIDENCE="${CONFIDENCE:-0}"
+
+# Two independent classifiers can both land here: SpamAssassin's own verdict (tagged as a
+# header at SMTP-accept time, checked directly in sync-filter.php) and the AI classifier. Keep
+# their results visibly separate rather than merging into one folder — SpamAssassin-flagged
+# mail goes to .Spam (matching what every mailbox already has since creation, and what the
+# webmail app's own Spam tab already points at by default), AI-flagged mail keeps going to
+# .Quarantine (its own existing review workflow: dashboard stats, one-click whitelist-approve
+# emails) exactly as before this change.
+if [ "$SPAM_TYPE" = "spamassassin" ]; then
+    QUARANTINE_FOLDER=".Spam"
+fi
 
 # Prepend spam classification headers to the email (before existing headers)
 TAGGED_FILE=$(mktemp /tmp/saf-tagged-XXXXXX.eml)

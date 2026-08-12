@@ -353,7 +353,7 @@ done
 apt-get install -y pure-ftpd-mysql || apt-get install -y pure-ftpd
 
 # ── Security tools ──────────────────────────────────────────────────────────
-apt-get install -y fail2ban clamav clamav-daemon clamav-freshclam || warn "Some security packages failed to install"
+apt-get install -y fail2ban clamav clamav-daemon clamav-freshclam ipset || warn "Some security packages failed to install"
 
 # ── firewalld (replaces ufw so the panel Security pages work unchanged) ─────
 if ! command -v firewall-cmd &>/dev/null; then
@@ -870,6 +870,30 @@ else
   warn "deploy/qmail-ai-filter not found in source - AI Spam Filter feature will be unavailable until deployed manually"
 fi
 
+# Copy Calendar & Contacts (CalDAV/CardDAV) plugin source + install script — Pro license,
+# opt-in addon like the AI Spam Filter above: files are staged here so the panel's own
+# "Install" button (DavService.install() -> RadicaleDriver) can run
+# install-sysadminhcp-dav.sh on demand, not run automatically during OS setup. Paths match
+# httpdocs/ (not $SYSADMINHCP_ROOT directly) because deploy.js's own ongoing sync for this
+# feature already targets httpdocs/deploy/dav-plugin + httpdocs/scripts — keeping fresh
+# installs and every later `npm run deploy` in agreement about where these files live.
+if [[ -d "$REPO_DIR/deploy/dav-plugin" ]]; then
+  mkdir -p "$SYSADMINHCP_ROOT/httpdocs/deploy"
+  rm -rf "$SYSADMINHCP_ROOT/httpdocs/deploy/dav-plugin"
+  cp -r "$REPO_DIR/deploy/dav-plugin" "$SYSADMINHCP_ROOT/httpdocs/deploy/dav-plugin"
+  info "Copied Calendar & Contacts (dav-plugin) deploy bundle to $SYSADMINHCP_ROOT/httpdocs/deploy/dav-plugin"
+else
+  warn "deploy/dav-plugin not found in source - Calendar & Contacts feature will be unavailable until deployed manually"
+fi
+if [[ -f "$REPO_DIR/deploy/install-sysadminhcp-dav.sh" ]]; then
+  mkdir -p "$SYSADMINHCP_ROOT/httpdocs/scripts"
+  cp "$REPO_DIR/deploy/install-sysadminhcp-dav.sh" "$SYSADMINHCP_ROOT/httpdocs/scripts/install-sysadminhcp-dav.sh"
+  chmod 755 "$SYSADMINHCP_ROOT/httpdocs/scripts/install-sysadminhcp-dav.sh"
+  info "Copied install-sysadminhcp-dav.sh script"
+else
+  warn "deploy/install-sysadminhcp-dav.sh not found in source - Calendar & Contacts feature will be unavailable until deployed manually"
+fi
+
 # ─── Step 8.5: Install qmail-queue rate-limit + DKIM-signing wrapper ───────
 # python3-dkim (dkimpy) provides the `dkim` module dkim-sign-message.py imports — this
 # build's spamdyke has no DKIM support at all, so Ubuntu signs outbound mail via the
@@ -977,7 +1001,7 @@ chmod 750 "$SYSADMINHCP_ROOT/etc/sysadminhcp.env"
 rm -f /etc/sudoers.d/sysadminhcp-logs
 cat > /etc/sudoers.d/sysadminhcp << 'SUDOEOF'
 Defaults:sysadminhcp env_keep += "DEBIAN_FRONTEND"
-sysadminhcp ALL=(root) NOPASSWD: /usr/bin/tail, /usr/bin/cat, /usr/bin/touch, /usr/bin/journalctl, /usr/local/sysadminhcp/scripts/install-qmail-toaster.sh, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/find, /usr/bin/mkdir, /usr/bin/rm, /usr/bin/systemctl, /bin/systemctl, /usr/bin/tcprules, /usr/sbin/useradd, /usr/sbin/groupadd, /usr/bin/id, /usr/sbin/usermod, /home/vpopmail/bin/vadddomain, /home/vpopmail/bin/vdeldomain, /home/vpopmail/bin/vadduser, /home/vpopmail/bin/vdeluser, /home/vpopmail/bin/vchangepw, /home/vpopmail/bin/vpasswd, /home/vpopmail/bin/vsetuserquota, /home/vpopmail/bin/vmoduser, /home/vpopmail/bin/vmoddomlimits, /home/vpopmail/bin/vdominfo, /home/vpopmail/bin/vuserinfo, /usr/bin/apt-get, /usr/bin/apt, /usr/bin/dpkg, /usr/bin/add-apt-repository, /usr/bin/setfacl, /usr/bin/firewall-cmd, /usr/sbin/iptables, /sbin/iptables, /usr/bin/freshclam, /usr/bin/fail2ban-client, /bin/bash, /usr/bin/bash, /root/.acme.sh/acme.sh, /usr/bin/openssl
+sysadminhcp ALL=(root) NOPASSWD: /usr/bin/tail, /usr/bin/cat, /usr/bin/touch, /usr/bin/journalctl, /usr/local/sysadminhcp/scripts/install-qmail-toaster.sh, /usr/local/sysadminhcp/httpdocs/scripts/install-sysadminhcp-dav.sh, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/find, /usr/bin/mkdir, /usr/bin/rm, /usr/bin/systemctl, /bin/systemctl, /usr/bin/tcprules, /usr/sbin/useradd, /usr/sbin/groupadd, /usr/bin/id, /usr/sbin/usermod, /home/vpopmail/bin/vadddomain, /home/vpopmail/bin/vdeldomain, /home/vpopmail/bin/vadduser, /home/vpopmail/bin/vdeluser, /home/vpopmail/bin/vchangepw, /home/vpopmail/bin/vpasswd, /home/vpopmail/bin/vsetuserquota, /home/vpopmail/bin/vmoduser, /home/vpopmail/bin/vmoddomlimits, /home/vpopmail/bin/vdominfo, /home/vpopmail/bin/vuserinfo, /usr/bin/apt-get, /usr/bin/apt, /usr/bin/dpkg, /usr/bin/add-apt-repository, /usr/bin/setfacl, /usr/bin/firewall-cmd, /usr/sbin/ipset, /usr/sbin/iptables, /sbin/iptables, /usr/bin/freshclam, /usr/bin/fail2ban-client, /bin/bash, /usr/bin/bash, /root/.acme.sh/acme.sh, /usr/bin/openssl
 SUDOEOF
 chmod 440 /etc/sudoers.d/sysadminhcp
 visudo -c && info "sudoers validated OK" || warn "sudoers validation failed — check /etc/sudoers.d/sysadminhcp"
@@ -1288,6 +1312,50 @@ systemctl restart apache2 2>/dev/null || warn "Apache failed to start - may need
 # BIND
 systemctl enable named 2>/dev/null || systemctl enable bind9 2>/dev/null || true
 systemctl restart named 2>/dev/null || systemctl restart bind9 2>/dev/null || warn "BIND (named) failed to start"
+
+# Point system DNS resolution at our own local recursive BIND instead of the cloud
+# provider's shared resolver. Real-world failure mode this avoids (hit live on a fresh
+# install): shared provider resolvers get rate-limited by Spamhaus's free public DNSBL
+# mirror once enough OTHER customers on that same resolver query it ("excess volume"),
+# and once that happens spamdyke's own RBL check misreads Spamhaus's rate-limit response
+# as "this connecting IP is blacklisted" — rejecting ALL inbound mail from every sender,
+# server-wide, for a reason that has nothing to do with actual sender reputation. Public
+# resolvers (1.1.1.1/8.8.8.8) don't fix this either — Spamhaus's free mirror separately
+# refuses queries it recognizes as coming from a known public resolver. BIND already does
+# full recursion for 127.0.0.1 (allow-query any, configured above), so this is safe as
+# long as named/bind9 is actually running. 1.1.1.1 is kept as a fallback purely so DNS
+# still works at all if BIND ever crashes — it is never queried for anything as long as
+# 127.0.0.1 answers, so it never reintroduces the shared/public-resolver problem.
+info "Pointing system DNS resolution at local BIND (avoids shared-resolver Spamhaus rate-limiting)..."
+if systemctl is-active --quiet systemd-resolved; then
+  mkdir -p /etc/systemd/resolved.conf.d
+  cat > /etc/systemd/resolved.conf.d/sysadminhcp-local-bind.conf << 'RESOLVEDCONF'
+[Resolve]
+DNS=127.0.0.1
+FallbackDNS=1.1.1.1
+DNSStubListener=no
+RESOLVEDCONF
+  systemctl restart systemd-resolved 2>/dev/null && info "DNS resolver set via systemd-resolved (persists across reboots)" \
+    || warn "systemd-resolved restart failed - DNS resolver change may not have taken effect"
+  # DNSStubListener=no means /etc/resolv.conf must point directly at the real resolved
+  # config (127.0.0.1:53, i.e. BIND itself), not systemd-resolved's own 127.0.0.53 stub
+  # (which would no longer be listening) or a stale static file cloud-init dropped in.
+  ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf 2>/dev/null || true
+elif command -v netplan &>/dev/null && [[ -d /etc/netplan ]] && ls /etc/netplan/*.yaml &>/dev/null 2>&1; then
+  warn "systemd-resolved not active but netplan present - DNS resolver change needs manual netplan nameservers config, falling back to direct /etc/resolv.conf write"
+  cat > /etc/resolv.conf << 'RESOLVCONF'
+; Managed by SysAdminHCP installer - local recursive BIND avoids shared-resolver Spamhaus rate-limiting
+nameserver 127.0.0.1
+nameserver 1.1.1.1
+RESOLVCONF
+else
+  cat > /etc/resolv.conf << 'RESOLVCONF'
+; Managed by SysAdminHCP installer - local recursive BIND avoids shared-resolver Spamhaus rate-limiting
+nameserver 127.0.0.1
+nameserver 1.1.1.1
+RESOLVCONF
+  warn "Wrote /etc/resolv.conf directly (no systemd-resolved detected - may not survive a future network reinit)"
+fi
 
 # ── Pure-FTPd MySQL Authentication ──────────────────────────────────────────
 info "Configuring Pure-FTPd MySQL authentication..."

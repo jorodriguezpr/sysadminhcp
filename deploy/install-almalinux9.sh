@@ -416,6 +416,15 @@ QMSVC
 systemctl daemon-reload
 systemctl enable qmail-send qmail-smtp qmail-submission 2>/dev/null || true
 
+# The QMT RPM's own legacy SysV svscan service (enabled earlier via `chkconfig qmail on`) and
+# these native units both bind ports 25/587 and both write to the same log files with different
+# ownership if left enabled together - they race at every boot and the native units (running as
+# root) stomp the qmaill:qmail log ownership the legacy svscan/multilog setup needs, which can
+# pause logging and hang the whole SMTP pipeline. Only one supervisor should ever be enabled;
+# keep the native units (this script starts/validates those below) and disable the legacy one.
+systemctl disable --now qmail 2>/dev/null || true
+chkconfig qmail off 2>/dev/null || true
+
 # Fix vpopmail home directory permissions
 chmod 755 /home/vpopmail 2>/dev/null || true
 
@@ -433,7 +442,7 @@ dnf install -y php-json 2>/dev/null || true   # bundled in php-common on EL9, se
 dnf install -y wget curl rsync sshpass logrotate htop unzip tar openssl
 
 # Security tools
-dnf install -y fail2ban acl 2>/dev/null || warn "Some security packages failed to install"
+dnf install -y fail2ban acl ipset 2>/dev/null || warn "Some security packages failed to install"
 # clamav-update provides freshclam (may already be installed via QMT clamav)
 dnf install -y clamav-update 2>/dev/null || true
 
@@ -579,6 +588,30 @@ else
   warn "deploy/qmail-ai-filter not found in source - AI Spam Filter feature will be unavailable until deployed manually"
 fi
 
+# Copy Calendar & Contacts (CalDAV/CardDAV) plugin source + install script — Pro license,
+# opt-in addon like the AI Spam Filter above: files are staged here so the panel's own
+# "Install" button (DavService.install() -> RadicaleDriver) can run
+# install-sysadminhcp-dav.sh on demand, not run automatically during OS setup. Paths match
+# httpdocs/ (not $SYSADMINHCP_ROOT directly) because deploy.js's own ongoing sync for this
+# feature already targets httpdocs/deploy/dav-plugin + httpdocs/scripts — keeping fresh
+# installs and every later `npm run deploy` in agreement about where these files live.
+if [[ -d "$REPO_DIR/deploy/dav-plugin" ]]; then
+  mkdir -p "$SYSADMINHCP_ROOT/httpdocs/deploy"
+  rm -rf "$SYSADMINHCP_ROOT/httpdocs/deploy/dav-plugin"
+  cp -r "$REPO_DIR/deploy/dav-plugin" "$SYSADMINHCP_ROOT/httpdocs/deploy/dav-plugin"
+  info "Copied Calendar & Contacts (dav-plugin) deploy bundle to $SYSADMINHCP_ROOT/httpdocs/deploy/dav-plugin"
+else
+  warn "deploy/dav-plugin not found in source - Calendar & Contacts feature will be unavailable until deployed manually"
+fi
+if [[ -f "$REPO_DIR/deploy/install-sysadminhcp-dav.sh" ]]; then
+  mkdir -p "$SYSADMINHCP_ROOT/httpdocs/scripts"
+  cp "$REPO_DIR/deploy/install-sysadminhcp-dav.sh" "$SYSADMINHCP_ROOT/httpdocs/scripts/install-sysadminhcp-dav.sh"
+  chmod 755 "$SYSADMINHCP_ROOT/httpdocs/scripts/install-sysadminhcp-dav.sh"
+  info "Copied install-sysadminhcp-dav.sh script"
+else
+  warn "deploy/install-sysadminhcp-dav.sh not found in source - Calendar & Contacts feature will be unavailable until deployed manually"
+fi
+
 # ─── Step 8.5: Install qmail-queue rate-limit wrapper ───────────────────────
 if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh" ]]; then
   info "Step 8.5: Installing qmail-queue rate-limit wrapper..."
@@ -686,7 +719,7 @@ chmod 750 "$SYSADMINHCP_ROOT/etc/sysadminhcp.env"
 # Remove legacy sysadminhcp-logs file if present from older installs
 rm -f /etc/sudoers.d/sysadminhcp-logs
 cat > /etc/sudoers.d/sysadminhcp << 'SUDOEOF'
-sysadminhcp ALL=(root) NOPASSWD: /usr/bin/tail, /usr/bin/cat, /usr/bin/touch, /usr/bin/journalctl, /usr/sbin/tail, /usr/local/sysadminhcp/scripts/install-qmail-toaster.sh, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/find, /usr/bin/mkdir, /usr/bin/rm, /usr/bin/systemctl, /usr/bin/tcprules, /usr/sbin/useradd, /usr/sbin/groupadd, /usr/bin/id, /usr/sbin/usermod, /home/vpopmail/bin/vadddomain, /home/vpopmail/bin/vdeldomain, /home/vpopmail/bin/vadduser, /home/vpopmail/bin/vdeluser, /home/vpopmail/bin/vchangepw, /home/vpopmail/bin/vpasswd, /home/vpopmail/bin/vsetuserquota, /home/vpopmail/bin/vmoduser, /home/vpopmail/bin/vmoddomlimits, /home/vpopmail/bin/vdominfo, /home/vpopmail/bin/vuserinfo, /usr/bin/dnf, /usr/bin/rpm, /usr/bin/setfacl, /usr/bin/firewall-cmd, /usr/sbin/iptables, /sbin/iptables, /usr/bin/freshclam, /usr/bin/fail2ban-client, /bin/bash, /usr/bin/bash, /root/.acme.sh/acme.sh, /usr/bin/openssl
+sysadminhcp ALL=(root) NOPASSWD: /usr/bin/tail, /usr/bin/cat, /usr/bin/touch, /usr/bin/journalctl, /usr/sbin/tail, /usr/local/sysadminhcp/scripts/install-qmail-toaster.sh, /usr/local/sysadminhcp/httpdocs/scripts/install-sysadminhcp-dav.sh, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/find, /usr/bin/mkdir, /usr/bin/rm, /usr/bin/systemctl, /usr/bin/tcprules, /usr/sbin/useradd, /usr/sbin/groupadd, /usr/bin/id, /usr/sbin/usermod, /home/vpopmail/bin/vadddomain, /home/vpopmail/bin/vdeldomain, /home/vpopmail/bin/vadduser, /home/vpopmail/bin/vdeluser, /home/vpopmail/bin/vchangepw, /home/vpopmail/bin/vpasswd, /home/vpopmail/bin/vsetuserquota, /home/vpopmail/bin/vmoduser, /home/vpopmail/bin/vmoddomlimits, /home/vpopmail/bin/vdominfo, /home/vpopmail/bin/vuserinfo, /usr/bin/dnf, /usr/bin/rpm, /usr/bin/setfacl, /usr/bin/firewall-cmd, /usr/sbin/ipset, /usr/sbin/iptables, /sbin/iptables, /usr/bin/freshclam, /usr/bin/fail2ban-client, /bin/bash, /usr/bin/bash, /root/.acme.sh/acme.sh, /usr/bin/openssl
 SUDOEOF
 chmod 440 /etc/sudoers.d/sysadminhcp
 visudo -c && info "sudoers validated OK" || warn "sudoers validation failed — check /etc/sudoers.d/sysadminhcp"
@@ -937,6 +970,7 @@ logpath  = %(sshd_log)s
 
 [httpd-auth]
 enabled  = true
+filter   = apache-auth
 port     = http,https
 logpath  = %(apache_error_log)s
 
@@ -1075,6 +1109,39 @@ fi
 # Start BIND
 systemctl enable named 2>/dev/null || true
 systemctl start named 2>/dev/null || warn "BIND (named) failed to start - may need manual configuration"
+
+# Point system DNS resolution at our own local recursive BIND instead of the cloud
+# provider's shared resolver. Real-world failure mode this avoids (hit live on a fresh
+# install): shared provider resolvers get rate-limited by Spamhaus's free public DNSBL
+# mirror once enough OTHER customers on that same resolver query it ("excess volume"),
+# and once that happens spamdyke's own RBL check misreads Spamhaus's rate-limit response
+# as "this connecting IP is blacklisted" — rejecting ALL inbound mail from every sender,
+# server-wide, for a reason that has nothing to do with actual sender reputation. Public
+# resolvers (1.1.1.1/8.8.8.8) don't fix this either — Spamhaus's free mirror separately
+# refuses queries it recognizes as coming from a known public resolver. BIND already does
+# full recursion for 127.0.0.1 (the allow-query/listen-on changes above), so this is safe
+# as long as named is actually running. 1.1.1.1 is kept as a second nameserver purely so
+# DNS still works at all if named ever crashes — it is never queried for anything as long
+# as 127.0.0.1 answers, so it never reintroduces the shared/public-resolver problem.
+info "Pointing system DNS resolution at local BIND (avoids shared-resolver Spamhaus rate-limiting)..."
+if command -v nmcli &>/dev/null && systemctl is-active --quiet NetworkManager; then
+  NM_CONN=$(nmcli -t -f NAME con show --active | head -1)
+  if [[ -n "$NM_CONN" ]]; then
+    nmcli con mod "$NM_CONN" ipv4.dns "127.0.0.1 1.1.1.1" 2>/dev/null
+    nmcli con mod "$NM_CONN" ipv4.ignore-auto-dns yes 2>/dev/null
+    nmcli con up "$NM_CONN" &>/dev/null && info "DNS resolver set via NetworkManager (persists across reboots)" \
+      || warn "NetworkManager reapply failed - DNS resolver change may not have taken effect"
+  else
+    warn "NetworkManager active but no active connection found - skipping persistent DNS resolver setup"
+  fi
+else
+  cat > /etc/resolv.conf << 'RESOLVCONF'
+; Managed by SysAdminHCP installer - local recursive BIND avoids shared-resolver Spamhaus rate-limiting
+nameserver 127.0.0.1
+nameserver 1.1.1.1
+RESOLVCONF
+  warn "NetworkManager not active - wrote /etc/resolv.conf directly (may not survive a future cloud-init network reinit)"
+fi
 
 # ─── Configure Pure-FTPd MySQL Authentication ──────────────────────────────
 info "Configuring Pure-FTPd MySQL authentication..."

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurant</title>
+<style>
+body { margin: 0; font-family: Georgia, 'Times New Roman', serif; color: #333; }
+.hero { background: linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)), linear-gradient(135deg,#6b1d1d,#ad4e00); color: #fff; text-align: center; padding: 100px 20px; }
+.hero h1 { font-size: 3rem; margin-bottom: 10px; }
+.wrap { max-width: 900px; margin: 0 auto; padding: 60px 20px; }
+.menu-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #eee; }
+.menu-item .desc { color: #777; font-size: 0.9rem; }
+.price { font-weight: bold; white-space: nowrap; margin-left: 20px; }
+.reserve { background: #f8f5f0; padding: 60px 20px; text-align: center; }
+label { display: block; font-weight: bold; margin-bottom: 6px; text-align: left; }
+input, select { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+button { padding: 12px 30px; background: #6b1d1d; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.form-inner { max-width: 400px; margin: 0 auto; text-align: left; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>Your Restaurant Name</h1>
+  <p>Fine dining in the heart of the city</p>
+</div>
+<div class="wrap">
+  <h2>Menu</h2>
+  <div class="menu-item"><div><div>Grilled Salmon</div><div class="desc">Lemon butter sauce, seasonal vegetables</div></div><div class="price">$24</div></div>
+  <div class="menu-item"><div><div>Ribeye Steak</div><div class="desc">12oz, garlic mashed potatoes</div></div><div class="price">$32</div></div>
+  <div class="menu-item"><div><div>Margherita Pizza</div><div class="desc">Fresh mozzarella, basil, San Marzano tomatoes</div></div><div class="price">$16</div></div>
+  <h2 style="margin-top:50px">Gallery</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px">
+    <img src="https://via.placeholder.com/300x200" style="width:100%;border-radius:8px" alt="Dish">
+    <img src="https://via.placeholder.com/300x200" style="width:100%;border-radius:8px" alt="Dish">
+    <img src="https://via.placeholder.com/300x200" style="width:100%;border-radius:8px" alt="Dish">
+  </div>
+</div>
+<div class="reserve">
+  <h2>Make a Reservation</h2>
+  <div class="form-inner">
+    <form>
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name">
+      <label for="date">Date &amp; Time</label>
+      <input type="datetime-local" id="date" name="date">
+      <label for="guests">Guests</label>
+      <select id="guests" name="guests"><option>1</option><option>2</option><option>3</option><option>4</option><option>5+</option></select>
+      <button type="submit">Reserve Table</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

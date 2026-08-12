@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing</title>
+<style>
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #333; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 60px 20px; }
+h1 { text-align: center; }
+.sub { text-align: center; color: #777; margin-bottom: 40px; }
+.plans { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+.plan { flex: 1; min-width: 250px; border: 1px solid #ddd; border-radius: 12px; padding: 30px; text-align: center; }
+.plan.popular { border: 2px solid #007bff; transform: scale(1.05); }
+.badge { background: #007bff; color: #fff; padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 0.8rem; margin-bottom: 10px; }
+.plan .price { font-size: 2.5rem; font-weight: bold; margin: 10px 0; }
+.plan .price span { font-size: 1rem; font-weight: normal; }
+.plan ul { list-style: none; padding: 0; line-height: 2; text-align: left; margin: 20px 0; }
+.plan button { width: 100%; padding: 12px; background: #007bff; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Simple, Transparent Pricing</h1>
+  <p class="sub">Choose the plan that's right for you.</p>
+  <div class="plans">
+    <div class="plan">
+      <h3>Starter</h3>
+      <div class="price">$9<span>/mo</span></div>
+      <ul><li>✓ 1 Domain</li><li>✓ 10GB Storage</li><li>✓ Email Support</li></ul>
+      <button>Choose Starter</button>
+    </div>
+    <div class="plan popular">
+      <div class="badge">MOST POPULAR</div>
+      <h3>Professional</h3>
+      <div class="price">$29<span>/mo</span></div>
+      <ul><li>✓ 10 Domains</li><li>✓ 100GB Storage</li><li>✓ Priority Support</li></ul>
+      <button>Choose Professional</button>
+    </div>
+    <div class="plan">
+      <h3>Enterprise</h3>
+      <div class="price">$99<span>/mo</span></div>
+      <ul><li>✓ Unlimited Domains</li><li>✓ 1TB Storage</li><li>✓ 24/7 Support</li></ul>
+      <button>Contact Sales</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

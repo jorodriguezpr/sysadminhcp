@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sysadminhcp-dav-plugin"
+version = "1.0.0"
+description = "SysAdminHCP Radicale plugins: vpopmail-MySQL auth + domain-aware sharing rights"
+requires-python = ">=3.8"
+dependencies = [
+    "radicale==3.7.7",
+    "vobject",
+    "mysql-connector-python",
+]
+
+[tool.setuptools]
+packages = ["sysadminhcp_dav"]

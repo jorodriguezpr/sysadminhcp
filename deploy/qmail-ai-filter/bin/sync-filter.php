@@ -106,6 +106,48 @@ try {
         }
     }
 
+    // ── SpamAssassin verdict — honor it directly, don't let the AI override it ──
+    // The panel's global "Mail > Spam" toggle (MailService.enableSpamAssassin()) tags every
+    // message with X-Spam-Status via spamc at SMTP-accept time (qmail-queue wrapper), but
+    // until now nothing downstream ever read that header — a message SpamAssassin scored as
+    // spam and an AI classifier that disagreed (or an AI provider that was down/misconfigured,
+    // which fails open to "not spam") both resulted in normal INBOX delivery. Checking this
+    // first, right after the whitelist check, means a whitelisted sender is still always safe,
+    // and a SpamAssassin-flagged message is always quarantined regardless of what the AI
+    // provider says or whether it's even reachable — no AI call needed for this case, saving
+    // the API cost too.
+    $rawContent = file_get_contents($emailPath);
+    if ($rawContent !== false) {
+        $headerEnd = strpos($rawContent, "\r\n\r\n");
+        if ($headerEnd === false) $headerEnd = strpos($rawContent, "\n\n");
+        $headerBlock = $headerEnd !== false ? substr($rawContent, 0, $headerEnd) : $rawContent;
+        if (preg_match('/^X-Spam-Status:\s*Yes/mi', $headerBlock)) {
+            $saScore = null;
+            if (preg_match('/^X-Spam-Status:.*?score=([0-9.\-]+)/mi', $headerBlock, $sm)) {
+                $saScore = (float)$sm[1];
+            }
+            $logger->info("SpamAssassin flagged this message - quarantining without an AI call", [
+                'recipient' => $recipientEmail, 'score' => $saScore
+            ]);
+            $statsFile = $config['stats']['stats_file'] ?? ($installDir . '/stats/stats.jsonl');
+            $parts = explode('@', $recipientEmail, 2);
+            @file_put_contents($statsFile, json_encode([
+                'ts' => time(), 'domain' => $parts[1] ?? $recipientEmail,
+                'account' => $recipientEmail, 'is_spam' => true,
+                'confidence' => 1.0, 'spam_type' => 'spamassassin',
+                'from' => $senderEmail ?: $rawFrom,
+                'subject' => mb_substr((string)($emailData['subject'] ?? ''), 0, 200),
+            ]) . "\n", FILE_APPEND | LOCK_EX);
+
+            echo json_encode([
+                'is_spam' => true, 'confidence' => 1.0,
+                'reason' => $saScore !== null ? "SpamAssassin flagged this message (score {$saScore})" : 'SpamAssassin flagged this message',
+                'spam_type' => 'spamassassin',
+            ]);
+            exit(0);
+        }
+    }
+
     // Initialize AI provider
     $providerName = $config['ai_provider']['provider'];
     $aiProvider = null;

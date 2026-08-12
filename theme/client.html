@@ -267,16 +267,37 @@
         .theme-option .theme-name{font-size:13px;font-weight:600;color:var(--text-primary)}
         .theme-option .theme-check{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px}
         .theme-option.active .theme-check{display:flex}
+        .help-content{color:var(--text-primary);font-size:13.5px;line-height:1.65}
+        .help-content h3{font-size:16px;font-weight:700;margin:22px 0 8px;color:var(--accent,#0984e3)}
+        .help-content h3:first-child{margin-top:0}
+        .help-content h4{font-size:13.5px;font-weight:700;margin:14px 0 6px;color:var(--text-primary)}
+        .help-content p{margin:0 0 10px}
+        .help-content ul,.help-content ol{margin:0 0 10px;padding-left:22px}
+        .help-content li{margin-bottom:5px}
+        .help-content code{background:rgba(127,127,127,0.15);padding:1px 5px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px}
+        .help-content .help-example{background:rgba(9,132,227,0.07);border-left:3px solid #0984e3;border-radius:6px;padding:10px 14px;margin:0 0 12px}
+        .help-content .help-example strong{color:#0984e3}
+        .help-content .help-warn{background:rgba(231,76,60,0.08);border-left:3px solid #e74c3c;border-radius:6px;padding:10px 14px;margin:0 0 12px}
+        .help-content table{width:100%;border-collapse:collapse;margin:0 0 12px;font-size:12.5px}
+        .help-content table th,.help-content table td{text-align:left;padding:6px 10px;border-bottom:1px solid rgba(127,127,127,0.15)}
+        .help-content table th{color:var(--text-secondary,#888);font-weight:600}
+        .btn-help{background:transparent;border:1px solid var(--card-border);color:var(--text-primary)}
     </style>
     <script>
     // Theme system - apply saved theme immediately to prevent flash
     (function(){
-        var t=localStorage.getItem('sysadminhcp-theme')||'cosmic';
-        if(t!=='cosmic')document.body.classList.add('theme-'+t);
-        var fs=localStorage.getItem('sysadminhcp-fs')||'md';
-        document.body.classList.add('fs-'+fs);
-        var d=localStorage.getItem('sysadminhcp-density')||'cozy';
-        document.body.classList.add('density-'+d);
+        function apply(){
+            var t=localStorage.getItem('sysadminhcp-theme')||'cosmic';
+            if(t!=='cosmic')document.body.classList.add('theme-'+t);
+            var fs=localStorage.getItem('sysadminhcp-fs')||'md';
+            document.body.classList.add('fs-'+fs);
+            var d=localStorage.getItem('sysadminhcp-density')||'cozy';
+            document.body.classList.add('density-'+d);
+        }
+        // document.body is still null this early when this script runs from <head> — apply
+        // immediately if it's already there (shouldn't normally happen here, but safe either
+        // way), otherwise wait for it to exist rather than throwing.
+        if(document.body){apply();}else{document.addEventListener('DOMContentLoaded',apply);}
     })();
     </script>
 </head>
@@ -291,11 +312,13 @@
             <div class="nav-item" data-page="dns"><span class="icon">📝</span> DNS Records</div>
             <div class="nav-item" data-page="mail"><span class="icon">📧</span> Email</div>
             <div class="nav-item" data-page="webmail"><span class="icon">✉️</span> Webmail</div>
+            <div class="nav-item" id="navDav" data-page="dav" style="display:none"><span class="icon">📅</span> Calendar &amp; Contacts</div>
             <div class="nav-item" data-page="ftp"><span class="icon">📁</span> FTP</div>
             <div class="nav-item" data-page="databases"><span class="icon">🗄️</span> Databases</div>
             <div class="nav-item" data-page="phpmyadmin"><span class="icon">🧭</span> phpMyAdmin</div>
         </div>
         <div class="nav-section"><div class="nav-section-title">Website</div>
+            <div class="nav-item" id="navSitebuilder" data-page="sitebuilder" style="display:none"><span class="icon">🎨</span> Page Builder</div>
             <div class="nav-item" data-page="redirects"><span class="icon">↪️</span> Redirects</div>
             <div class="nav-item" data-page="errorpages"><span class="icon">🚫</span> Error Pages</div>
             <div class="nav-item" data-page="dirprotect"><span class="icon">🔐</span> Directory Protection</div>
@@ -309,6 +332,7 @@
             <div class="nav-item" data-page="files"><span class="icon">📂</span> File Manager</div>
             <div class="nav-item" data-page="backups"><span class="icon">💾</span> Backups</div>
             <div class="nav-item" data-page="phpversion"><span class="icon">🐘</span> PHP Version</div>
+            <div class="nav-item" data-page="phpsettings"><span class="icon">⚙️</span> PHP Settings</div>
             <div class="nav-item" data-page="bandwidth"><span class="icon">📈</span> Bandwidth</div>
             <div class="nav-item" id="navAppInstaller" data-page="appinstaller" style="display:none"><span class="icon">📦</span> App Installer</div>
             <div class="nav-item" id="navEmailMigration" data-page="emailmigration" style="display:none"><span class="icon">✉️</span> Email Migration</div>
@@ -342,6 +366,175 @@ async function api(path,options={}){const res=await fetch(`${API}${path}`,{...op
 function showAlert(msg,type='info'){const a=document.getElementById('alertArea');a.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;setTimeout(()=>a.innerHTML='',5000);}
 function showModal(title,body,actions=[]){const c=document.getElementById('modalContainer');const ah=actions.map(a=>`<button class="btn ${a.cls||'btn-primary'}" onclick="${a.onclick}">${a.label}</button>`).join('')+`<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>`;c.innerHTML=`<div class="modal-overlay" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()"><h2>${title}</h2><div>${body}</div><div class="modal-actions">${ah}</div></div></div>`;c.classList.remove('hidden');const phpSelectD=document.getElementById('m_dPV');if(phpSelectD){loadManagedPhpVersionOptions('m_dPV',phpSelectD.value||'8.3');}}
 function closeModal(){document.getElementById('modalContainer').classList.add('hidden');}
+function showModuleHelp(key){
+  const h=CLIENT_MODULE_HELP[key];
+  if(!h){showAlert('No help available for this page yet','info');return;}
+  const c=document.getElementById('modalContainer');
+  c.innerHTML=`<div class="modal-overlay" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()" style="width:840px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px"><h2 style="margin:0">${h.title}</h2><button class="btn btn-secondary btn-sm" onclick="closeModal()" style="flex-shrink:0">✕ Close</button></div><div class="help-content">${h.html}</div></div></div>`;
+  c.classList.remove('hidden');
+}
+const CLIENT_MODULE_HELP={
+domains:{title:'📖 Help — Domains',html:`
+<p>Manage every domain hosted under your account — add new ones, edit web/mail/DNS settings, and (for advanced users) edit the raw VirtualHost, SSL VirtualHost, and Webmail VirtualHost configs directly.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s3" target="_blank">Chapter 3 of the User Manual</a> for full step-by-step instructions, including the VHost editors and visitor statistics.</div>
+`},
+subdomains:{title:'📖 Help — Subdomains',html:`
+<p>Create and manage subdomains (e.g. <code>shop.yourdomain.com</code>) under any of your domains, each with its own document root.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s4" target="_blank">Chapter 4 of the User Manual</a> for full details.</div>
+`},
+dns:{title:'📖 Help — DNS Records',html:`
+<p>Add, edit, and delete DNS records (A, AAAA, CNAME, MX, TXT, and more) for your domains, plus bulk-update IP addresses across many records at once.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s5" target="_blank">Chapter 5 of the User Manual</a> for full details.</div>
+`},
+mail:{title:'📖 Help — Email',html:`
+<p>Manage mail accounts, mail domains, forwards, and your spam whitelist/blacklist all from one place.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s6" target="_blank">Chapter 6 of the User Manual</a> for full step-by-step instructions on each of these.</div>
+`},
+webmail:{title:'📖 Help — Webmail',html:`
+<p>Open the built-in webmail client for any of your mailboxes — no separate login or app install required.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s7" target="_blank">Chapter 7 of the User Manual</a> for full details.</div>
+`},
+dav:{title:'📖 Help — Calendar & Contacts',html:`
+<p><strong>Calendar &amp; Contacts</strong> gives every mailbox its own CalDAV/CardDAV calendar and address book — sync-able with Apple Calendar/Contacts, iOS, Thunderbird, DAVx⁵, and Outlook. There may also be a domain-shared calendar/address book visible to everyone on the domain.</p>
+
+<h3>Connecting a device</h3>
+<ol>
+<li>Find your DAV address on this page — it looks like <code>https://dav.yourdomain.com/you@yourdomain.com/</code>.</li>
+<li>In your calendar/contacts app, add a new CalDAV or CardDAV account using that address.</li>
+<li>Sign in with your normal mailbox email address and password — there's no separate DAV password.</li>
+</ol>
+
+<div class="help-example"><strong>Works even if webmail is down</strong> — Calendar &amp; Contacts authenticates directly against your mail account, not through webmail.</div>
+
+<div class="help-warn">This page only appears if your administrator has enabled Calendar &amp; Contacts (a Pro feature) for your domain.</div>
+
+<p>See <a href="/theme/client-manual.html#s24" target="_blank">Chapter 24 of the User Manual</a> for the full walkthrough.</p>
+`},
+ftp:{title:'📖 Help — FTP Accounts',html:`
+<p>Create and manage FTP accounts scoped to your domains, for uploading files with an FTP client.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s8" target="_blank">Chapter 8 of the User Manual</a> for full details.</div>
+`},
+databases:{title:'📖 Help — Databases',html:`
+<p>Create MySQL/MariaDB databases and users, and manage which users have access to which database.</p>
+<div class="help-warn">Databases and database users you create are automatically prefixed with your account username (<code>{username}_{name}</code>) — use the full prefixed name in your application's connection settings.</div>
+<div class="help-example">See <a href="/theme/client-manual.html#s9" target="_blank">Chapter 9 of the User Manual</a> for full step-by-step instructions.</div>
+`},
+phpmyadmin:{title:'📖 Help — phpMyAdmin',html:`
+<p>Single sign-on straight into phpMyAdmin for any of your databases — no separate phpMyAdmin login needed.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s10" target="_blank">Chapter 10 of the User Manual</a> for full details.</div>
+`},
+redirects:{title:'📖 Help — Redirects',html:`
+<p>Send visitors from one URL on your domain to another automatically.</p>
+<h3>Adding a redirect</h3>
+<ol>
+<li>Click <strong>+ Add Redirect</strong>.</li>
+<li>Enter the <strong>Source Path</strong> (e.g. <code>/old-page</code>) and the <strong>Destination URL</strong> it should send visitors to.</li>
+<li>Choose <strong>301 (Permanent)</strong> if the old page is gone for good, or <strong>302 (Temporary)</strong> if you'll restore it later — search engines treat these differently.</li>
+<li>Click <strong>Create</strong>.</li>
+</ol>
+<div class="help-example">Redirects are generated directly into your vhost configuration — not written as <code>.htaccess</code> rules that could be lost or overwritten by an app installer.</div>
+<p>See <a href="/theme/client-manual.html#s23-1" target="_blank">Section 23.1 of the User Manual</a> for more.</p>
+`},
+errorpages:{title:'📖 Help — Custom Error Pages',html:`
+<p>Replace the default "404 Not Found" or "500 Server Error" page shown to visitors with your own branded page.</p>
+<h3>Setting one up</h3>
+<ol>
+<li>Pick the error code you want to customize (404, 403, 500, etc.).</li>
+<li>Upload your own HTML page via File Manager first, then point this screen at its path — or paste HTML directly if the editor supports it.</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<p>See <a href="/theme/client-manual.html#s23-2" target="_blank">Section 23.2 of the User Manual</a> for more.</p>
+`},
+dirprotect:{title:'📖 Help — Directory Password Protection',html:`
+<p>Password-protect any folder under your domain with HTTP Basic Auth — a browser login prompt appears before anyone can view that folder's contents.</p>
+<h3>Protecting a folder</h3>
+<ol>
+<li>Click <strong>+ Protect Directory</strong> and choose the folder (e.g. <code>/private</code>).</li>
+<li>Add one or more users, each with their own username and password — these are separate from your portal login.</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<div class="help-example">You can add several users to the same protected directory — useful for sharing access with a client or contractor without giving out your own portal credentials.</div>
+<p>See <a href="/theme/client-manual.html#s23-3" target="_blank">Section 23.3 of the User Manual</a> for more.</p>
+`},
+mimetypes:{title:'📖 Help — Custom MIME Types',html:`
+<p>Tell the web server how to serve a file extension it doesn't recognize by default.</p>
+<h3>Adding a mapping</h3>
+<ol>
+<li>Click <strong>+ Add Mapping</strong>.</li>
+<li>Enter the file <strong>Extension</strong> (e.g. <code>webmanifest</code>) and the <strong>MIME Type</strong> it should be served as (e.g. <code>application/manifest+json</code>).</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<p>See <a href="/theme/client-manual.html#s23-4" target="_blank">Section 23.4 of the User Manual</a> for more.</p>
+`},
+ssl:{title:'📖 Help — SSL Certificates',html:`
+<p>Install and manage SSL certificates for your domains, or check current certificate status and expiry.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s11" target="_blank">Chapter 11 of the User Manual</a> for full details.</div>
+`},
+letsencrypt:{title:"📖 Help — Let's Encrypt",html:`
+<p>Issue and auto-renew free SSL certificates from Let's Encrypt for any of your domains — no manual certificate purchase or renewal required.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s12" target="_blank">Chapter 12 of the User Manual</a> for full details.</div>
+`},
+files:{title:'📖 Help — File Manager',html:`
+<p>A full browser-based file manager for your hosting account — upload, edit, move, compress, and permission your files without needing a separate FTP client.</p>
+<div class="help-warn">File Manager is confined to your own home directory (<code>/home/{username}</code>) for security — this is intentional, not a bug.</div>
+<div class="help-example">See <a href="/theme/client-manual.html#s13" target="_blank">Chapter 13 of the User Manual</a> for full details.</div>
+`},
+backups:{title:'📖 Help — Backups',html:`
+<p>One-click backups and restores covering your web files, mail, databases, and DNS zone data.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s14" target="_blank">Chapter 14 of the User Manual</a> for full step-by-step instructions.</div>
+`},
+phpversion:{title:'📖 Help — PHP Version',html:`
+<p>Choose which PHP version runs your site, per domain. This is separate from <strong>PHP Settings</strong>, which tunes how PHP's processes are configured, not which version runs.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s15" target="_blank">Chapter 15 of the User Manual</a> for full details.</div>
+`},
+sitebuilder:{title:'📖 Help — Page Builder',html:`
+<p>A visual, drag-and-drop editor for your website's HTML pages — edit text, layout, and styling without touching code, then save directly to your document root. A Pro feature.</p>
+<h3>Getting started</h3>
+<p>Pick a domain, then either open an existing <code>.html</code> page or click <strong>+ New Page</strong> to create one from a template. Drag blocks onto the canvas, click any element to style it, and use the device icons to preview desktop/tablet/mobile sizing. <strong>Save</strong> publishes the page immediately — there's no separate publish step.</p>
+<p><strong>⚠️ Editing an existing hand-written page:</strong> the editor works best on pages it created itself. Opening a page that was never edited here shows a one-time warning, since saving can restructure markup the editor didn't originally produce — a backup is written automatically before that first save either way.</p>
+`},
+phpsettings:{title:'📖 Help — PHP Settings',html:`
+<p>Tune your own domain's PHP-FPM process pool directly, without waiting on your administrator — separate from <strong>PHP Version</strong>, which controls which PHP version runs, not how its processes are configured.</p>
+<h3>What you can adjust</h3>
+<ul>
+<li><strong>Memory Limit</strong> — raise this if your application reports running out of memory.</li>
+<li><strong>Max Children</strong> — how many simultaneous PHP requests the pool can handle; raise this if your site gets slow or unresponsive under traffic. Higher values use more server RAM.</li>
+<li><strong>Request Timeout</strong> — raise this if a legitimately slow operation (a large import, a report) is being cut off before it finishes.</li>
+</ul>
+<div class="help-warn">Higher isn't always better — raising Max Children or Memory Limit too far can exhaust your account's overall resource limit and affect other sites on a shared plan. Start with small increases and confirm the problem is actually resolved before raising further.</div>
+<div class="help-warn">This page only appears if your administrator has enabled Client PHP Settings (a Pro feature) for your account.</div>
+<p>See <a href="/theme/client-manual.html#s25" target="_blank">Chapter 25 of the User Manual</a> for the full walkthrough.</p>
+`},
+bandwidth:{title:'📖 Help — Bandwidth',html:`
+<p>See your current-cycle bandwidth usage, a per-domain breakdown, and a 12-month history.</p>
+<div class="help-warn">If you're nearing your bandwidth limit, an amber banner appears at 90% usage; going over 100% may result in hosting being suspended until your next billing cycle or until your administrator raises your limit.</div>
+<div class="help-example">See <a href="/theme/client-manual.html#s16" target="_blank">Chapter 16 of the User Manual</a> for full details.</div>
+`},
+appinstaller:{title:'📖 Help — App Installer',html:`
+<p>One-click installs for WordPress, Joomla, Drupal, and Nextcloud onto any of your domains.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s20" target="_blank">Chapter 20 of the User Manual</a> for full step-by-step instructions.</div>
+`},
+emailmigration:{title:'📖 Help — Email Migration',html:`
+<p>Pull an existing mailbox over from another mail provider via IMAP, straight into your local mailbox — messages and folders copy across directly, and the source password is never stored.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s21" target="_blank">Chapter 21 of the User Manual</a> for full details.</div>
+`},
+spamstats:{title:'📖 Help — AI Spam Filter',html:`
+<p>Shows spam-filtering statistics for the last 30 days (emails analyzed, spam blocked, legitimate mail delivered) plus an Email Log of every individual message — the fastest way to check whether an email that "never arrived" was actually delivered or quarantined as spam.</p>
+<div class="help-warn">This only shows data for domains where your administrator has enabled AI spam filtering.</div>
+<div class="help-example">See <a href="/theme/client-manual.html#s17" target="_blank">Chapter 17 of the User Manual</a> for full details, including how to read the Email Log.</div>
+`},
+tickets:{title:'📖 Help — Support Tickets',html:`
+<p>Open and track support tickets directly with your hosting provider from the portal.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s18" target="_blank">Chapter 18 of the User Manual</a> for full details.</div>
+`},
+account:{title:'📖 Help — My Account',html:`
+<p>Manage your profile, change your password, enable Two-Factor Authentication (2FA), and generate API keys for scripted access.</p>
+<div class="help-example">See <a href="/theme/client-manual.html#s22" target="_blank">Chapter 22 of the User Manual</a> for full step-by-step instructions on each of these.</div>
+`},
+about:{title:'📖 Help — About',html:`
+<p>Shows version and licensing information about the SysAdminHCP software your hosting provider is running.</p>
+`},
+};
 function ft(input,tableId){const filter=input.value.toLowerCase();document.querySelectorAll(`#${tableId} tr`).forEach(tr=>{const text=tr.textContent.toLowerCase();tr.style.display=text.includes(filter)?'':'none';});}
 function formatBytes(bytes){if(!bytes)return'0 B';const k=1024;const sizes=['B','KB','MB','GB','TB'];const i=Math.floor(Math.log(bytes)/Math.log(k));return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];}
 function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -353,7 +546,7 @@ document.querySelectorAll('.nav-item').forEach(wireNavItem);
 // Show AI Spam Filter nav section if the client has it enabled
 (async()=>{try{const d=await api('/client/spam-stats');if(d&&d.enabled){const sec=document.getElementById('navSpamSection');if(sec){sec.style.display='';sec.querySelectorAll('.nav-item').forEach(wireNavItem);}}}catch(e){}})();
 // Reveal Pro-gated nav sections (Support Tickets, etc.) based on the panel's active license
-(async()=>{try{const d=await api('/client/entitlements');if(d&&d.tickets){const sec=document.getElementById('navSupportSection');if(sec){sec.style.display='';sec.querySelectorAll('.nav-item').forEach(wireNavItem);}}if(d&&d.notifications){document.getElementById('ntfBellWrap').style.display='';ntfPoll();setInterval(ntfPoll,60000);}if(d&&d.appInstaller){const el=document.getElementById('navAppInstaller');if(el)el.style.display='';}if(d&&d.emailMigration){const el2=document.getElementById('navEmailMigration');if(el2)el2.style.display='';}}catch(e){}})();
+(async()=>{try{const d=await api('/client/entitlements');if(d&&d.tickets){const sec=document.getElementById('navSupportSection');if(sec){sec.style.display='';sec.querySelectorAll('.nav-item').forEach(wireNavItem);}}if(d&&d.notifications){document.getElementById('ntfBellWrap').style.display='';ntfPoll();setInterval(ntfPoll,60000);}if(d&&d.appInstaller){const el=document.getElementById('navAppInstaller');if(el)el.style.display='';}if(d&&d.emailMigration){const el2=document.getElementById('navEmailMigration');if(el2)el2.style.display='';}if(d&&d.dav){const el3=document.getElementById('navDav');if(el3)el3.style.display='';}if(d&&d.sitebuilder){const el4=document.getElementById('navSitebuilder');if(el4)el4.style.display='';}}catch(e){}})();
 async function ntfPoll(){try{const d=await api('/client/notifications/unread-count');const badge=document.getElementById('ntfBadge');if(d.count>0){badge.style.display='';badge.textContent=d.count>99?'99+':d.count;}else{badge.style.display='none';}}catch(e){}}
 let _ntfDropdownOpen=false;
 async function ntfToggleDropdown(){
@@ -379,7 +572,7 @@ async function ntfClickItem(id,alreadyRead){
 }
 document.addEventListener('click',(e)=>{const wrap=document.getElementById('ntfBellWrap');if(wrap&&_ntfDropdownOpen&&!wrap.contains(e.target)){document.getElementById('ntfDropdown').style.display='none';_ntfDropdownOpen=false;}});
 
-async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;case 'redirects':await renderRedirects(el);break;case 'errorpages':await renderErrorPages(el);break;case 'dirprotect':await renderDirProtect(el);break;case 'mimetypes':await renderMimeTypes(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
+async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'sitebuilder':await renderSiteBuilder(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'phpsettings':await renderPhpSettings(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'dav':await renderDav(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;case 'redirects':await renderRedirects(el);break;case 'errorpages':await renderErrorPages(el);break;case 'dirprotect':await renderDirProtect(el);break;case 'mimetypes':await renderMimeTypes(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
 
 // ═══════════════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -421,7 +614,7 @@ async function renderDashboard(el){
 async function renderDomains(el){
     const data=await api('/client/domains');
     const d=data.domains||[];
-    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search domains..." oninput="ft(this,'dt')"></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddDomain()">+ Add Domain</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Domain</th><th>Type</th><th>Status</th><th>PHP</th><th>SSL</th><th>Actions</th></tr></thead><tbody id="dt">${d.map(dm=>`<tr><td><strong>${dm.nname}</strong></td><td>${dm.domainType||'virtual'}</td><td><span class="status-badge status-${dm.status==='on'?'on':'off'}">${dm.status}</span></td><td>${dm.webSettings?.phpVersion||'Default'}</td><td>${dm.sslEnabled?'✓':'✗'}</td><td><button class="btn btn-xs btn-success" onclick="previewDomain('${dm.nname}')">Preview</button> <button class="btn btn-xs btn-primary" onclick="showEditDomain('${dm.nname}')">Edit</button> <button class="btn btn-xs btn-secondary" onclick="showDomainVhost('${dm.nname}')">VHost</button> <button class="btn btn-xs btn-secondary" onclick="showDomainSslVhost('${dm.nname}')">SSL VHost</button> <button class="btn btn-xs btn-secondary" onclick="showWebmailVhost('${dm.nname}')">Webmail VHost</button> <button class="btn btn-xs btn-secondary" onclick="viewDomainStats('${dm.nname}')">Stats</button> <button class="btn btn-xs btn-danger" onclick="delDomain('${dm.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
+    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search domains..." oninput="ft(this,'dt')"></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('domains')">❓ Help</button> <button class="btn btn-primary" onclick="showAddDomain()">+ Add Domain</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Domain</th><th>Type</th><th>Status</th><th>PHP</th><th>SSL</th><th>Actions</th></tr></thead><tbody id="dt">${d.map(dm=>`<tr><td><strong>${dm.nname}</strong></td><td>${dm.domainType||'virtual'}</td><td><span class="status-badge status-${dm.status==='on'?'on':'off'}">${dm.status}</span></td><td>${dm.webSettings?.phpVersion||'Default'}</td><td>${dm.sslEnabled?'✓':'✗'}</td><td><button class="btn btn-xs btn-success" onclick="previewDomain('${dm.nname}')">Preview</button> <button class="btn btn-xs btn-primary" onclick="showEditDomain('${dm.nname}')">Edit</button> <button class="btn btn-xs btn-secondary" onclick="showDomainVhost('${dm.nname}')">VHost</button> <button class="btn btn-xs btn-secondary" onclick="showDomainSslVhost('${dm.nname}')">SSL VHost</button> <button class="btn btn-xs btn-secondary" onclick="showWebmailVhost('${dm.nname}')">Webmail VHost</button> <button class="btn btn-xs btn-secondary" onclick="viewDomainStats('${dm.nname}')">Stats</button> <button class="btn btn-xs btn-danger" onclick="delDomain('${dm.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 function showAddDomain(){showModal('Add Domain',`<div class="form-group"><label>Domain Name</label><input id="m_dN" placeholder="example.com"></div><div class="form-group"><label>Type</label><select id="m_dT"><option value="virtual">Virtual</option><option value="addon">Addon</option><option value="forward">Forward</option></select></div>`,[{label:'Create',cls:'btn-primary',onclick:'doAddDomain()'}]);}
 async function doAddDomain(){try{await api('/client/domains',{method:'POST',body:JSON.stringify({domainName:document.getElementById('m_dN').value,domainType:document.getElementById('m_dT').value})});closeModal();showAlert('Domain created','success');renderPage('domains');}catch(e){showAlert(e.message,'error');}}
@@ -438,11 +631,16 @@ function copyPreviewUrl(){
     const url=location.origin+(window._previewUrl||'');
     navigator.clipboard.writeText(url).then(()=>showAlert('Preview URL copied','success')).catch(()=>showAlert('Copy failed — select and copy the URL manually','error'));
 }
+
+// ─── Page Builder (WYSIWYG, GrapesJS) — Pro addon ──────────────────────────
+// Implementation lives in theme/assets/js/sitebuilder.js, shared with the admin panel — see
+// that file's header comment. This page only needs to set the two config globals before it loads
+// (done in the <script> tag near the end of <body>).
 async function showEditDomain(n){try{const data=await api(`/domains/${n}`);const d=data.domain||data;const w=d.webSettings||{};const isForward=d.domainType==='forward';showModal('Edit Domain: '+n,`<div style="max-height:72vh;overflow-y:auto;padding-right:6px"><div class="card-title" style="font-size:14px;margin-bottom:8px">General Settings</div><div class="form-row"><div class="form-group"><label>Document Root</label><input id="m_dR" value="${d.docroot||`/home/${user.username}/${n}`}"></div><div class="form-group"><label>Index File</label><input id="m_dI" value="${d.indexFile||'index.html'}"></div></div>${isForward?`<div class="card-title" style="font-size:14px;margin:12px 0 8px">Forward Settings</div><div class="form-row"><div class="form-group"><label>Forward URL</label><input id="m_dFU" value="${d.forwardUrl||''}" placeholder="https://example.com"></div><div class="form-group"><label>Forward Type</label><select id="m_dFT"><option value="301" ${d.forwardType==='301'?'selected':''}>301 (Permanent)</option><option value="302" ${d.forwardType==='302'?'selected':''}>302 (Temporary)</option></select></div></div>`:''}<div class="card-title" style="font-size:14px;margin:12px 0 8px">Web Settings</div><div class="form-row"><div class="form-group"><label>SSL Enabled</label><select id="m_dS"><option value="false" ${!d.sslEnabled?'selected':''}>No</option><option value="true" ${d.sslEnabled?'selected':''}>Yes</option></select></div><div class="form-group"><label>PHP Version</label><select id="m_dPV"><option value="5.6" ${w.phpVersion==='5.6'?'selected':''}>5.6</option><option value="7.4" ${w.phpVersion==='7.4'?'selected':''}>7.4</option><option value="8.0" ${w.phpVersion==='8.0'?'selected':''}>8.0</option><option value="8.1" ${w.phpVersion==='8.1'?'selected':''}>8.1</option><option value="8.2" ${w.phpVersion==='8.2'?'selected':''}>8.2</option><option value="8.3" ${w.phpVersion==='8.3'||!w.phpVersion?'selected':''}>8.3</option><option value="8.4" ${w.phpVersion==='8.4'?'selected':''}>8.4</option></select></div></div><div class="form-row"><div class="form-group"><label>PHP Mode</label><select id="m_dPM"><option value="php-fpm" ${w.phpMode==='php-fpm'||!w.phpMode?'selected':''}>PHP-FPM</option><option value="mod_php" ${w.phpMode==='mod_php'?'selected':''}>mod_php</option><option value="suphp" ${w.phpMode==='suphp'?'selected':''}>suPHP</option><option value="fcgid" ${w.phpMode==='fcgid'?'selected':''}>FCGId</option><option value="cgi" ${w.phpMode==='cgi'?'selected':''}>CGI</option><option value="lsapi" ${w.phpMode==='lsapi'?'selected':''}>LSAPI</option></select></div><div class="form-group"><label>Force HTTPS</label><select id="m_dSF"><option value="false" ${!w.sslForce?'selected':''}>No</option><option value="true" ${w.sslForce?'selected':''}>Yes</option></select></div></div><div class="card-title" style="font-size:14px;margin:12px 0 8px">Mail Settings</div><div class="form-row"><div class="form-group"><label>Catchall</label><select id="m_dCA"><option value="true" ${d.catchall!==false?'selected':''}>Enabled</option><option value="false" ${d.catchall===false?'selected':''}>Disabled</option></select></div><div class="form-group"><label>Catchall Email</label><input id="m_dCE" value="${d.catchallEmail||''}" placeholder="catchall@${n}"></div></div><div class="card-title" style="font-size:14px;margin:12px 0 8px">DNS Settings</div><div class="form-group"><label>DNS Managed</label><select id="m_dDM"><option value="true" ${d.dnsManaged!==false?'selected':''}>Yes</option><option value="false" ${d.dnsManaged===false?'selected':''}>No</option></select></div></div>`,[{label:'Save',cls:'btn-primary',onclick:`doEditDomain('${n}')`}]);}catch(e){showAlert(e.message,'error');}}
-async function showDomainVhost(d){try{const data=await api(`/client/domains/${d}/vhost`);showModal('VirtualHost Editor: '+d,`<div style="max-height:72vh;overflow-y:auto"><div class="form-row"><div class="form-group"><label>Server Type</label><input value="${data.serverType||'apache'}" disabled></div><div class="form-group"><label>Config Path</label><input value="${data.vhostPath||''}" disabled></div></div><div class="form-group"><label>Manual Editor Enabled</label><select id="m_vE"><option value="true" ${data.manualVhostEnabled?'selected':''}>Yes</option><option value="false" ${!data.manualVhostEnabled?'selected':''}>No (generated from settings)</option></select></div><div class="form-group"><label>VirtualHost Config</label><textarea id="m_vC" rows="20" style="font-family:monospace">${(data.manualVhostConfig||data.currentConfig||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></div></div>`,[{label:'Save VHost',cls:'btn-primary',onclick:`saveDomainVhost('${d}')`}]);}catch(e){showAlert(e.message,'error');}}
+async function showDomainVhost(d){try{const data=await api(`/client/domains/${d}/vhost`);showModal('VirtualHost Editor: '+d,`<div style="max-height:72vh;overflow-y:auto"><div class="form-row"><div class="form-group"><label>Server Type</label><input value="${data.serverType||'apache'}" disabled></div><div class="form-group"><label>Config Path</label><input value="${data.vhostPath||''}" disabled></div></div><div class="form-group"><label>Manual Editor Enabled</label><select id="m_vE"><option value="true" ${data.manualVhostEnabled?'selected':''}>Yes</option><option value="false" ${!data.manualVhostEnabled?'selected':''}>No (generated from settings)</option></select></div><div class="form-group"><label>VirtualHost Config</label><textarea id="m_vC" rows="20" style="font-family:monospace">${((data.manualVhostEnabled&&data.manualVhostConfig)||data.currentConfig||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></div></div>`,[{label:'Save VHost',cls:'btn-primary',onclick:`saveDomainVhost('${d}')`}]);}catch(e){showAlert(e.message,'error');}}
 async function saveDomainVhost(d){try{await api(`/client/domains/${d}/vhost`,{method:'PUT',body:JSON.stringify({config:document.getElementById('m_vC').value,manualVhostEnabled:document.getElementById('m_vE').value==='true'})});closeModal();showAlert('VirtualHost saved','success');}catch(e){showAlert(e.message,'error');}}
 async function doEditDomain(n){try{const body={docroot:document.getElementById('m_dR').value,indexFile:document.getElementById('m_dI').value,sslEnabled:document.getElementById('m_dS').value==='true',catchall:document.getElementById('m_dCA').value==='true',catchallEmail:document.getElementById('m_dCE').value,dnsManaged:document.getElementById('m_dDM').value==='true',webSettings:{phpVersion:document.getElementById('m_dPV').value,phpMode:document.getElementById('m_dPM').value,sslForce:document.getElementById('m_dSF').value==='true'}};const fwdType=document.getElementById('m_dFT');if(fwdType){body.forwardUrl=document.getElementById('m_dFU').value;body.forwardType=fwdType.value;}await api(`/domains/${n}`,{method:'PUT',body:JSON.stringify(body)});closeModal();showAlert('Domain updated','success');renderPage('domains');}catch(e){showAlert(e.message,'error');}}
-async function showDomainVhost(d){try{const data=await api(`/client/domains/${d}/vhost`);showModal('VirtualHost Editor: '+d,`<div style="max-height:72vh;overflow-y:auto"><div class="form-row"><div class="form-group"><label>Server Type</label><input value="${data.serverType||'apache'}" disabled></div><div class="form-group"><label>Config Path</label><input value="${data.vhostPath||''}" disabled></div></div><div class="form-group"><label>Manual Editor Enabled</label><select id="m_vE"><option value="true" ${data.manualVhostEnabled?'selected':''}>Yes</option><option value="false" ${!data.manualVhostEnabled?'selected':''}>No (generated from settings)</option></select></div><div class="form-group"><label>VirtualHost Config</label><textarea id="m_vC" rows="20" style="font-family:monospace">${(data.manualVhostConfig||data.currentConfig||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></div></div>`,[{label:'Save VHost',cls:'btn-primary',onclick:`saveDomainVhost('${d}')`}]);}catch(e){showAlert(e.message,'error');}}
+async function showDomainVhost(d){try{const data=await api(`/client/domains/${d}/vhost`);showModal('VirtualHost Editor: '+d,`<div style="max-height:72vh;overflow-y:auto"><div class="form-row"><div class="form-group"><label>Server Type</label><input value="${data.serverType||'apache'}" disabled></div><div class="form-group"><label>Config Path</label><input value="${data.vhostPath||''}" disabled></div></div><div class="form-group"><label>Manual Editor Enabled</label><select id="m_vE"><option value="true" ${data.manualVhostEnabled?'selected':''}>Yes</option><option value="false" ${!data.manualVhostEnabled?'selected':''}>No (generated from settings)</option></select></div><div class="form-group"><label>VirtualHost Config</label><textarea id="m_vC" rows="20" style="font-family:monospace">${((data.manualVhostEnabled&&data.manualVhostConfig)||data.currentConfig||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></div></div>`,[{label:'Save VHost',cls:'btn-primary',onclick:`saveDomainVhost('${d}')`}]);}catch(e){showAlert(e.message,'error');}}
 async function saveDomainVhost(d){try{await api(`/client/domains/${d}/vhost`,{method:'PUT',body:JSON.stringify({config:document.getElementById('m_vC').value,manualVhostEnabled:document.getElementById('m_vE').value==='true'})});closeModal();showAlert('VirtualHost saved','success');}catch(e){showAlert(e.message,'error');}}
 async function showDomainSslVhost(d){try{const data=await api(`/client/domains/${d}/vhost-ssl`);const hasConfig=data.currentConfig&&data.currentConfig.trim().length>0;const sslStatus=data.sslEnabled?'<span style="color:#27ae60">✓ SSL Enabled</span>':'<span style="color:#e74c3c">✗ SSL Disabled</span>';const sslTypeLabel=data.sslType&&data.sslType!=='none'?data.sslType:'none';showModal('SSL VirtualHost Editor: '+d,`<div style="max-height:72vh;overflow-y:auto"><div class="form-row"><div class="form-group"><label>Server Type</label><input value="${data.serverType||'apache'}" disabled></div><div class="form-group"><label>SSL Config Path</label><input value="${data.sslVhostPath||''}" disabled></div></div><div class="form-row"><div class="form-group"><label>SSL Status</label><div style="padding:8px 0">${sslStatus}</div></div><div class="form-group"><label>SSL Type</label><input value="${sslTypeLabel}" disabled></div></div><div class="form-group"><label>SSL VirtualHost Config</label><textarea id="m_sslVC" rows="20" style="font-family:monospace">${(data.currentConfig||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea></div>${!hasConfig?'<div style="background:#fff3cd;padding:10px;border-radius:6px;margin-bottom:12px;font-size:13px">⚠️ No SSL vhost file found. You can create one by entering the SSL VirtualHost configuration above and saving. A template will be generated if the field is empty.</div>':''}</div>`,[{label:'Save SSL VHost',cls:'btn-primary',onclick:`saveDomainSslVhost('${d}')`},{label:'Generate Template',cls:'btn-secondary',onclick:`generateSslVhostTemplate('${d}')`}]);}catch(e){showAlert(e.message,'error');}}
 async function saveDomainSslVhost(d){try{const config=document.getElementById('m_sslVC').value;if(!config.trim()){showAlert('SSL VirtualHost config cannot be empty','error');return;}await api(`/client/domains/${d}/vhost-ssl`,{method:'PUT',body:JSON.stringify({config})});closeModal();showAlert('SSL VirtualHost saved','success');}catch(e){showAlert(e.message,'error');}}
@@ -458,7 +656,7 @@ async function renderRedirects(el){
     const doms=data.domains||[];
     if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
     const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
-    el.innerHTML=`<div class="card"><div class="card-title">Redirects</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Send visitors from an old path on your site straight to a new URL.</p><div class="toolbar"><div class="toolbar-left"><select id="rd_domain" onchange="loadRedirects()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddRedirect()">+ Add Redirect</button></div></div><div id="rd_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Redirects <button class="btn btn-sm btn-help" onclick="showModuleHelp('redirects')">❓ Help</button></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Send visitors from an old path on your site straight to a new URL.</p><div class="toolbar"><div class="toolbar-left"><select id="rd_domain" onchange="loadRedirects()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddRedirect()">+ Add Redirect</button></div></div><div id="rd_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
     loadRedirects();
 }
 async function loadRedirects(){
@@ -468,7 +666,7 @@ async function loadRedirects(){
         const data=await api(`/client/redirects/${domain}`);
         const r=data.redirects||[];
         if(r.length===0){el.innerHTML='<p style="color:#888;padding:12px">No redirects configured for this domain.</p>';return;}
-        el.innerHTML=`<table class="data-table"><thead><tr><th>Source Path</th><th>Target URL</th><th>Type</th><th>Actions</th></tr></thead><tbody>${r.map(x=>`<tr><td>${escHtml(x.source)}</td><td>${escHtml(x.target)}</td><td>${x.type}</td><td><button class="btn btn-xs btn-danger" onclick="delRedirect('${domain}','${encodeURIComponent(x.source)}')">Delete</button></td></tr>`).join('')}</tbody></table>`;
+        el.innerHTML=`<table class="data-table"><thead><tr><th>Source Path</th><th>Target URL</th><th>Type</th><th>Actions</th></tr></thead><tbody>${r.map(x=>`<tr><td>${escHtml(x.source)}</td><td>${escHtml(x.target)}</td><td>${x.type}</td><td><button class="btn btn-xs" onclick="showEditRedirect('${domain}','${encodeURIComponent(x.source)}','${encodeURIComponent(x.target)}','${x.type}')">Edit</button> <button class="btn btn-xs btn-danger" onclick="delRedirect('${domain}','${encodeURIComponent(x.source)}')">Delete</button></td></tr>`).join('')}</tbody></table>`;
     }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
 }
 function showAddRedirect(){
@@ -477,6 +675,21 @@ function showAddRedirect(){
 }
 async function doAddRedirect(domain){
     try{await api(`/client/redirects/${domain}`,{method:'POST',body:JSON.stringify({source:document.getElementById('m_rdS').value,target:document.getElementById('m_rdT').value,type:document.getElementById('m_rdY').value})});closeModal();showAlert('Redirect added','success');loadRedirects();}catch(e){showAlert(e.message,'error');}
+}
+function showEditRedirect(domain,encSource,encTarget,type){
+    const source=decodeURIComponent(encSource),target=decodeURIComponent(encTarget);
+    showModal('Edit Redirect',`<div class="form-group"><label>Source Path</label><input id="m_rdS" value="${escHtml(source)}" placeholder="/old-page"></div><div class="form-group"><label>Target URL</label><input id="m_rdT" value="${escHtml(target)}" placeholder="https://example.com/new-page"></div><div class="form-group"><label>Type</label><select id="m_rdY"><option value="301" ${type==='301'?'selected':''}>301 (Permanent)</option><option value="302" ${type==='302'?'selected':''}>302 (Temporary)</option></select></div>`,[{label:'Save',cls:'btn-primary',onclick:`doEditRedirect('${domain}','${encSource}')`}]);
+}
+async function doEditRedirect(domain,encOldSource){
+    const oldSource=decodeURIComponent(encOldSource);
+    const newSource=document.getElementById('m_rdS').value;
+    try{
+        // Source is the array key on the backend, so a changed source can't just overwrite the
+        // old entry in place — remove the old key first, then add the (possibly renamed) one.
+        if(newSource!==oldSource)await api(`/client/redirects/${domain}/${encodeURIComponent(oldSource)}`,{method:'DELETE'});
+        await api(`/client/redirects/${domain}`,{method:'POST',body:JSON.stringify({source:newSource,target:document.getElementById('m_rdT').value,type:document.getElementById('m_rdY').value})});
+        closeModal();showAlert('Redirect updated','success');loadRedirects();
+    }catch(e){showAlert(e.message,'error');}
 }
 async function delRedirect(domain,source){
     if(!confirm('Delete this redirect?'))return;
@@ -491,7 +704,7 @@ async function renderErrorPages(el){
     const doms=data.domains||[];
     if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
     const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
-    el.innerHTML=`<div class="card"><div class="card-title">Custom Error Pages</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Replace the server's default error page with your own for any of these HTTP codes.</p><div class="toolbar"><div class="toolbar-left"><select id="ep_domain" onchange="loadErrorPages()">${opts}</select></div></div><div id="ep_grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px"></div></div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Custom Error Pages <button class="btn btn-sm btn-help" onclick="showModuleHelp('errorpages')">❓ Help</button></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Replace the server's default error page with your own for any of these HTTP codes.</p><div class="toolbar"><div class="toolbar-left"><select id="ep_domain" onchange="loadErrorPages()">${opts}</select></div></div><div id="ep_grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px"></div></div>`;
     loadErrorPages();
 }
 async function loadErrorPages(){
@@ -531,7 +744,7 @@ async function renderDirProtect(el){
     const doms=data.domains||[];
     if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
     const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
-    el.innerHTML=`<div class="card"><div class="card-title">Directory Password Protection</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Require a username and password before anyone can view a folder on your site.</p><div class="toolbar"><div class="toolbar-left"><select id="dp_domain" onchange="loadProtectedDirs()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddProtectedDir()">+ Protect a Directory</button></div></div><div id="dp_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Directory Password Protection <button class="btn btn-sm btn-help" onclick="showModuleHelp('dirprotect')">❓ Help</button></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Require a username and password before anyone can view a folder on your site.</p><div class="toolbar"><div class="toolbar-left"><select id="dp_domain" onchange="loadProtectedDirs()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddProtectedDir()">+ Protect a Directory</button></div></div><div id="dp_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
     loadProtectedDirs();
 }
 async function loadProtectedDirs(){
@@ -581,7 +794,7 @@ async function renderMimeTypes(el){
     const doms=data.domains||[];
     if(doms.length===0){el.innerHTML='<div class="card"><p>No domains found. Create a domain first.</p></div>';return;}
     const opts=doms.map(d=>`<option value="${d.nname}">${d.nname}</option>`).join('');
-    el.innerHTML=`<div class="card"><div class="card-title">Custom MIME Types</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Tell the web server how to label a file extension it doesn't already recognize.</p><div class="toolbar"><div class="toolbar-left"><select id="mt_domain" onchange="loadMimeTypes()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddMimeType()">+ Add MIME Type</button></div></div><div id="mt_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Custom MIME Types <button class="btn btn-sm btn-help" onclick="showModuleHelp('mimetypes')">❓ Help</button></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Tell the web server how to label a file extension it doesn't already recognize.</p><div class="toolbar"><div class="toolbar-left"><select id="mt_domain" onchange="loadMimeTypes()">${opts}</select></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddMimeType()">+ Add MIME Type</button></div></div><div id="mt_table"><div style="padding:20px;text-align:center;color:#888">Loading...</div></div></div>`;
     loadMimeTypes();
 }
 async function loadMimeTypes(){
@@ -613,7 +826,7 @@ async function renderSubdomains(el){
     const[data,domains]=await Promise.all([api('/client/subdomains'),api('/client/domains')]);
     const subs=data.subdomains||[];
     const doms=domains.domains||[];
-    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'st')"></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddSubdomain()">+ Add Subdomain</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Subdomain</th><th>Parent Domain</th><th>Status</th><th>Actions</th></tr></thead><tbody id="st">${subs.map(s=>`<tr><td><strong>${s.nname}</strong></td><td>${s.nname.split('.').slice(1).join('.')||'-'}</td><td><span class="status-badge status-${s.status==='on'?'on':'off'}">${s.status}</span></td><td><button class="btn btn-xs btn-danger" onclick="delDomain('${s.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
+    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'st')"></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('subdomains')">❓ Help</button> <button class="btn btn-primary" onclick="showAddSubdomain()">+ Add Subdomain</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Subdomain</th><th>Parent Domain</th><th>Status</th><th>Actions</th></tr></thead><tbody id="st">${subs.map(s=>`<tr><td><strong>${s.nname}</strong></td><td>${s.nname.split('.').slice(1).join('.')||'-'}</td><td><span class="status-badge status-${s.status==='on'?'on':'off'}">${s.status}</span></td><td><button class="btn btn-xs btn-danger" onclick="delDomain('${s.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 function showAddSubdomain(){
     api('/client/domains').then(d=>{
@@ -632,14 +845,14 @@ async function renderDns(el){
     const zones=data.zones||[];
     if(zones.length===0){el.innerHTML='<div class="card"><p>No DNS zones found. Create a domain first.</p></div>';return;}
     if(zones.length===1){await showClientDnsZone(zones[0].domainName);return;}
-    el.innerHTML=`<div class="card"><div class="card-title">DNS Zones</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">${zones.length} zones across your domains</p><table class="data-table"><thead><tr><th>Domain</th><th>Status</th><th>Actions</th></tr></thead><tbody>${zones.map(z=>`<tr><td><strong>${z.domainName}</strong></td><td><span class="status-badge status-${z.dnsEnabled!==false?'on':'off'}">${z.dnsEnabled!==false?'Enabled':'Disabled'}</span></td><td><button class="btn btn-xs btn-primary" onclick="showClientDnsZone('${z.domainName}')">Manage Records</button></td></tr>`).join('')}</tbody></table></div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">DNS Zones <button class="btn btn-sm btn-help" onclick="showModuleHelp('dns')">❓ Help</button></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">${zones.length} zones across your domains</p><table class="data-table"><thead><tr><th>Domain</th><th>Status</th><th>Actions</th></tr></thead><tbody>${zones.map(z=>`<tr><td><strong>${z.domainName}</strong></td><td><span class="status-badge status-${z.dnsEnabled!==false?'on':'off'}">${z.dnsEnabled!==false?'Enabled':'Disabled'}</span></td><td><button class="btn btn-xs btn-primary" onclick="showClientDnsZone('${z.domainName}')">Manage Records</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 async function showClientDnsZone(domainName){
     const el=document.getElementById('content');
     const recs=await api(`/client/dns/zones/${domainName}/records`);
     const records=recs.records||[];
     window._clientDnsRecords=records;window._clientDnsZone=domainName;
-    el.innerHTML=`<div class="card"><div class="card-title">DNS Zone: ${domainName}</div><div class="toolbar"><div class="toolbar-left"><button class="btn btn-sm btn-secondary" onclick="renderPage('dns')">← All Zones</button> <span style="font-size:13px;color:#7f8c8d;margin-left:8px">${records.length} records</span></div><div class="toolbar-right"><button class="btn btn-primary btn-sm" onclick="showAddDnsRecord('${domainName}')">+ Add Record</button> <button class="btn btn-secondary btn-sm" onclick="showChangeIpClient('${domainName}')">🌐 Change IP</button></div></div><div class="dns-record-row header"><div>Hostname</div><div>Type</div><div>Content</div><div>TTL</div><div>Actions</div></div>${records.map(r=>`<div class="dns-record-row"><div>${r.hostname||'@'}</div><div>${r.recordType}</div><div>${r.content||r.param||''}</div><div>${r.ttl||3600}</div><div><button class="btn btn-xs btn-primary" onclick="showEditDnsRecord('${domainName}','${r.nname}')">Edit</button> <button class="btn btn-xs btn-danger" onclick="delDnsRecord('${domainName}','${r.nname}')">Delete</button></div></div>`).join('')}</div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">DNS Zone: ${domainName} <button class="btn btn-sm btn-help" onclick="showModuleHelp('dns')">❓ Help</button></div><div class="toolbar"><div class="toolbar-left"><button class="btn btn-sm btn-secondary" onclick="renderPage('dns')">← All Zones</button> <span style="font-size:13px;color:#7f8c8d;margin-left:8px">${records.length} records</span></div><div class="toolbar-right"><button class="btn btn-primary btn-sm" onclick="showAddDnsRecord('${domainName}')">+ Add Record</button> <button class="btn btn-secondary btn-sm" onclick="showChangeIpClient('${domainName}')">🌐 Change IP</button></div></div><div class="dns-record-row header"><div>Hostname</div><div>Type</div><div>Content</div><div>TTL</div><div>Actions</div></div>${records.map(r=>`<div class="dns-record-row"><div>${r.hostname||'@'}</div><div>${r.recordType}</div><div>${r.content||r.param||''}</div><div>${r.ttl||3600}</div><div><button class="btn btn-xs btn-primary" onclick="showEditDnsRecord('${domainName}','${r.nname}')">Edit</button> <button class="btn btn-xs btn-danger" onclick="delDnsRecord('${domainName}','${r.nname}')">Delete</button></div></div>`).join('')}</div>`;
 }
 function showAddDnsRecord(zone){showModal('Add DNS Record',`<div class="form-row"><div class="form-group"><label>Hostname</label><input id="m_rH" placeholder="@ or www"></div><div class="form-group"><label>Type</label><select id="m_rT"><option value="A">A</option><option value="AAAA">AAAA</option><option value="CNAME">CNAME</option><option value="MX">MX</option><option value="TXT">TXT</option><option value="NS">NS</option></select></div></div><div class="form-row"><div class="form-group"><label>Content</label><input id="m_rC" placeholder="IP address or hostname"></div><div class="form-group"><label>TTL</label><input id="m_rTTL" value="3600" type="number"></div></div><div class="form-group" id="m_rP_group" style="display:none"><label>Priority (MX only)</label><input id="m_rP" value="10" type="number"></div>`,[{label:'Add',cls:'btn-primary',onclick:`doAddDnsRecord('${zone}')`}]);document.getElementById('m_rT').addEventListener('change',e=>{document.getElementById('m_rP_group').style.display=e.target.value==='MX'?'block':'none';});}
 async function doAddDnsRecord(zone){try{await api(`/client/dns/zones/${zone}/records`,{method:'POST',body:JSON.stringify({hostname:document.getElementById('m_rH').value,type:document.getElementById('m_rT').value,content:document.getElementById('m_rC').value,ttl:parseInt(document.getElementById('m_rTTL').value)||3600,priority:parseInt(document.getElementById('m_rP').value)||0})});closeModal();showAlert('Record added','success');showClientDnsZone(zone);}catch(e){showAlert(e.message,'error');}}
@@ -653,7 +866,7 @@ async function doChangeIpClient(zone){const ip=(document.getElementById('m_chIp'
 // MAIL
 // ═══════════════════════════════════════════════════════════════════════
 async function renderMail(el){
-    el.innerHTML=`<div class="tab-bar"><div class="tab active" onclick="showMailTab('accounts')">Mail Accounts</div><div class="tab" onclick="showMailTab('domains')">Mail Domains</div><div class="tab" onclick="showMailTab('forwards')">Forwards</div><div class="tab" onclick="showMailTab('whitelist')">Spam Whitelist</div><div class="tab" onclick="showMailTab('blacklist')">Spam Blacklist</div></div><div id="mailContent"></div>`;
+    el.innerHTML=`<div class="tab-bar" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex"><div class="tab active" onclick="showMailTab('accounts')">Mail Accounts</div><div class="tab" onclick="showMailTab('domains')">Mail Domains</div><div class="tab" onclick="showMailTab('forwards')">Forwards</div><div class="tab" onclick="showMailTab('whitelist')">Spam Whitelist</div><div class="tab" onclick="showMailTab('blacklist')">Spam Blacklist</div></div><button class="btn btn-sm btn-help" onclick="showModuleHelp('mail')">❓ Help</button></div><div id="mailContent"></div>`;
     showMailTab('accounts');
 }
 async function showMailTab(tab){
@@ -666,7 +879,8 @@ async function showMailTab(tab){
         try{
         const data=await api('/client/mail/accounts');
         const a=data.accounts||[];
-        el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'mat')"></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddMailAccount()">+ Add Account</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Email</th><th>Domain</th><th>Quota</th><th>Status</th><th>Actions</th></tr></thead><tbody id="mat">${a.map(m=>{const lp=m.nname.includes('@')?m.nname.split('@')[0]:m.nname;return`<tr><td><strong>${lp}@${m.domainName}</strong></td><td>${m.domainName}</td><td>${m.quota>0?formatBytes(m.quota*1024*1024):'Unlimited'}</td><td><span class="status-badge status-${m.status==='on'?'on':'off'}">${m.status}</span></td><td><button class="btn btn-xs btn-secondary" onclick="openWebmailForDomain('${m.domainName}')">Webmail</button> <button class="btn btn-xs btn-warning" onclick="showChangeMailPassword('${lp}','${m.domainName}')">Password</button> <button class="btn btn-xs btn-danger" onclick="delMailAccount('${lp}','${m.domainName}')">Delete</button></td></tr>`;}).join('')}</tbody></table></div>`;
+        const domains=[...new Set(a.map(m=>m.domainName))];
+        el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'mat')"></div><div class="toolbar-right"><button class="btn btn-secondary" id="matRecalcBtn" onclick="recalcMailUsageClient(${JSON.stringify(domains).replace(/"/g,'&quot;')})" title="Scan disk and refresh the Used column below (can take a while for large mailboxes)">🔄 Recalculate Storage</button> <button class="btn btn-primary" onclick="showAddMailAccount()">+ Add Account</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Email</th><th>Domain</th><th>Quota</th><th>Used</th><th>Status</th><th>Actions</th></tr></thead><tbody id="mat">${a.map(m=>{const lp=m.nname.includes('@')?m.nname.split('@')[0]:m.nname;return`<tr><td><strong>${lp}@${m.domainName}</strong></td><td>${m.domainName}</td><td>${m.quota>0?formatBytes(m.quota*1024*1024):'Unlimited'}</td><td>${formatBytes(m.diskUsage||0)}</td><td><span class="status-badge status-${m.status==='on'?'on':'off'}">${m.status}</span></td><td><button class="btn btn-xs btn-secondary" onclick="openWebmailForDomain('${m.domainName}')">Webmail</button> <button class="btn btn-xs btn-warning" onclick="showChangeMailPassword('${lp}','${m.domainName}')">Password</button> <button class="btn btn-xs btn-danger" onclick="delMailAccount('${lp}','${m.domainName}')">Delete</button></td></tr>`;}).join('')}</tbody></table></div>`;
         }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
     }else if(tab==='domains'){
         try{
@@ -753,6 +967,7 @@ async function clDelBlacklist(nname){
     if(!confirm('Remove this blacklist entry?'))return;
     try{await api(`/client/spam-blacklist/${encodeURIComponent(nname)}`,{method:'DELETE'});showAlert('Entry removed','success');clLoadBlacklist();}catch(e){showAlert(e.message,'error');}}
 
+async function recalcMailUsageClient(domains){const btn=document.getElementById('matRecalcBtn');const orig=btn.textContent;btn.disabled=true;btn.textContent='Scanning...';try{let updated=0;for(const d of domains){const r=await api(`/client/mail/domains/${d}/recalculate-usage`,{method:'POST'});updated+=r.updated||0;}showAlert(`Storage usage recalculated for ${updated} account(s)`,'success');showMailTab('accounts');}catch(e){showAlert(e.message,'error');btn.disabled=false;btn.textContent=orig;}}
 function showAddMailAccount(){
     api('/client/mail/domains').then(d=>{
         const doms=d.mailDomains||[];
@@ -774,7 +989,7 @@ async function delMailForward(name){if(!confirm('Delete this forward?'))return;t
 async function renderFtp(el){
     const data=await api('/client/ftp');
     const a=data.accounts||[];
-    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'ft')"></div><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddFtp()">+ Add FTP Account</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Username</th><th>Domain</th><th>Home Dir</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ft">${a.map(f=>`<tr><td><strong>${f.nname}</strong></td><td>${f.domainName||'-'}</td><td>${f.homedir||f.getHomeDir||'-'}</td><td><span class="status-badge status-${f.status==='on'?'on':'off'}">${f.status}</span></td><td><button class="btn btn-xs btn-warning" onclick="showChangeFtpPassword('${f.nname}')">Password</button> <button class="btn btn-xs btn-danger" onclick="delFtp('${f.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
+    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'ft')"></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('ftp')">❓ Help</button> <button class="btn btn-primary" onclick="showAddFtp()">+ Add FTP Account</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Username</th><th>Domain</th><th>Home Dir</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ft">${a.map(f=>`<tr><td><strong>${f.nname}</strong></td><td>${f.domainName||'-'}</td><td>${f.homedir||f.getHomeDir||'-'}</td><td><span class="status-badge status-${f.status==='on'?'on':'off'}">${f.status}</span></td><td><button class="btn btn-xs btn-warning" onclick="showChangeFtpPassword('${f.nname}')">Password</button> <button class="btn btn-xs btn-danger" onclick="delFtp('${f.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 function showAddFtp(){
     api('/client/domains').then(d=>{
@@ -796,7 +1011,7 @@ async function renderDatabases(el){
     const dbs=data.databases||[];
     const users=data.dbUsers||[];
     const dbNames=dbs.map(d=>d.nname);
-    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'dbt')"></div><div class="toolbar-right"><button class="btn btn-secondary" onclick="showAddDbUser()" style="margin-right:8px">+ Add DB User</button><button class="btn btn-primary" onclick="showAddDatabase()">+ Add Database</button></div></div><div class="card"><div class="card-title">Databases</div><table class="data-table"><thead><tr><th>Database Name</th><th>Charset</th><th>Status</th><th>Actions</th></tr></thead><tbody id="dbt">${dbs.map(db=>`<tr><td><strong>${db.nname}</strong></td><td>${db.charset||'utf8mb4'}</td><td><span class="status-badge status-${db.status==='on'?'on':'off'}">${db.status}</span></td><td><button class="btn btn-xs btn-secondary" onclick="openPmaDb('${db.nname}')" style="margin-right:4px" title="Open in phpMyAdmin">phpMyAdmin</button><button class="btn btn-xs btn-danger" onclick="delDatabase('${db.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div><div class="card" style="margin-top:16px"><div class="card-title">Database Users</div><table class="data-table"><thead><tr><th>Username</th><th>Database Access</th><th>Actions</th></tr></thead><tbody>${users.length?users.map(u=>{const privs=u.privileges||{};const assigned=Object.keys(privs);return `<tr><td><strong>${u.nname}</strong></td><td>${assigned.length?assigned.map(db=>`<span class="status-badge status-on" style="margin-right:4px">${db}</span><button class="btn btn-xs btn-warning" onclick="revokeDbAccess('${u.nname}','${db}')" style="margin-right:6px">Revoke</button>`).join(''):'<em style="color:#888">No databases assigned</em>'}</td><td><button class="btn btn-xs btn-secondary" onclick="showAssignDb('${u.nname}',${JSON.stringify(dbNames).replace(/"/g,'&quot;')})" style="margin-right:4px">Assign DB</button><button class="btn btn-xs btn-secondary" onclick="showChangeDbUserPw('${u.nname}')" style="margin-right:4px">Password</button><button class="btn btn-xs btn-danger" onclick="delDbUser('${u.nname}')">Delete</button></td></tr>`;}).join(''):'<tr><td colspan="3" style="text-align:center;color:#888;padding:16px">No database users yet. Click &quot;+ Add DB User&quot; to create one.</td></tr>'}</tbody></table></div>`;
+    el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'dbt')"></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('databases')">❓ Help</button> <button class="btn btn-secondary" onclick="showAddDbUser()" style="margin-right:8px">+ Add DB User</button><button class="btn btn-primary" onclick="showAddDatabase()">+ Add Database</button></div></div><div class="card"><div class="card-title">Databases</div><table class="data-table"><thead><tr><th>Database Name</th><th>Charset</th><th>Status</th><th>Actions</th></tr></thead><tbody id="dbt">${dbs.map(db=>`<tr><td><strong>${db.nname}</strong></td><td>${db.charset||'utf8mb4'}</td><td><span class="status-badge status-${db.status==='on'?'on':'off'}">${db.status}</span></td><td><button class="btn btn-xs btn-secondary" onclick="openPmaDb('${db.nname}')" style="margin-right:4px" title="Open in phpMyAdmin">phpMyAdmin</button><button class="btn btn-xs btn-danger" onclick="delDatabase('${db.nname}')">Delete</button></td></tr>`).join('')}</tbody></table></div><div class="card" style="margin-top:16px"><div class="card-title">Database Users</div><table class="data-table"><thead><tr><th>Username</th><th>Database Access</th><th>Actions</th></tr></thead><tbody>${users.length?users.map(u=>{const privs=u.privileges||{};const assigned=Object.keys(privs);return `<tr><td><strong>${u.nname}</strong></td><td>${assigned.length?assigned.map(db=>`<span class="status-badge status-on" style="margin-right:4px">${db}</span><button class="btn btn-xs btn-warning" onclick="revokeDbAccess('${u.nname}','${db}')" style="margin-right:6px">Revoke</button>`).join(''):'<em style="color:#888">No databases assigned</em>'}</td><td><button class="btn btn-xs btn-secondary" onclick="showAssignDb('${u.nname}',${JSON.stringify(dbNames).replace(/"/g,'&quot;')})" style="margin-right:4px">Assign DB</button><button class="btn btn-xs btn-secondary" onclick="showChangeDbUserPw('${u.nname}')" style="margin-right:4px">Password</button><button class="btn btn-xs btn-danger" onclick="delDbUser('${u.nname}')">Delete</button></td></tr>`;}).join(''):'<tr><td colspan="3" style="text-align:center;color:#888;padding:16px">No database users yet. Click &quot;+ Add DB User&quot; to create one.</td></tr>'}</tbody></table></div>`;
 }
 function showAddDatabase(){showModal('Add Database',`<div class="form-row"><div class="form-group"><label>Database Name</label><input id="m_dbN" placeholder="mydb"></div><div class="form-group"><label>DB User Name (optional)</label><input id="m_dbU" placeholder="dbuser"></div></div><div class="form-group"><label>DB User Password (optional)</label><input id="m_dbP" type="password"></div>`,[{label:'Create',cls:'btn-primary',onclick:'doAddDatabase()'}]);}
 async function doAddDatabase(){try{await api('/client/databases',{method:'POST',body:JSON.stringify({dbName:document.getElementById('m_dbN').value,dbUserName:document.getElementById('m_dbU').value,dbPassword:document.getElementById('m_dbP').value})});closeModal();showAlert('Database created','success');renderPage('databases');}catch(e){showAlert(e.message,'error');}}
@@ -820,11 +1035,11 @@ async function renderPhpMyAdmin(el){
     const isAdmin=data.isAdmin;
     let html='';
     if(!installed){
-        html=`<div class="card"><div class="card-title">phpMyAdmin</div><p>phpMyAdmin is not installed on this server. Please contact your administrator.</p></div>`;
+        html=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">phpMyAdmin <button class="btn btn-sm btn-help" onclick="showModuleHelp('phpmyadmin')">❓ Help</button></div><p>phpMyAdmin is not installed on this server. Please contact your administrator.</p></div>`;
     }else if(!hasAccess){
-        html=`<div class="card"><div class="card-title">phpMyAdmin</div><p>Your account does not have access to phpMyAdmin. Please contact your administrator to enable access.</p></div>`;
+        html=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">phpMyAdmin <button class="btn btn-sm btn-help" onclick="showModuleHelp('phpmyadmin')">❓ Help</button></div><p>Your account does not have access to phpMyAdmin. Please contact your administrator to enable access.</p></div>`;
     }else{
-        html=`<div class="card"><div class="card-title">phpMyAdmin</div><p style="margin-bottom:16px">Access your MySQL databases through phpMyAdmin.</p><div style="background:#f8f9fa;border-radius:8px;padding:20px;text-align:center"><p style="margin-bottom:12px;color:#7f8c8d">Click the button below to open phpMyAdmin. ${isAdmin?'You will be logged in as <strong>root</strong> with full access.':'You will be logged in with your database credentials.'}</p><button class="btn btn-primary" style="font-size:16px;padding:12px 32px" onclick="openPma()">🧭 Open phpMyAdmin</button></div></div>`;
+        html=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">phpMyAdmin <button class="btn btn-sm btn-help" onclick="showModuleHelp('phpmyadmin')">❓ Help</button></div><p style="margin-bottom:16px">Access your MySQL databases through phpMyAdmin.</p><div style="background:#f8f9fa;border-radius:8px;padding:20px;text-align:center"><p style="margin-bottom:12px;color:#7f8c8d">Click the button below to open phpMyAdmin. ${isAdmin?'You will be logged in as <strong>root</strong> with full access.':'You will be logged in with your database credentials.'}</p><button class="btn btn-primary" style="font-size:16px;padding:12px 32px" onclick="openPma()">🧭 Open phpMyAdmin</button></div></div>`;
         html+=`<div class="card" style="margin-top:16px"><div class="card-title">Quick Info</div><table class="data-table"><tr><td><strong>Your Databases</strong></td><td>You can manage all databases owned by your account (${user.username})</td></tr><tr><td><strong>Login</strong></td><td>${isAdmin?'Root access (full privileges)':'Automatic login with your database credentials'}</td></tr><tr><td><strong>Security</strong></td><td>phpMyAdmin access is controlled by your administrator</td></tr></table></div>`;
     }
     el.innerHTML=html;
@@ -838,7 +1053,7 @@ async function openPmaDb(dbName){try{const r=await api('/phpmyadmin/sso',{method
 async function renderSsl(el){
     const data=await api('/client/ssl');
     const certs=data.certificates||[];
-    el.innerHTML=`<div class="card"><div class="card-title">SSL Certificates</div>${certs.length===0?'<p>No SSL certificates installed.</p>':`<table class="data-table"><thead><tr><th>Domain</th><th>Type</th><th>Valid From</th><th>Expires</th><th>Auto Renew</th><th>Status</th></tr></thead><tbody>${certs.map(c=>`<tr><td><strong>${c.domainName||c.nname}</strong></td><td>${c.certType||c.sslType||'custom'}</td><td>${c.validFrom?new Date(c.validFrom).toLocaleDateString():'N/A'}</td><td>${c.validTo?new Date(c.validTo).toLocaleDateString():'N/A'}</td><td>${c.autoRenew?'✓':'✗'}</td><td><span class="status-badge status-${c.status==='on'?'on':'off'}">${c.status}</span></td></tr>`).join('')}</tbody></table>`}</div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">SSL Certificates <button class="btn btn-sm btn-help" onclick="showModuleHelp('ssl')">❓ Help</button></div>${certs.length===0?'<p>No SSL certificates installed.</p>':`<table class="data-table"><thead><tr><th>Domain</th><th>Type</th><th>Valid From</th><th>Expires</th><th>Auto Renew</th><th>Status</th></tr></thead><tbody>${certs.map(c=>`<tr><td><strong>${c.domainName||c.nname}</strong></td><td>${c.certType||c.sslType||'custom'}</td><td>${c.validFrom?new Date(c.validFrom).toLocaleDateString():'N/A'}</td><td>${c.validTo?new Date(c.validTo).toLocaleDateString():'N/A'}</td><td>${c.autoRenew?'✓':'✗'}</td><td><span class="status-badge status-${c.status==='on'?'on':'off'}">${c.status}</span></td></tr>`).join('')}</tbody></table>`}</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -849,7 +1064,7 @@ async function renderLetsEncrypt(el){
     const d=domainsData.domains||[];
     const leCerts=(sslData.certificates||[]).filter(c=>c.certType==='letsencrypt');
     const certsTable=leCerts.length===0?'<p style="color:#7f8c8d;font-size:13px">No Let\'s Encrypt certificates issued yet.</p>':`<table class="data-table"><thead><tr><th>Domain</th><th>Issued</th><th>Expires</th><th>Auto Renew</th><th>Status</th></tr></thead><tbody>${leCerts.map(c=>{const now=new Date();const exp=c.validTo?new Date(c.validTo):null;const expiring=exp&&(exp-now)<30*86400000;const expired=exp&&exp<now;const badge=expired?'status-off':expiring?'status-suspended':'status-on';const label=expired?'Expired':expiring?'Expiring Soon':'Active';return`<tr><td><strong>${c.domainName||c.nname}</strong></td><td>${c.validFrom?new Date(c.validFrom).toLocaleDateString():'N/A'}</td><td style="color:${expired?'#e74c3c':expiring?'#e67e22':'inherit'}">${exp?exp.toLocaleDateString():'N/A'}</td><td>${c.autoRenew?'✓':'✗'}</td><td><span class="status-badge ${badge}">${label}</span></td></tr>`;}).join('')}</tbody></table>`;
-    el.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="card-title">Issued Certificates</div>${certsTable}</div><div class="card"><div class="card-title">🆓 Request New Certificate</div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">Request a free SSL certificate for your domain.</p><div class="form-row"><div class="form-group"><label>Select Domain</label><select id="m_leD">${d.map(dm=>`<option value="${dm.nname}">${dm.nname}</option>`).join('')}</select></div><div class="form-group"><label>Email (optional)</label><input id="m_leE" placeholder="admin@domain.com"></div></div><button class="btn btn-success" onclick="doLetsEncrypt()">Request Certificate</button></div>`;
+    el.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Issued Certificates <button class="btn btn-sm btn-help" onclick="showModuleHelp('letsencrypt')">❓ Help</button></div>${certsTable}</div><div class="card"><div class="card-title">🆓 Request New Certificate</div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">Request a free SSL certificate for your domain.</p><div class="form-row"><div class="form-group"><label>Select Domain</label><select id="m_leD">${d.map(dm=>`<option value="${dm.nname}">${dm.nname}</option>`).join('')}</select></div><div class="form-group"><label>Email (optional)</label><input id="m_leE" placeholder="admin@domain.com"></div></div><button class="btn btn-success" onclick="doLetsEncrypt()">Request Certificate</button></div>`;
 }
 async function doLetsEncrypt(){try{const domain=document.getElementById('m_leD').value;const email=document.getElementById('m_leE').value;showAlert('Requesting certificate... This may take a minute.','info');await api('/client/ssl/letsencrypt',{method:'POST',body:JSON.stringify({domainName:domain,email:email})});showAlert('Certificate installed successfully!','success');}catch(e){showAlert('Certificate request failed: '+e.message,'error');}}
 
@@ -871,7 +1086,7 @@ function fmIcon(e){if(e.type==='directory')return'📁';if(e.type==='link')retur
 
 async function renderFiles(el){
   el.innerHTML=`<div class="card">
-    <div class="card-title">📂 File Manager</div>
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">📂 File Manager <button class="btn btn-sm btn-help" onclick="showModuleHelp('files')">❓ Help</button></div>
     <div class="toolbar">
       <div class="toolbar-left">
         <input id="fmPath" value="${fmEsc(fmCurrentPath)}" style="width:340px;padding:8px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')fmNavigate(this.value)">
@@ -1151,7 +1366,10 @@ function fmDownloadSelected(){
 function fmEdit(path){
   api(`/files/file?path=${encodeURIComponent(path)}`).then(data=>{
     const content=data.content||'';
-    showModal('Edit: '+path,`<div class="form-group"><label>Path: ${fmEsc(path)}</label><textarea id="m_fmE" rows="20" style="font-family:monospace;font-size:13px;width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:8px">${fmEsc(content)}</textarea></div>`,[{label:'Save',cls:'btn-primary',onclick:`fmSave('${fmEsc(path)}')`}]);
+    const isHtml=/\.html?$/i.test(path);
+    const buttons=[{label:'Save',cls:'btn-primary',onclick:`fmSave('${fmEsc(path)}')`}];
+    if(isHtml)buttons.unshift({label:'🎨 Open in Page Builder',cls:'btn-info',onclick:`closeModal();sbOpenFromFileManager('${fmEsc(path).replace(/'/g,"\\'")}');`});
+    showModal('Edit: '+path,`<div class="form-group"><label>Path: ${fmEsc(path)}</label><textarea id="m_fmE" rows="20" style="font-family:monospace;font-size:13px;width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:8px">${fmEsc(content)}</textarea></div>`,buttons);
   }).catch(e=>showAlert(e.message,'error'));
 }
 
@@ -1272,7 +1490,7 @@ async function renderBackups(el){
   <div class="card" style="margin-bottom:16px">
     <div class="toolbar">
       <div class="toolbar-left"><div class="card-title" style="margin:0">💾 Backups <span style="font-size:13px;color:#7f8c8d;font-weight:normal">${b.length} backup(s)</span></div></div>
-      <div class="toolbar-right"><button class="btn btn-success" onclick="showCreateBackupModal()">+ Create Backup</button></div>
+      <div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('backups')">❓ Help</button> <button class="btn btn-success" onclick="showCreateBackupModal()">+ Create Backup</button></div>
     </div>
   </div>
   <div id="bk-progress-wrap" style="display:none;margin-bottom:16px"></div>
@@ -1384,9 +1602,54 @@ async function renderPhpVersion(el){
     const[versions,domains]=await Promise.all([api('/client/php-versions').catch(()=>({versions:['7.4','8.0','8.1','8.2','8.3']})),api('/client/domains')]);
     const v=versions.versions||[];
     const d=domains.domains||[];
-    el.innerHTML=`<div class="card"><div class="card-title">🐘 PHP Version Management</div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">Switch PHP version for your domains.</p><table class="data-table"><thead><tr><th>Domain</th><th>Current PHP</th><th>Change To</th><th>Actions</th></tr></thead><tbody>${d.map(dm=>`<tr><td><strong>${dm.nname}</strong></td><td>${dm.webSettings?.phpVersion||'Default'}</td><td><select id="php_${dm.nname}">${v.map(ver=>`<option value="${ver}" ${dm.webSettings?.phpVersion===ver?'selected':''}>${ver}</option>`).join('')}</select></td><td><button class="btn btn-xs btn-primary" onclick="switchPhpVersion('${dm.nname}')">Apply</button></td></tr>`).join('')}</tbody></table></div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">🐘 PHP Version Management <button class="btn btn-sm btn-help" onclick="showModuleHelp('phpversion')">❓ Help</button></div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">Switch PHP version for your domains.</p><table class="data-table"><thead><tr><th>Domain</th><th>Current PHP</th><th>Change To</th><th>Actions</th></tr></thead><tbody>${d.map(dm=>`<tr><td><strong>${dm.nname}</strong></td><td>${dm.webSettings?.phpVersion||'Default'}</td><td><select id="php_${dm.nname}">${v.map(ver=>`<option value="${ver}" ${dm.webSettings?.phpVersion===ver?'selected':''}>${ver}</option>`).join('')}</select></td><td><button class="btn btn-xs btn-primary" onclick="switchPhpVersion('${dm.nname}')">Apply</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 async function switchPhpVersion(domain){try{const sel=document.getElementById(`php_${domain}`);await api(`/client/domains/${domain}/php-version`,{method:'PUT',body:JSON.stringify({phpVersion:sel.value})});showAlert(`PHP version changed to ${sel.value} for ${domain}`,'success');}catch(e){showAlert(e.message,'error');}}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PHP SETTINGS (Pro addon — per-domain PHP-FPM directive customization)
+// ═══════════════════════════════════════════════════════════════════════
+const PHP_SETTINGS_TIMEZONES=['','UTC','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Sao_Paulo','Europe/London','Europe/Madrid','Europe/Paris','Europe/Berlin','Africa/Cairo','Asia/Dubai','Asia/Kolkata','Asia/Shanghai','Asia/Tokyo','Australia/Sydney'];
+async function renderPhpSettings(el){
+    const domains=await api('/client/domains').catch(()=>({domains:[]}));
+    const d=domains.domains||[];
+    const cards=await Promise.all(d.map(async dm=>{
+        try{const r=await api(`/client/domains/${dm.nname}/php-settings`);return{domain:dm.nname,...r};}
+        catch(e){return{domain:dm.nname,error:e.message};}
+    }));
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">⚙️ PHP Settings <button class="btn btn-sm btn-help" onclick="showModuleHelp('phpsettings')">❓ Help</button></div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">Customize PHP-FPM directives per domain (Pro addon). Changes apply immediately.</p>${cards.map(c=>{
+        if(c.error)return `<div class="alert alert-error" style="margin-bottom:10px">${c.domain}: ${c.error}</div>`;
+        const s=c.settings,b=c.bounds,dom=c.domain;
+        return `<div class="card" style="margin-bottom:14px"><div class="card-title" style="font-size:14px">${dom}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+          <label>Memory Limit (${b.memoryLimit.min}-${b.memoryLimit.max})<input id="pset_${dom}_memoryLimit" type="text" class="form-control" value="${s.memoryLimit}"></label>
+          <label>Upload Max Filesize<input id="pset_${dom}_uploadMaxFilesize" type="text" class="form-control" value="${s.uploadMaxFilesize}"></label>
+          <label>Post Max Size<input id="pset_${dom}_postMaxSize" type="text" class="form-control" value="${s.postMaxSize}"></label>
+          <label>Max Execution Time (s)<input id="pset_${dom}_maxExecutionTime" type="number" min="${b.maxExecutionTime.min}" max="${b.maxExecutionTime.max}" class="form-control" value="${s.maxExecutionTime}"></label>
+          <label>Max Input Time (s)<input id="pset_${dom}_maxInputTime" type="number" min="${b.maxInputTime.min}" max="${b.maxInputTime.max}" class="form-control" value="${s.maxInputTime}"></label>
+          <label>Max Input Vars<input id="pset_${dom}_maxInputVars" type="number" min="${b.maxInputVars.min}" max="${b.maxInputVars.max}" class="form-control" value="${s.maxInputVars}"></label>
+          <label>Session GC Max Lifetime (s)<input id="pset_${dom}_sessionGcMaxlifetime" type="number" min="${b.sessionGcMaxlifetime.min}" max="${b.sessionGcMaxlifetime.max}" class="form-control" value="${s.sessionGcMaxlifetime}"></label>
+          <label>Timezone<select id="pset_${dom}_dateTimezone" class="form-control">${PHP_SETTINGS_TIMEZONES.map(tz=>`<option value="${tz}" ${s.dateTimezone===tz?'selected':''}>${tz||'(server default)'}</option>`).join('')}</select></label>
+          <label style="display:flex;align-items:center;gap:6px"><input id="pset_${dom}_displayErrors" type="checkbox" ${s.displayErrors?'checked':''}> Display Errors</label>
+          <label style="display:flex;align-items:center;gap:6px"><input id="pset_${dom}_allowUrlFopen" type="checkbox" ${s.allowUrlFopen?'checked':''}> Allow URL fopen</label>
+        </div>
+        <button class="btn btn-sm btn-primary" style="margin-top:10px" onclick="savePhpSettings('${dom}')">Save</button></div>`;
+    }).join('')}</div>`;
+}
+async function savePhpSettings(domain){
+    try{
+        const val=k=>document.getElementById(`pset_${domain}_${k}`).value;
+        const checked=k=>document.getElementById(`pset_${domain}_${k}`).checked;
+        const body={
+            memoryLimit:val('memoryLimit'), uploadMaxFilesize:val('uploadMaxFilesize'), postMaxSize:val('postMaxSize'),
+            maxExecutionTime:parseInt(val('maxExecutionTime'),10), maxInputTime:parseInt(val('maxInputTime'),10),
+            maxInputVars:parseInt(val('maxInputVars'),10), sessionGcMaxlifetime:parseInt(val('sessionGcMaxlifetime'),10),
+            dateTimezone:val('dateTimezone'), displayErrors:checked('displayErrors'), allowUrlFopen:checked('allowUrlFopen'),
+        };
+        await api(`/client/domains/${domain}/php-settings`,{method:'PUT',body:JSON.stringify(body)});
+        showAlert(`PHP settings saved for ${domain}`,'success');
+    }catch(e){showAlert(e.message,'error');}
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // WEBMAIL
@@ -1399,11 +1662,55 @@ async function renderWebmail(el){
         const rlInstalled=!!status.rainloopInstalled;
         const bothInstalled=rcInstalled&&rlInstalled;
         const domainUrls=urls.filter(u=>u.domain&&u.domain!==location.hostname);
-        el.innerHTML=`<div class="card"><div class="card-title">✉️ Webmail Access</div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">${bothInstalled?'Choose your preferred webmail client for each domain, then click the link to open it.':'Click a link below to access your webmail.'}</p>${domainUrls.map(u=>`<div style="margin-bottom:12px;padding:12px;background:#f8f9fa;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><div><strong style="font-size:13px;color:#333">${u.domain}</strong><div style="margin-top:4px"><a href="${u.url}" target="_blank" style="color:#3498db;font-size:13px">🌐 ${u.url}</a></div></div>${bothInstalled?`<div style="display:flex;align-items:center;gap:6px"><label style="font-size:12px;color:#666">Client:</label><select style="font-size:12px;padding:4px 8px;border-radius:4px;border:1px solid #ddd" onchange="switchMyWebmail('${u.domain}',this.value)"><option value="roundcube"${(u.clientType||'roundcube')==='roundcube'?' selected':''}>Roundcube</option><option value="rainloop"${u.clientType==='rainloop'?' selected':''}>RainLoop</option></select></div>`:''}</div>`).join('')}${domainUrls.length===0?'<p style="color:#7f8c8d">No domains configured yet.</p>':''}</div>`;
+        el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">✉️ Webmail Access <button class="btn btn-sm btn-help" onclick="showModuleHelp('webmail')">❓ Help</button></div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">${bothInstalled?'Choose your preferred webmail client for each domain, then click the link to open it.':'Click a link below to access your webmail.'}</p>${domainUrls.map(u=>`<div style="margin-bottom:12px;padding:12px;background:#f8f9fa;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><div><strong style="font-size:13px;color:#333">${u.domain}</strong><div style="margin-top:4px"><a href="${u.url}" target="_blank" style="color:#3498db;font-size:13px">🌐 ${u.url}</a></div></div>${bothInstalled?`<div style="display:flex;align-items:center;gap:6px"><label style="font-size:12px;color:#666">Client:</label><select style="font-size:12px;padding:4px 8px;border-radius:4px;border:1px solid #ddd" onchange="switchMyWebmail('${u.domain}',this.value)"><option value="roundcube"${(u.clientType||'roundcube')==='roundcube'?' selected':''}>Roundcube</option><option value="rainloop"${u.clientType==='rainloop'?' selected':''}>RainLoop</option></select></div>`:''}</div>`).join('')}${domainUrls.length===0?'<p style="color:#7f8c8d">No domains configured yet.</p>':''}</div>`;
     }catch(e){el.innerHTML=`<div class="card"><p>Webmail access: <a href="https://webmail.${location.hostname}/" target="_blank">Open Webmail</a></p></div>`;}
 }
 async function switchMyWebmail(domain,clientType){try{await api(`/client/domains/${domain}/webmail-client`,{method:'POST',body:JSON.stringify({clientType})});showAlert('Webmail for '+domain+' switched to '+clientType,'success');}catch(e){showAlert(e.message,'error');}}
 function openWebmailForDomain(domain){window.open(`https://webmail.${domain}/`,'_blank');}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CALENDAR & CONTACTS (CalDAV/CardDAV)
+// ═══════════════════════════════════════════════════════════════════════
+async function renderDav(el){
+    try{
+        const [domData,acctData]=await Promise.all([api('/client/dav/my-domains'),api('/client/mail/accounts').catch(()=>({accounts:[]}))]);
+        const doms=domData.domains||[];
+        if(doms.length===0){el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">📅 Calendar &amp; Contacts <button class="btn btn-sm btn-help" onclick="showModuleHelp('dav')">❓ Help</button></div><p style="color:#7f8c8d">Calendar &amp; Contacts is not enabled for any of your domains yet. Contact your administrator to enable it.</p></div>`;return;}
+        const domByName={};doms.forEach(d=>domByName[d.domainName]=d);
+        const accounts=(acctData.accounts||[]).filter(a=>domByName[a.domainName]);
+        const rows=accounts.map(a=>{
+            const email=a.nname&&a.nname.includes('@')?a.nname:`${a.nname}@${a.domainName}`;
+            const d=domByName[a.domainName];
+            const host=d.davHostname||`dav.${a.domainName}`;
+            const url=`https://${host}/dav/${email}/`;
+            return `<tr><td>${escHtml(email)}</td><td><code style="font-size:11px">${escHtml(url)}</code></td><td><button class="btn btn-xs btn-secondary" onclick="navigator.clipboard.writeText('${url}');showAlert('Copied','success')">Copy</button></td></tr>`;
+        }).join('');
+        const davShareRow=(label,icon,enabled,domainName,token,kind)=>{
+            if(!enabled)return'';
+            const host=domByName[domainName].davHostname||`dav.${domainName}`;
+            const davUrl=`https://${host}/dav/shared@${domainName}/domain-${kind==='calendar'?'calendar':'contacts'}/`;
+            const pubUrl=token?`${location.origin}/api/dav-public/${token}/${kind==='calendar'?'calendar.ics':'contacts.vcf'}`:'';
+            return `<div style="margin-bottom:10px"><strong style="font-size:12px">${icon} ${label}</strong><div style="font-size:11px;color:#7f8c8d;margin:2px 0">CalDAV/CardDAV app URL:</div><code style="font-size:11px">${escHtml(davUrl)}</code><div style="font-size:11px;color:#7f8c8d;margin:6px 0 2px">Public read-only link (no login needed):</div><div style="display:flex;gap:6px;align-items:center">${pubUrl?`<code style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis">${escHtml(pubUrl)}</code><button class="btn btn-xs btn-secondary" onclick="navigator.clipboard.writeText('${pubUrl}');showAlert('Copied','success')">Copy</button>`:'<span style="color:#888;font-size:12px">Not generated yet</span>'}<button class="btn btn-xs btn-warning" onclick="doRegenMyDavToken('${domainName}','${kind}')">Regenerate</button></div></div>`;
+        };
+        const sharedCards=doms.filter(d=>d.domainSharedCalendar||d.domainSharedContacts).map(d=>{
+            return `<div class="card"><div class="card-title">Domain Shared — ${escHtml(d.domainName)}</div>${davShareRow('Shared Calendar','📅',d.domainSharedCalendar,d.domainName,d.sharedCalendarToken,'calendar')}${davShareRow('Shared Contacts','📇',d.domainSharedContacts,d.domainName,d.sharedContactsToken,'contacts')}<p style="color:#7f8c8d;font-size:12px;margin-top:4px">The DAV app URL is visible to every mailbox on this domain. The public link works for anyone, no login — regenerating it invalidates the old one immediately.</p></div>`;
+        }).join('');
+        el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">📅 My Calendar &amp; Contacts <button class="btn btn-sm btn-help" onclick="showModuleHelp('dav')">❓ Help</button></div><p style="margin-bottom:12px;color:#7f8c8d;font-size:13px">Use these URLs to add your calendar and contacts to iOS, macOS, Android, Thunderbird, or Outlook. Sign in with your full email address and your regular email password.</p><table class="data-table"><thead><tr><th>Email</th><th>CalDAV / CardDAV URL</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="3" style="color:#888">No mail accounts found</td></tr>'}</tbody></table></div>${sharedCards}<div class="card"><div class="card-title">Setup Instructions</div><div id="davSetupTabs" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">${['ios','macos','android','thunderbird','outlook'].map(k=>`<button class="btn btn-xs btn-secondary" onclick="showDavSetup('${k}')">${{ios:'iOS',macos:'macOS',android:'Android',thunderbird:'Thunderbird',outlook:'Outlook'}[k]}</button>`).join(' ')}</div><div id="davSetupContent" style="font-size:13px;color:#444"></div></div>`;
+        showDavSetup('ios');
+    }catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}
+}
+async function doRegenMyDavToken(domainName,kind){if(!confirm('Regenerate this public link? The old link will stop working immediately.'))return;try{await api(`/client/dav/domains/${domainName}/shared/${kind}/regenerate-token`,{method:'POST'});showAlert('Link regenerated','success');renderPage('dav');}catch(e){showAlert(e.message,'error');}}
+function showDavSetup(client){
+    const host='dav.yourdomain.com';
+    const steps={
+        ios:`<ol><li>Settings → Calendar → Accounts → Add Account</li><li>Select "Other" → "Add CalDAV Account"</li><li>Server: <code>${host}</code></li><li>User: your full email address</li><li>Password: your email password</li><li>For Contacts, repeat with "Add CardDAV Account"</li></ol>`,
+        macos:`<ol><li>System Settings → Internet Accounts → Add Account</li><li>Select "Add Other Account" → "CalDAV Account"</li><li>Server: <code>${host}</code></li><li>User: your full email address</li><li>Password: your email password</li><li>For Contacts, repeat with "CardDAV Account"</li></ol>`,
+        android:`<ol><li>Install <strong>DAVx⁵</strong> from Google Play or F-Droid</li><li>Add account → CalDAV/CardDAV</li><li>Server: <code>https://${host}/dav/</code></li><li>User: your full email address</li><li>Password: your email password</li></ol>`,
+        thunderbird:`<ol><li>File → New → Calendar → On the Network</li><li>URL: use the CalDAV URL shown for your email above</li><li>User: your full email address</li><li>Password: your email password</li><li>For Contacts: Address Book → File → New → CardDAV Address Book</li></ol>`,
+        outlook:`<ol><li>Install the <strong>CalDAV Synchronizer</strong> add-in</li><li>Synchronization → Configure → Add profile</li><li>URL: <code>https://${host}/dav/</code></li><li>User: your full email address</li><li>Password: your email password</li></ol>`,
+    };
+    document.getElementById('davSetupContent').innerHTML=steps[client]||'';
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // ACCOUNT
@@ -1414,10 +1721,11 @@ async function renderAccount(el){
     window.__acct2faEnabled=!!a.totpEnabled;
     const apiKeysData=await api('/auth/api-keys').catch(()=>({apiKeys:[]}));
     const apiKeyRows=(apiKeysData.apiKeys||[]).map(k=>`<tr><td>${escHtml(k.label||'(no label)')}</td><td style="font-size:12px;color:#999">${k.createdAt?new Date(k.createdAt).toLocaleDateString():'-'}</td><td style="font-size:12px;color:#999">${k.expiresAt?new Date(k.expiresAt).toLocaleDateString():'Never'}</td><td style="font-size:12px;color:#999">${k.lastUsedAt?new Date(k.lastUsedAt).toLocaleString():'Never used'}</td><td><span class="status-badge ${k.status==='on'?'status-on':'status-off'}">${k.status==='on'?'Active':'Revoked'}</span></td><td>${k.status==='on'?`<button class="btn btn-sm btn-danger" onclick="doRevokeApiKey('${k.id}')">Revoke</button>`:''}</td></tr>`).join('');
-    el.innerHTML=`<div class="card"><div class="card-title">👤 My Account</div><div class="form-row"><div class="form-group"><label>Username</label><input value="${a.name||''}" disabled style="background:#f5f5f5"></div><div class="form-group"><label>Login Type</label><input value="${a.logintype||''}" disabled style="background:#f5f5f5"></div></div><div class="form-row"><div class="form-group"><label>Real Name</label><input id="a_rn" value="${a.realname||''}"></div><div class="form-group"><label>Email</label><input id="a_em" value="${a.email||''}"></div></div><div class="form-row"><div class="form-group"><label>Phone</label><input id="a_ph" value="${a.phone||''}"></div><div class="form-group"><label>Language</label><select id="a_ln"><option value="en" ${a.language==='en'?'selected':''}>English</option><option value="es" ${a.language==='es'?'selected':''}>Español</option><option value="pt" ${a.language==='pt'?'selected':''}>Português</option></select></div></div><div class="form-row"><div class="form-group"><label>Address</label><input id="a_ad" value="${a.address||''}"></div><div class="form-group"><label>City</label><input id="a_ci" value="${a.city||''}"></div></div><div class="form-row"><div class="form-group"><label>State</label><input id="a_st" value="${a.state||''}"></div><div class="form-group"><label>Country</label><input id="a_co" value="${a.country||''}"></div></div><div class="form-row"><div class="form-group" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="a_aiSummary" ${a.aiUsageSummaryEmail?'checked':''}><label for="a_aiSummary" style="margin:0">Email me a monthly AI Spam Filter token usage summary</label></div></div><div style="margin-top:16px"><button class="btn btn-primary" onclick="saveAccount()">Save Changes</button></div></div><div class="card" style="margin-top:16px"><div class="card-title">🔑 Change Password</div><div class="form-row"><div class="form-group"><label>Current Password</label><input id="a_cp" type="password"></div><div class="form-group"><label>New Password</label><input id="a_np" type="password"></div></div><div style="margin-top:12px"><button class="btn btn-warning" onclick="changePassword()">Change Password</button></div></div><div class="card" style="margin-top:16px"><div class="card-title">🔒 Two-Factor Authentication</div><p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">Require a 6-digit code from an authenticator app (Google Authenticator, Authy, etc.) in addition to your password when logging in.</p><div style="display:flex;align-items:center;gap:12px"><span class="status-badge ${a.totpEnabled?'status-on':'status-off'}">${a.totpEnabled?'Enabled':'Disabled'}</span><button class="btn ${a.totpEnabled?'btn-danger':'btn-primary'}" onclick="toggle2FA()">${a.totpEnabled?'Disable 2FA':'Enable 2FA'}</button></div></div><div class="card" style="margin-top:16px"><div class="card-title">🔑 API Access</div><p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">Generate a key to call the SysAdminHCP API from scripts or external tools without using your account password. A key can only be exchanged for a temporary access token at <code>POST /api/auth/api-login</code> — it cannot be used to log into this portal directly, and revoking it never affects your password.</p>${apiKeyRows?`<table class="data-table"><thead><tr><th>Label</th><th>Created</th><th>Expires</th><th>Last Used</th><th>Status</th><th></th></tr></thead><tbody>${apiKeyRows}</tbody></table>`:'<p style="color:#aaa;font-size:13px">No API keys yet.</p>'}<button class="btn btn-primary" style="margin-top:12px" onclick="doCreateApiKey()">Generate New Key</button></div><div class="card" style="margin-top:16px"><div class="card-title">🎨 Theme</div><p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">Choose the look and feel of your portal. Your selection is saved and persists across logins.</p><div class="theme-grid"><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='cosmic'||!localStorage.getItem('sysadminhcp-theme')?'active':''}" onclick="switchTheme('cosmic')"><div class="theme-preview" style="background:linear-gradient(135deg,#1a1a2e,#2d1b69);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#0b0b1e,#2d1b69)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.15);border-radius:4px"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(67,97,238,0.4);border-radius:3px"></div></div><div class="theme-name">Cosmic</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='classic'?'active':''}" onclick="switchTheme('classic')"><div class="theme-preview" style="background:#e8ecf1;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#1e3a5f,#2c5282)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:#2c5282;border-radius:3px;opacity:0.4"></div></div><div class="theme-name">Classic</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='dark'?'active':''}" onclick="switchTheme('dark')"><div class="theme-preview" style="background:linear-gradient(135deg,#0d1117,#161b22);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#010409,#0d1117)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(22,27,34,0.9);border-radius:4px;border:1px solid rgba(255,255,255,0.06)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(88,166,255,0.3);border-radius:3px"></div></div><div class="theme-name">Dark</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='ocean'?'active':''}" onclick="switchTheme('ocean')"><div class="theme-preview" style="background:linear-gradient(135deg,#e6f7ff,#bae7ff,#e6fffb);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#003a70,#0076b6)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.85);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(24,144,255,0.4);border-radius:3px"></div></div><div class="theme-name">Ocean</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='sunset'?'active':''}" onclick="switchTheme('sunset')"><div class="theme-preview" style="background:linear-gradient(135deg,#fff1f0,#ffe7ba,#fff2e8);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#6b1d1d,#ad4e00)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.85);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(250,84,28,0.4);border-radius:3px"></div></div><div class="theme-name">Sunset</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='forest'?'active':''}" onclick="switchTheme('forest')"><div class="theme-preview" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#14532d,#15803d)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.85);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(34,197,94,0.4);border-radius:3px"></div></div><div class="theme-name">Forest</div><div class="theme-check">✓</div></div></div><div style="margin-top:12px"><div class="appearance-row"><label>Font Size</label><div class="seg-control" id="fsControl"><button class="seg-btn ${localStorage.getItem('sysadminhcp-fs')==='sm'?'active':''}" onclick="switchFontSize('sm')">Small</button><button class="seg-btn ${(localStorage.getItem('sysadminhcp-fs')==='md'||!localStorage.getItem('sysadminhcp-fs'))?'active':''}" onclick="switchFontSize('md')">Medium</button><button class="seg-btn ${localStorage.getItem('sysadminhcp-fs')==='lg'?'active':''}" onclick="switchFontSize('lg')">Large</button></div></div><div class="appearance-row"><label>Density</label><div class="seg-control" id="densityControl"><button class="seg-btn ${localStorage.getItem('sysadminhcp-density')==='compact'?'active':''}" onclick="switchDensity('compact')">Compact</button><button class="seg-btn ${(localStorage.getItem('sysadminhcp-density')==='cozy'||!localStorage.getItem('sysadminhcp-density'))?'active':''}" onclick="switchDensity('cozy')">Cozy</button><button class="seg-btn ${localStorage.getItem('sysadminhcp-density')==='comfortable'?'active':''}" onclick="switchDensity('comfortable')">Comfortable</button></div></div></div></div>`;
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">👤 My Account <button class="btn btn-sm btn-help" onclick="showModuleHelp('account')">❓ Help</button></div><div class="form-row"><div class="form-group"><label>Username</label><input value="${a.name||''}" disabled style="background:#f5f5f5"></div><div class="form-group"><label>Login Type</label><input value="${a.logintype||''}" disabled style="background:#f5f5f5"></div></div><div class="form-row"><div class="form-group"><label>Real Name</label><input id="a_rn" value="${a.realname||''}"></div><div class="form-group"><label>Email</label><input id="a_em" value="${a.email||''}"></div></div><div class="form-row"><div class="form-group"><label>Phone</label><input id="a_ph" value="${a.phone||''}"></div><div class="form-group"><label>Language</label><select id="a_ln"><option value="en" ${a.language==='en'?'selected':''}>English</option><option value="es" ${a.language==='es'?'selected':''}>Español</option><option value="pt" ${a.language==='pt'?'selected':''}>Português</option></select></div></div><div class="form-row"><div class="form-group"><label>Address</label><input id="a_ad" value="${a.address||''}"></div><div class="form-group"><label>City</label><input id="a_ci" value="${a.city||''}"></div></div><div class="form-row"><div class="form-group"><label>State</label><input id="a_st" value="${a.state||''}"></div><div class="form-group"><label>Country</label><input id="a_co" value="${a.country||''}"></div></div><div class="form-row"><div class="form-group" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="a_aiSummary" ${a.aiUsageSummaryEmail?'checked':''}><label for="a_aiSummary" style="margin:0">Email me a monthly AI Spam Filter token usage summary</label></div></div><div style="margin-top:16px"><button class="btn btn-primary" onclick="saveAccount()">Save Changes</button></div></div><div class="card" style="margin-top:16px"><div class="card-title">🔑 Change Password</div><div class="form-row"><div class="form-group"><label>Current Password</label><input id="a_cp" type="password"></div><div class="form-group"><label>New Password</label><input id="a_np" type="password"></div></div><div style="margin-top:12px"><button class="btn btn-warning" onclick="changePassword()">Change Password</button></div></div>${a.sftpJailEnabled?`<div class="card" style="margin-top:16px"><div class="card-title">📁 Secure File Access (SFTP)</div><p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">Connect with any SFTP client (FileZilla, WinSCP, Cyberduck, etc.) to securely transfer files directly to your home folder — no shell access, file transfer only.</p><div class="form-row"><div class="form-group"><label>Host</label><input value="${window.location.hostname}" disabled style="background:#f5f5f5"></div><div class="form-group"><label>Port</label><input value="22" disabled style="background:#f5f5f5"></div></div><div class="form-group"><label>Username</label><input value="${escHtml(a.sftpUsername||'')}" disabled style="background:#f5f5f5"></div><button class="btn btn-warning" onclick="regenerateSftpPassword()">Generate New Password</button></div>`:''}<div class="card" style="margin-top:16px"><div class="card-title">🔒 Two-Factor Authentication</div><p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">Require a 6-digit code from an authenticator app (Google Authenticator, Authy, etc.) in addition to your password when logging in.</p><div style="display:flex;align-items:center;gap:12px"><span class="status-badge ${a.totpEnabled?'status-on':'status-off'}">${a.totpEnabled?'Enabled':'Disabled'}</span><button class="btn ${a.totpEnabled?'btn-danger':'btn-primary'}" onclick="toggle2FA()">${a.totpEnabled?'Disable 2FA':'Enable 2FA'}</button></div></div><div class="card" style="margin-top:16px"><div class="card-title">🔑 API Access</div><p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">Generate a key to call the SysAdminHCP API from scripts or external tools without using your account password. A key can only be exchanged for a temporary access token at <code>POST /api/auth/api-login</code> — it cannot be used to log into this portal directly, and revoking it never affects your password.</p>${apiKeyRows?`<table class="data-table"><thead><tr><th>Label</th><th>Created</th><th>Expires</th><th>Last Used</th><th>Status</th><th></th></tr></thead><tbody>${apiKeyRows}</tbody></table>`:'<p style="color:#aaa;font-size:13px">No API keys yet.</p>'}<button class="btn btn-primary" style="margin-top:12px" onclick="doCreateApiKey()">Generate New Key</button></div><div class="card" style="margin-top:16px"><div class="card-title">🎨 Theme</div><p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">Choose the look and feel of your portal. Your selection is saved and persists across logins.</p><div class="theme-grid"><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='cosmic'||!localStorage.getItem('sysadminhcp-theme')?'active':''}" onclick="switchTheme('cosmic')"><div class="theme-preview" style="background:linear-gradient(135deg,#1a1a2e,#2d1b69);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#0b0b1e,#2d1b69)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.15);border-radius:4px"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(67,97,238,0.4);border-radius:3px"></div></div><div class="theme-name">Cosmic</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='classic'?'active':''}" onclick="switchTheme('classic')"><div class="theme-preview" style="background:#e8ecf1;position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#1e3a5f,#2c5282)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:#2c5282;border-radius:3px;opacity:0.4"></div></div><div class="theme-name">Classic</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='dark'?'active':''}" onclick="switchTheme('dark')"><div class="theme-preview" style="background:linear-gradient(135deg,#0d1117,#161b22);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#010409,#0d1117)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(22,27,34,0.9);border-radius:4px;border:1px solid rgba(255,255,255,0.06)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(88,166,255,0.3);border-radius:3px"></div></div><div class="theme-name">Dark</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='ocean'?'active':''}" onclick="switchTheme('ocean')"><div class="theme-preview" style="background:linear-gradient(135deg,#e6f7ff,#bae7ff,#e6fffb);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#003a70,#0076b6)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.85);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(24,144,255,0.4);border-radius:3px"></div></div><div class="theme-name">Ocean</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='sunset'?'active':''}" onclick="switchTheme('sunset')"><div class="theme-preview" style="background:linear-gradient(135deg,#fff1f0,#ffe7ba,#fff2e8);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#6b1d1d,#ad4e00)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.85);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(250,84,28,0.4);border-radius:3px"></div></div><div class="theme-name">Sunset</div><div class="theme-check">✓</div></div><div class="theme-option ${localStorage.getItem('sysadminhcp-theme')==='forest'?'active':''}" onclick="switchTheme('forest')"><div class="theme-preview" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:40px;background:linear-gradient(180deg,#14532d,#15803d)"></div><div style="position:absolute;right:12px;top:12px;width:60px;height:8px;background:rgba(255,255,255,0.85);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.08)"></div><div style="position:absolute;right:12px;top:28px;width:40px;height:6px;background:rgba(34,197,94,0.4);border-radius:3px"></div></div><div class="theme-name">Forest</div><div class="theme-check">✓</div></div></div><div style="margin-top:12px"><div class="appearance-row"><label>Font Size</label><div class="seg-control" id="fsControl"><button class="seg-btn ${localStorage.getItem('sysadminhcp-fs')==='sm'?'active':''}" onclick="switchFontSize('sm')">Small</button><button class="seg-btn ${(localStorage.getItem('sysadminhcp-fs')==='md'||!localStorage.getItem('sysadminhcp-fs'))?'active':''}" onclick="switchFontSize('md')">Medium</button><button class="seg-btn ${localStorage.getItem('sysadminhcp-fs')==='lg'?'active':''}" onclick="switchFontSize('lg')">Large</button></div></div><div class="appearance-row"><label>Density</label><div class="seg-control" id="densityControl"><button class="seg-btn ${localStorage.getItem('sysadminhcp-density')==='compact'?'active':''}" onclick="switchDensity('compact')">Compact</button><button class="seg-btn ${(localStorage.getItem('sysadminhcp-density')==='cozy'||!localStorage.getItem('sysadminhcp-density'))?'active':''}" onclick="switchDensity('cozy')">Cozy</button><button class="seg-btn ${localStorage.getItem('sysadminhcp-density')==='comfortable'?'active':''}" onclick="switchDensity('comfortable')">Comfortable</button></div></div></div></div>`;
 }
 async function saveAccount(){try{await api('/client/account',{method:'PUT',body:JSON.stringify({realname:document.getElementById('a_rn').value,email:document.getElementById('a_em').value,phone:document.getElementById('a_ph').value,language:document.getElementById('a_ln').value,address:document.getElementById('a_ad').value,city:document.getElementById('a_ci').value,state:document.getElementById('a_st').value,country:document.getElementById('a_co').value,aiUsageSummaryEmail:document.getElementById('a_aiSummary').checked})});showAlert('Account updated','success');}catch(e){showAlert(e.message,'error');}}
 async function changePassword(){try{await api('/client/account/password',{method:'PUT',body:JSON.stringify({currentPassword:document.getElementById('a_cp').value,newPassword:document.getElementById('a_np').value})});showAlert('Password changed successfully','success');document.getElementById('a_cp').value='';document.getElementById('a_np').value='';}catch(e){showAlert(e.message,'error');}}
+async function regenerateSftpPassword(){if(!confirm('Generate a new SFTP password? Your old password will stop working immediately.'))return;try{const r=await api('/client/sftp/regenerate-password',{method:'POST'});showModal('New SFTP Password',`<p>Your new password is shown below — save it now, it will not be shown again:</p><div style="background:#f5f5f5;padding:12px;border-radius:6px;margin:12px 0;font-family:monospace;font-size:15px">${escHtml(r.sftpPassword)}</div>`,[{label:'Done',cls:'btn-primary',onclick:'closeModal()'}]);}catch(e){showAlert(e.message,'error');}}
 async function toggle2FA(){
   if(window.__acct2faEnabled){
     showModal('Disable Two-Factor Authentication','<p>Enter your password to confirm.</p><div class="form-group"><label>Password</label><input type="password" id="tfa_disable_pw"></div>',[{label:'Disable 2FA',cls:'btn-danger',onclick:'confirmDisable2FA()'}]);
@@ -1458,7 +1766,7 @@ async function doRevokeApiKey(id){if(!confirm('Revoke this API key? Any script u
 // ═══════════════════════════════════════════════════════════════════════
 async function renderSpamStats(el){
   const d=await api('/client/spam-stats');
-  if(!d.enabled){el.innerHTML='<div class="card"><p>AI Spam Filter is not enabled for your domains.</p></div>';return;}
+  if(!d.enabled){el.innerHTML='<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">AI Spam Filter <button class="btn btn-sm btn-help" onclick="showModuleHelp(\'spamstats\')">❓ Help</button></div><p>AI Spam Filter is not enabled for your domains.</p></div>';return;}
   const s=d.stats||{};
   const tu=d.tokenUsage||{};
   const fmtN=n=>n!=null?n.toLocaleString():'—';
@@ -1477,7 +1785,7 @@ async function renderSpamStats(el){
   const domainSelectHtml=enabledDomains.length>1?`<select id="spamRecentDomain" style="width:auto"><option value="">All my domains</option>${enabledDomains.map(dn=>`<option value="${escHtml(dn)}">${escHtml(dn)}</option>`).join('')}</select>`:'';
   el.innerHTML=`
   <div class="card" style="margin-bottom:16px">
-    <div class="card-title">🛡️ AI Spam Filter — Email Stats (Last 30 Days)</div>
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">🛡️ AI Spam Filter — Email Stats (Last 30 Days) <button class="btn btn-sm btn-help" onclick="showModuleHelp('spamstats')">❓ Help</button></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px">
       <div class="stat-card"><div class="stat-value">${fmtN(s.total)}</div><div class="stat-label">Emails Analyzed</div></div>
       <div class="stat-card"><div class="stat-value">${fmtN(s.spam)}</div><div class="stat-label">Spam Blocked</div></div>
@@ -1543,7 +1851,7 @@ function tkTimeAgo(date){const now=new Date();const diff=Math.floor((now.getTime
 const _tkPriorityColor={low:'#636e72',medium:'#0984e3',high:'#e17055',urgent:'#d63031'};
 const _tkStatusColor={open:'off',answered:'on','client-reply':'off',closed:'on'};
 async function renderTickets(el){
-  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">My Support Tickets</h3></div><div class="toolbar-right"><button class="btn btn-primary" onclick="tkShowNewTicket()">+ New Ticket</button></div></div>
+  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">My Support Tickets</h3></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('tickets')">❓ Help</button> <button class="btn btn-primary" onclick="tkShowNewTicket()">+ New Ticket</button></div></div>
     <div class="card"><table class="data-table"><thead><tr><th>#</th><th>Subject</th><th>Priority</th><th>Status</th><th>Last Activity</th></tr></thead><tbody id="tk_ctable"><tr><td colspan="5">Loading...</td></tr></tbody></table></div>`;
   tkLoadMyTickets();
 }
@@ -1613,7 +1921,7 @@ async function tkSendMyReply(id){
 // ═══ App Installer (Pro feature) ═════════════════════════════════════════════
 const _aiStatusColor={pending:'off',installing:'off',completed:'on',failed:'off'};
 async function renderAppInstaller(el){
-  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">App Installer</h3></div><div class="toolbar-right"><button class="btn btn-primary" onclick="aiShowNewInstall()">+ New Install</button></div></div>
+  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">App Installer</h3></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('appinstaller')">❓ Help</button> <button class="btn btn-primary" onclick="aiShowNewInstall()">+ New Install</button></div></div>
     <div class="card"><table class="data-table"><thead><tr><th>App</th><th>Domain</th><th>Status</th><th>Started</th><th>Actions</th></tr></thead><tbody id="ai_ctable"><tr><td colspan="5">Loading...</td></tr></tbody></table></div>`;
   aiLoadMyTable();
 }
@@ -1672,7 +1980,7 @@ async function aiDeleteMine(id){
 // ═══ Email Migration / IMAP Import (Pro feature) ═════════════════════════════
 const _emStatusColor={pending:'off',running:'off',completed:'on',failed:'off'};
 async function renderEmailMigration(el){
-  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">Email Migration (IMAP Import)</h3></div><div class="toolbar-right"><button class="btn btn-primary" onclick="emShowNewMigration()">+ New Import</button></div></div>
+  el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><h3 style="margin:0">Email Migration (IMAP Import)</h3></div><div class="toolbar-right"><button class="btn btn-sm btn-help" onclick="showModuleHelp('emailmigration')">❓ Help</button> <button class="btn btn-primary" onclick="emShowNewMigration()">+ New Import</button></div></div>
     <div class="card"><p style="font-size:13px;color:#666;margin-top:0">Bring your mailbox over from your old email host. We connect to your old provider over IMAP and copy your messages straight into your new mailbox here — your old account is never modified.</p></div>
     <div class="card"><table class="data-table"><thead><tr><th>Source</th><th>Destination</th><th>Status</th><th>Progress</th><th>Started</th><th>Actions</th></tr></thead><tbody id="em_ctable"><tr><td colspan="6">Loading...</td></tr></tbody></table></div>`;
   emLoadMyTable();
@@ -1752,7 +2060,7 @@ async function renderBandwidth(el){
       else if(summary.percent>=90)banner=`<div class="alert alert-warning">⚠ You've used ${summary.percent}% of your bandwidth quota for this cycle.</div>`;
     }
     el.innerHTML=`${banner}
-      <div class="card"><div class="card-title">Current Cycle (${escHtml(summary.cycleStart)} to ${escHtml(summary.cycleEnd)})</div>
+      <div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Current Cycle (${escHtml(summary.cycleStart)} to ${escHtml(summary.cycleEnd)}) <button class="btn btn-sm btn-help" onclick="showModuleHelp('bandwidth')">❓ Help</button></div>
         <div style="font-size:26px;font-weight:700">${formatBytes(summary.totalBytes)} <span style="font-size:14px;font-weight:400;color:#888">of ${summary.limitBytes?formatBytes(summary.limitBytes):'Unlimited'}</span></div>
         ${bwBar(summary.percent)}<div style="font-size:12px;color:#888;margin-top:4px">${summary.percent}% used</div>
       </div>
@@ -1777,7 +2085,7 @@ async function renderManual(el){
   </div></div>`;
 }
 async function renderAbout(el){
-  el.innerHTML=`<div class="card"><div class="card-title">ℹ️ About SysAdminHCP</div>
+  el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">ℹ️ About SysAdminHCP <button class="btn btn-sm btn-help" onclick="showModuleHelp('about')">❓ Help</button></div>
   <div style="max-width:600px;margin:0 auto;padding:20px">
     <div style="text-align:center;margin-bottom:24px">
       <div style="font-size:48px;margin-bottom:8px">🖥️</div>
@@ -1788,8 +2096,9 @@ async function renderAbout(el){
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
         <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#3498db,#2c3e50);display:flex;align-items:center;justify-content:center;color:white;font-size:24px;font-weight:bold">JR</div>
         <div>
-          <div style="font-size:18px;font-weight:600;color:#2c3e50">Micro Computer Repair Service / Jose Rodriguez</div>
-          <div style="color:#7f8c8d;font-size:14px">Developers</div>
+          <div style="font-size:17px;font-weight:600;color:#2c3e50">Developed By: Micro Computer Repair Service</div>
+          <div style="color:#7f8c8d;font-size:13px;margin-top:3px">Developers: Jose Rodriguez Arroyo &mdash; Senior Lead</div>
+          <div style="color:#7f8c8d;font-size:13px;margin-top:3px">2nd Level Collaborators: Zaida G., Claudio O., Oliver A.</div>
         </div>
       </div>
       <div style="border-top:1px solid #e0e0e0;padding-top:16px">
@@ -1815,5 +2124,7 @@ if(isLoginAs){const banner=document.getElementById('loginAsBanner');if(banner)ba
 // Auto-load dashboard on page load
 renderPage('dashboard');
 </script>
+<script>window.SB_API_BASE='/client/site-builder';window.SB_DOMAINS_PATH='/client/domains';</script>
+<script src="/theme/assets/js/sitebuilder.js"></script>
 </body>
 </html>
