@@ -13,7 +13,7 @@
 #   chmod 755 /var/qmail/bin/qmail-queue && chown root:root /var/qmail/bin/qmail-queue
 #   restorecon /var/qmail/bin/qmail-queue 2>/dev/null || true
 #   mkdir -p /var/lib/sysadminhcp/email-rate
-#   chown -R vpopmail /var/lib/sysadminhcp/email-rate
+#   chmod 1777 /var/lib/sysadminhcp/email-rate
 #   cp deploy/dkim-sign-message.py /var/qmail/bin/dkim-sign-message.py
 #   chmod 755 /var/qmail/bin/dkim-sign-message.py
 #
@@ -28,7 +28,7 @@
 #   Gated on /var/qmail/control/dkim-signing-enabled (global switch, panel Settings
 #   toggle) AND /var/qmail/control/domainkeys/<domain>/private (per-domain key, panel
 #   "Generate DKIM Keys" button). Requires the dkimpy Python module (apt: python3-dkim;
-#   RHEL/AlmaLinux: no distro package — installed via pip3 into a dedicated venv).
+#   RHEL/AlmaLinux: no distro package - installed system-wide via pip3).
 #
 # SpamAssassin content scanning (see MailService.enableSpamAssassin() in mailService.ts):
 #   Gated on /var/qmail/control/spamassassin-scanning-enabled (panel Mail > Spam toggle).
@@ -106,16 +106,24 @@ increment_counter() {
   local tag; tag=$(date +%Y%m%d%H)
   local dir="${RATE_DIR}/${dom}"
   local cf="${dir}/${tag}"
-  # mkdir's mode depends on the calling process's umask, which differs between
-  # inbound SMTP delivery and outbound authenticated submission on some servers —
-  # chmod explicitly so the panel's own service user (not in the vpopmail/vchkpw
-  # group) can always read these back for the Email Stats page, regardless.
+  # This directory tree is written by at least two different, unrelated UIDs: this wrapper
+  # (which qmail-smtpd execs as one of the low-privilege qmail-family users - qmaild/qmailr,
+  # NOT vpopmail and NOT root, confirmed live via `sudo -u qmaild mkdir` failing with
+  # Permission denied on a 755 dir owned by a different user) and the panel's own Node process
+  # (runs as the "sysadminhcp" system user, and also writes counters here for the Email Stats
+  # page). Whichever one gets to a given per-domain subdirectory first stamps it with ITS OWN
+  # ownership under a plain 755, silently locking the other one out - confirmed live: a fresh
+  # per-domain directory came back owned by a completely different user than qmaild, and every
+  # subsequent write from this wrapper failed with "No such file or directory" (mkdir -p having
+  # failed silently against the read-only-to-us parent, swallowed by the 2>/dev/null below).
+  # 1777 (sticky + world-writable, the same model /tmp uses) is the only permission scheme that
+  # actually works for a directory tree several unrelated UIDs all need to write into.
   mkdir -p "$dir" 2>/dev/null || true
-  chmod 755 "$dir" 2>/dev/null || true
+  chmod 1777 "$dir" 2>/dev/null || true
   local cur
   cur=$(cat "$cf" 2>/dev/null || echo 0)
   echo $(( cur + 1 )) > "$cf" 2>/dev/null || true
-  chmod 644 "$cf" 2>/dev/null || true
+  chmod 666 "$cf" 2>/dev/null || true
   find "$dir" -type f -mmin +2880 -delete 2>/dev/null &
 }
 
@@ -133,7 +141,7 @@ if [[ -n "$DOMAIN" ]]; then
   increment_counter "$DOMAIN"
 fi
 
-# ── DKIM signing (Ubuntu/Debian only — see enableDkimUbuntu() in mailService.ts) ──────
+# ── DKIM signing (all OS families — see enableDkim() in mailService.ts) ──────
 # Gated on two independent checks so this is a zero-overhead no-op unless both are true:
 # a global marker (the Settings-page toggle) and a per-domain private key (the existing
 # "Generate DKIM Keys" button, unchanged). Any failure here — missing tool, bad key,

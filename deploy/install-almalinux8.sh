@@ -699,7 +699,13 @@ if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh
     restorecon /var/qmail/bin/dkim-sign-message.py 2>/dev/null || true
   fi
   mkdir -p /var/lib/sysadminhcp/email-rate
-  chown -R vpopmail /var/lib/sysadminhcp/email-rate 2>/dev/null || true
+  # 1777 (sticky + world-writable, same model /tmp uses), not a single chown target - this
+  # directory is written by both the qmail-queue wrapper (execs as a low-privilege qmail-family
+  # user, not vpopmail and not root) and the panel's own Node process (runs as sysadminhcp) for
+  # the Email Stats page. Confirmed live: a plain chown-to-vpopmail left qmaild unable to create
+  # its own per-domain subdirectory, and every rate-limit write failed with "No such file or
+  # directory" because mkdir -p had failed silently against a parent it couldn't write into.
+  chmod 1777 /var/lib/sysadminhcp/email-rate 2>/dev/null || true
   mkdir -p /var/log/sysadminhcp
   touch /var/qmail/control/sysadminhcp-ratelimits 2>/dev/null || true
   info "qmail-queue wrapper installed — rate limiting + DKIM signing active"
