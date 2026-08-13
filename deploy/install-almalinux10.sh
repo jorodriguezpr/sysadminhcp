@@ -877,9 +877,22 @@ else
   warn "deploy/install-sysadminhcp-dav.sh not found in source - Calendar & Contacts feature will be unavailable until deployed manually"
 fi
 
-# ─── Step 8.5: Install qmail-queue rate-limit wrapper ───────────────────────
+# dkimpy provides the `dkim` module dkim-sign-message.py imports for outbound signing (see
+# qmail-queue-check.sh's own header) — this build's spamdyke has no DKIM support at all. No RPM
+# package for it exists on EL8/9/10 (unlike Ubuntu's python3-dkim), so install via pip3 into the
+# system Python. --break-system-packages is required on the PEP 668-enforcing pip3 shipped with
+# EL9/10's Python 3.9+ (EL8's older pip3 doesn't recognize the flag and errors on it, hence the
+# fallback) — the wrapper script invokes plain `python3`, not a venv, so this must land in the
+# system site-packages, not an isolated environment. Confirmed live: dkim-sign-message.py was
+# never even deployed to this OS family at all before this fix, and outbound mail from a
+# migrated domain carried no DKIM signature whatsoever despite the key/marker/DNS record all
+# being set up correctly - real Gmail delivery showed no DKIM result at all, not even a failure.
+dnf install -y python3-pip 2>/dev/null || warn "python3-pip install failed — DKIM signing will be unavailable until installed manually"
+pip3 install --break-system-packages dkimpy 2>/dev/null || pip3 install dkimpy 2>/dev/null || warn "dkimpy install failed — DKIM signing will be unavailable until installed manually"
+
+# ─── Step 8.5: Install qmail-queue rate-limit + DKIM-signing wrapper ────────
 if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh" ]]; then
-  info "Step 8.5: Installing qmail-queue rate-limit wrapper..."
+  info "Step 8.5: Installing qmail-queue rate-limit + DKIM wrapper..."
   if [[ ! -f /var/qmail/bin/qmail-queue.real ]]; then
     cp -p /var/qmail/bin/qmail-queue /var/qmail/bin/qmail-queue.real
     info "Original qmail-queue backed up to qmail-queue.real"
@@ -888,10 +901,16 @@ if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh
   chmod 755 /var/qmail/bin/qmail-queue
   chown root:root /var/qmail/bin/qmail-queue
   restorecon /var/qmail/bin/qmail-queue 2>/dev/null || true
+  if [[ -f "$REPO_DIR/deploy/dkim-sign-message.py" ]]; then
+    cp "$REPO_DIR/deploy/dkim-sign-message.py" /var/qmail/bin/dkim-sign-message.py
+    chmod 755 /var/qmail/bin/dkim-sign-message.py
+    chown root:root /var/qmail/bin/dkim-sign-message.py
+    restorecon /var/qmail/bin/dkim-sign-message.py 2>/dev/null || true
+  fi
   mkdir -p /var/lib/sysadminhcp/email-rate
   chown -R vpopmail /var/lib/sysadminhcp/email-rate 2>/dev/null || true
   touch /var/qmail/control/sysadminhcp-ratelimits 2>/dev/null || true
-  info "qmail-queue wrapper installed — rate limiting active"
+  info "qmail-queue wrapper installed — rate limiting + DKIM signing active"
 else
   info "Step 8.5: qmail not present or wrapper not found — skipping queue wrapper"
 fi
