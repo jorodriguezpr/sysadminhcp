@@ -608,6 +608,17 @@ The simplest of the three — just the KloxoNG server's hostname/IP and root SSH
 <h3>Related: importing DNS zones from a non-SysAdminHCP server</h3>
 <p>If you just need DNS records (not a full hosting account) from <em>any</em> BIND-based server — including non-SysAdminHCP panels like KloxoNG, whose config is often split across multiple included files — use the <strong>Import Zone</strong> button on the DNS Zones page (under Hosting → DNS) rather than the migration wizard here. It connects over SSH, discovers every zone the remote BIND is authoritative for, and imports whichever ones you pick with records copied exactly as found (no IPs rewritten).</p>
 
+<h3>What happens automatically after a migration completes</h3>
+<p>Every migration (cPanel/WHM, SysAdminHCP, KloxoNG) runs a full stabilization pass with no manual steps required — imported accounts used to sometimes need a Fix Script run by hand afterward; they don't anymore. The wizard automatically:</p>
+<ul>
+<li>Issues a Let's Encrypt SSL certificate for the domain and its webmail, even when the source server's own certificate couldn't be carried over.</li>
+<li>Sets up DKIM signing for outbound mail, including publishing the DNS TXT record — no separate "Generate DKIM Keys" step needed.</li>
+<li>Creates the PHP-FPM pool on the closest PHP version actually installed on this server.</li>
+<li>Recreates the web, SSL, and webmail vhosts from the final imported state, so nothing is left half-configured from an intermediate step.</li>
+<li>Retries automatically for up to 20 minutes right after the migration, then keeps checking every 30 minutes after that, for anything that couldn't finish yet — most commonly because DNS hadn't finished pointing here at the exact moment of migration.</li>
+</ul>
+<p>If something still needs attention, it shows up as a warning on the <strong>Overview &amp; History</strong> page rather than failing silently — but for a normal migration where DNS already points here, there's nothing left to do by hand once it finishes.</p>
+
 <div class="help-warn"><strong>Credentials are never persisted.</strong> SSH passwords and API keys you enter in the wizard are used for that session only — they're not saved anywhere, including in Migration History. If you need to resync later, you'll re-enter them (or load a saved server from Remote Servers &amp; Cluster, which stores them for reuse only if you explicitly add it there).</div>
 `},
 spamfilter:{title:'📖 Help — AI Spam Filter',html:`
