@@ -1482,7 +1482,11 @@ CREATE TABLE IF NOT EXISTS vpopmail (
   pw_dir varchar(160) NOT NULL DEFAULT '',
   pw_shell varchar(20) NOT NULL DEFAULT 'NOQUOTA',
   pw_quota varchar(20) NOT NULL DEFAULT 'NOQUOTA',
-  pw_clear_passwd varchar(16) NOT NULL DEFAULT '',
+  -- 136 matches vpopmail's own upstream MySQL schema (doc/mysql/tables.mysql) - this was
+  -- previously varchar(16), too narrow for vpopmail's real vadduser C binary. Confirmed live:
+  -- a real cPanel migration's vadduser call failed outright with "vmysql: sql error[2]: Data
+  -- too long for column 'pw_clear_passwd'", silently leaving the mail account never created.
+  pw_clear_passwd varchar(136) NOT NULL DEFAULT '',
   PRIMARY KEY (pw_name, pw_domain)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 CREATE TABLE IF NOT EXISTS lastauth (
