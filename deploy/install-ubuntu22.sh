@@ -1216,9 +1216,14 @@ if command -v firewall-cmd &>/dev/null && systemctl is-active firewalld &>/dev/n
   firewall-cmd --permanent --add-service=smtp 2>/dev/null || firewall-cmd --permanent --add-port=25/tcp
   firewall-cmd --permanent --add-port=587/tcp
   firewall-cmd --permanent --add-port=143/tcp --add-port=993/tcp --add-port=110/tcp --add-port=995/tcp
+  # Every server in this fleet gets SSH moved to 10022 via the panel's own SSH Config page after
+  # install, but the firewall had no matching rule prepared for it - confirmed live: this exact
+  # gap locked out SSH access on a real server until opened manually through the panel's own
+  # Firewall API.
+  firewall-cmd --permanent --add-port=10022/tcp
   firewall-cmd --permanent --add-port=30000-31000/tcp  # FTP passive
   firewall-cmd --reload
-  info "Firewall rules added (7778, 7777, 80, 443, 53, 21, 25, 587, IMAP/POP, 30000-31000)"
+  info "Firewall rules added (7778, 7777, 80, 443, 53, 21, 25, 587, IMAP/POP, 10022, 30000-31000)"
 elif [[ $WSL_MODE -eq 1 ]]; then
   info "WSL detected: skipping firewall configuration (Windows handles networking)"
 else

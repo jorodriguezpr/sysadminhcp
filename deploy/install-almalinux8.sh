@@ -1016,9 +1016,22 @@ if command -v firewall-cmd &>/dev/null; then
   firewall-cmd --permanent --add-service=https
   firewall-cmd --permanent --add-service=dns        # DNS (port 53 UDP+TCP)
   firewall-cmd --permanent --add-service=ftp        # FTP control (21)
+  # Mail (SMTP 25, submission 587, IMAP 143/993, POP3 110/995) - previously never opened by
+  # this installer at all, so a fresh server's mail ports were only reachable if someone
+  # noticed and opened them by hand. Also 10022/tcp: every server in this fleet gets SSH moved
+  # there via the panel's own SSH Config page after install, but the firewall had no matching
+  # rule prepared for it - confirmed live: this exact gap locked out SSH access on a real
+  # server until opened manually through the panel's own Firewall API.
+  firewall-cmd --permanent --add-service=smtp
+  firewall-cmd --permanent --add-service=imap
+  firewall-cmd --permanent --add-service=imaps
+  firewall-cmd --permanent --add-service=pop3
+  firewall-cmd --permanent --add-service=pop3s
+  firewall-cmd --permanent --add-port=587/tcp
+  firewall-cmd --permanent --add-port=10022/tcp
   firewall-cmd --permanent --add-port=30000-31000/tcp  # FTP passive
   firewall-cmd --reload
-  info "Firewall rules added for ports 7778, 7777, 80, 443, 53, 21, 30000-31000"
+  info "Firewall rules added for ports 7778, 7777, 80, 443, 53, 21, 25, 587, 143, 993, 110, 995, 10022, 30000-31000"
 else
   warn "firewalld not found. Skipping firewall configuration."
 fi
