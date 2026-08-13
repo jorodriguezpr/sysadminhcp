@@ -1217,6 +1217,7 @@ elif command -v firewall-cmd &>/dev/null; then
     # rule prepared for it - confirmed live: this exact gap locked out SSH access on a real
     # server until opened manually through the panel's own Firewall API.
     firewall-cmd --permanent --add-service=smtp
+    firewall-cmd --permanent --add-service=smtps
     firewall-cmd --permanent --add-service=imap
     firewall-cmd --permanent --add-service=imaps
     firewall-cmd --permanent --add-service=pop3
@@ -1225,7 +1226,7 @@ elif command -v firewall-cmd &>/dev/null; then
     firewall-cmd --permanent --add-port=10022/tcp
     firewall-cmd --permanent --add-port=30000-31000/tcp
     firewall-cmd --reload
-    info "Firewall rules added for ports 7778, 7777, 80, 443, 21, 25, 587, 143, 993, 110, 995, 10022, 30000-31000"
+    info "Firewall rules added for ports 7778, 7777, 80, 443, 21, 25, 465, 587, 143, 993, 110, 995, 10022, 30000-31000"
   else
     warn "firewalld could not be started. Skipping firewall configuration."
   fi
