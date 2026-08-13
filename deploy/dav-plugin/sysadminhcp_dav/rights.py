@@ -35,6 +35,18 @@ class Rights(BaseRights):
         if user == SERVICE_LOGIN:
             return "RrWw"
 
+        # The server root ("/", or "" once Radicale strips the leading/trailing
+        # slashes) is not anyone's collection - it's what every real CalDAV/CardDAV
+        # client PROPFINDs first to discover {DAV:}current-user-principal before it
+        # ever knows to look at /user@domain/. Radicale's own stock rights backends
+        # (e.g. owner_only.Rights) explicitly grant read-only access here for exactly
+        # that reason; without it, every client's very first request 403s before
+        # login even gets a chance to matter. Confirmed live: authentication
+        # succeeded ("Successful login") immediately followed by "Access to '/'
+        # denied" on literally every login attempt, for every client.
+        if path in ("", "/"):
+            return "R"
+
         # Owner access: /user@domain (root) and everything under /user@domain/...
         if _owns(user, path):
             return "RrWw"
