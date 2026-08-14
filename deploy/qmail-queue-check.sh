@@ -141,27 +141,20 @@ if [[ -n "$DOMAIN" ]]; then
   increment_counter "$DOMAIN"
 fi
 
-# ── DKIM signing (all OS families — see enableDkim() in mailService.ts) ──────
-# Gated on two independent checks so this is a zero-overhead no-op unless both are true:
-# a global marker (the Settings-page toggle) and a per-domain private key (the existing
-# "Generate DKIM Keys" button, unchanged). Any failure here — missing tool, bad key,
-# non-zero exit, empty output — falls back to the original unsigned message; signing must
-# never block or corrupt mail delivery.
-DKIM_MARKER=/var/qmail/control/dkim-signing-enabled
-if [[ -f "$DKIM_MARKER" && -n "$DOMAIN" && -f "/var/qmail/control/domainkeys/${DOMAIN}/private" ]]; then
-  SIGNED_TMP=$(mktemp /tmp/qqsigned.XXXXXX)
-  if timeout 10 python3 /var/qmail/bin/dkim-sign-message.py "$DOMAIN" "/var/qmail/control/domainkeys/${DOMAIN}/private" < "$MSG_TMP" > "$SIGNED_TMP" 2>/dev/null && [[ -s "$SIGNED_TMP" ]]; then
-    mv "$SIGNED_TMP" "$MSG_TMP"
-  else
-    rm -f "$SIGNED_TMP"
-  fi
-fi
-
 # ── SpamAssassin content scanning (panel Mail > Spam toggle) ─────────
 # Gated on a marker file so this is a zero-overhead no-op unless explicitly enabled.
 # spamc always returns the message with X-Spam-* headers added (scored or not) unless
 # it can't reach spamd, in which case it just echoes the original message back — same
-# "never block or corrupt delivery" contract as the DKIM step above.
+# "never block or corrupt delivery" contract as the DKIM step below.
+#
+# Must run BEFORE DKIM signing, not after. local.cf has "rewrite_header Subject [SPAM]"
+# (report_safe 0 — the tag is written straight into the existing Subject header, not a
+# wrapped attachment), and Subject is one of the headers DKIM signs. Signing first and
+# then letting SpamAssassin rewrite Subject afterward invalidates the signature outright
+# — confirmed live: a real Gmail delivery came back "[SPAM] Mail test" in the subject
+# with SPF/DMARC PASS but DKIM FAIL. This never showed up before because outbound
+# submission mail didn't reliably get this far until the port 587/465 TLS+AUTH fix made
+# it actually deliverable — the ordering bug was always there, just never exercised.
 SPAM_MARKER=/var/qmail/control/spamassassin-scanning-enabled
 if [[ -f "$SPAM_MARKER" ]]; then
   SCANNED_TMP=$(mktemp /tmp/qqspam.XXXXXX)
@@ -169,6 +162,23 @@ if [[ -f "$SPAM_MARKER" ]]; then
     mv "$SCANNED_TMP" "$MSG_TMP"
   else
     rm -f "$SCANNED_TMP"
+  fi
+fi
+
+# ── DKIM signing (all OS families — see enableDkim() in mailService.ts) ──────
+# Gated on two independent checks so this is a zero-overhead no-op unless both are true:
+# a global marker (the Settings-page toggle) and a per-domain private key (the existing
+# "Generate DKIM Keys" button, unchanged). Any failure here — missing tool, bad key,
+# non-zero exit, empty output — falls back to the original unsigned message; signing must
+# never block or corrupt mail delivery. Runs last so it signs the final message content,
+# after any SpamAssassin header rewriting above.
+DKIM_MARKER=/var/qmail/control/dkim-signing-enabled
+if [[ -f "$DKIM_MARKER" && -n "$DOMAIN" && -f "/var/qmail/control/domainkeys/${DOMAIN}/private" ]]; then
+  SIGNED_TMP=$(mktemp /tmp/qqsigned.XXXXXX)
+  if timeout 10 python3 /var/qmail/bin/dkim-sign-message.py "$DOMAIN" "/var/qmail/control/domainkeys/${DOMAIN}/private" < "$MSG_TMP" > "$SIGNED_TMP" 2>/dev/null && [[ -s "$SIGNED_TMP" ]]; then
+    mv "$SIGNED_TMP" "$MSG_TMP"
+  else
+    rm -f "$SIGNED_TMP"
   fi
 fi
 
