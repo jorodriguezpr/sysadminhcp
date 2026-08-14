@@ -141,7 +141,7 @@ if [[ -n "$DOMAIN" ]]; then
   increment_counter "$DOMAIN"
 fi
 
-# ── SpamAssassin content scanning (panel Mail > Spam toggle) ─────────
+# ── SpamAssassin content scanning (panel Mail > Spam toggle; inbound/outbound gated separately) ─
 # Gated on a marker file so this is a zero-overhead no-op unless explicitly enabled.
 # spamc always returns the message with X-Spam-* headers added (scored or not) unless
 # it can't reach spamd, in which case it just echoes the original message back — same
@@ -155,8 +155,25 @@ fi
 # with SPF/DMARC PASS but DKIM FAIL. This never showed up before because outbound
 # submission mail didn't reliably get this far until the port 587/465 TLS+AUTH fix made
 # it actually deliverable — the ordering bug was always there, just never exercised.
+#
+# Inbound (port 25, anonymous public mail) and outbound (submission, ports 587/465, your
+# own authenticated users) are gated by separate marker files/panel toggles. Scanning your
+# own authenticated senders is not standard practice — they're already trusted via SMTP
+# AUTH, and a false-positive score doing exactly the header-rewrite above on a legitimate
+# outbound message hurts deliverability at the recipient — so outbound defaults to off.
+# SYSADMINHCP_SMTP_DIRECTION is exported by the qmail supervise run scripts (inbound from
+# smtp/run, outbound from submission/run — port 465 flows through submission/run too, via
+# the stunnel forward to 127.0.0.1:587); defaults to inbound if unset (e.g. locally
+# injected mail bypassing tcpserver entirely).
 SPAM_MARKER=/var/qmail/control/spamassassin-scanning-enabled
-if [[ -f "$SPAM_MARKER" ]]; then
+SPAM_MARKER_OUTBOUND=/var/qmail/control/spamassassin-scanning-outbound-enabled
+SCAN_SPAM=0
+if [[ "${SYSADMINHCP_SMTP_DIRECTION:-inbound}" == "outbound" ]]; then
+  [[ -f "$SPAM_MARKER_OUTBOUND" ]] && SCAN_SPAM=1
+else
+  [[ -f "$SPAM_MARKER" ]] && SCAN_SPAM=1
+fi
+if [[ "$SCAN_SPAM" -eq 1 ]]; then
   SCANNED_TMP=$(mktemp /tmp/qqspam.XXXXXX)
   if timeout 30 spamc < "$MSG_TMP" > "$SCANNED_TMP" 2>/dev/null && [[ -s "$SCANNED_TMP" ]]; then
     mv "$SCANNED_TMP" "$MSG_TMP"

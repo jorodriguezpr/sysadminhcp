@@ -463,6 +463,7 @@ TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
 HOSTNAME=`hostname`
 VCHKPW="/home/vpopmail/bin/vchkpw"
 export SMTPAUTH="-"
+export SYSADMINHCP_SMTP_DIRECTION="inbound"
 
 exec /usr/bin/softlimit -m 256000000 \
      /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
@@ -484,6 +485,7 @@ TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
 HOSTNAME=`hostname`
 VCHKPW="/home/vpopmail/bin/vchkpw"
 export SMTPAUTH="!"
+export SYSADMINHCP_SMTP_DIRECTION="outbound"
 
 exec /usr/bin/softlimit -m 128000000 \
     /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \

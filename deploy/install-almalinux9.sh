@@ -268,6 +268,12 @@ if [ -f /var/qmail/supervise/smtp/run ] && ! grep -q '\$SPAMDYKE --config-file' 
   sed -i 's|^# # SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"|SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"|' /var/qmail/supervise/smtp/run
   sed -i 's|^\(\s*\)\$SMTPD \$VCHKPW /bin/true|\1$SPAMDYKE --config-file $SPAMDYKE_CONF \\\n\1$SMTPD $VCHKPW /bin/true|' /var/qmail/supervise/smtp/run
 fi
+# Tags port 25 traffic as inbound for qmail-queue-check.sh's per-direction SpamAssassin gate
+# (panel Mail > Spam: inbound/outbound scanned independently). Inserted after the shebang since
+# the RPM-shipped run script's exact internal structure otherwise isn't guaranteed.
+if [ -f /var/qmail/supervise/smtp/run ] && ! grep -q 'SYSADMINHCP_SMTP_DIRECTION' /var/qmail/supervise/smtp/run; then
+  sed -i '1a export SYSADMINHCP_SMTP_DIRECTION="inbound"' /var/qmail/supervise/smtp/run
+fi
 
 # The QMT submission (587) run script this RPM ships never wires in spamdyke at all (unlike
 # port 25's, which at least ships spamdyke commented out for the sed fix above to enable) — so
@@ -286,6 +292,7 @@ TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
 HOSTNAME=`hostname`
 VCHKPW="/home/vpopmail/bin/vchkpw"
 export SMTPAUTH="!"
+export SYSADMINHCP_SMTP_DIRECTION="outbound"
 
 exec /usr/bin/softlimit -m 128000000 \
     /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \

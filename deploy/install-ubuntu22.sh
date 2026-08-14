@@ -585,6 +585,7 @@ exec 2>&1
 HOSTNAME=$(hostname -f 2>/dev/null || hostname)
 SPAMDYKE=""
 [ -x /usr/local/bin/spamdyke ] && SPAMDYKE="/usr/local/bin/spamdyke --config-file /etc/spamdyke/spamdyke.conf"
+export SYSADMINHCP_SMTP_DIRECTION="inbound"
 exec /usr/bin/tcpserver -v -R -H -l "$HOSTNAME" -c 100 0 25 \
   $SPAMDYKE /var/qmail/bin/qmail-smtpd \
   /home/vpopmail/bin/vchkpw /bin/true 2>&1
@@ -598,6 +599,7 @@ exec 2>&1
 HOSTNAME=$(hostname -f 2>/dev/null || hostname)
 SPAMDYKE=""
 [ -x /usr/local/bin/spamdyke ] && SPAMDYKE="/usr/local/bin/spamdyke --config-file /etc/spamdyke/spamdyke-submission.conf"
+export SYSADMINHCP_SMTP_DIRECTION="outbound"
 exec /usr/bin/tcpserver -v -R -H -l "$HOSTNAME" -c 50 0 587 \
   $SPAMDYKE /var/qmail/bin/qmail-smtpd \
   /home/vpopmail/bin/vchkpw /bin/true 2>&1
