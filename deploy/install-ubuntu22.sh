@@ -527,8 +527,7 @@ mkdir -p /etc/spamdyke
 if [[ ! -f /etc/spamdyke/spamdyke.conf ]]; then
   cat > /etc/spamdyke/spamdyke.conf << EOF
 log-level=info
-tls-certificate-file=/etc/pki/tls/certs/localhost.crt
-tls-privatekey-file=/etc/pki/tls/private/localhost.key
+tls-certificate-file=/var/qmail/control/servercert.pem
 tls-cipher-list=$SPAMDYKE_CIPHER_LIST
 smtp-auth-command=/home/vpopmail/bin/vchkpw /bin/true
 smtp-auth-level=ondemand
@@ -545,25 +544,35 @@ fi
 if [[ ! -f /etc/spamdyke/spamdyke-submission.conf ]]; then
   cat > /etc/spamdyke/spamdyke-submission.conf << EOF
 log-level=info
-tls-certificate-file=/etc/pki/tls/certs/localhost.crt
-tls-privatekey-file=/etc/pki/tls/private/localhost.key
+tls-certificate-file=/var/qmail/control/servercert.pem
 tls-cipher-list=$SPAMDYKE_CIPHER_LIST
 smtp-auth-command=/home/vpopmail/bin/vchkpw /bin/true
 smtp-auth-level=always
+filter-level=require-auth
 idle-timeout-secs=300
 greeting-delay-secs=0
 EOF
   info "spamdyke-submission.conf created"
 fi
 
-# Idempotent fix for existing installs re-running this script: correct the line even if the
-# config files already existed and were skipped by the [[ ! -f ]] guards above.
+# Idempotent fix for existing installs re-running this script: correct the lines even if the
+# config files already existed and were skipped by the [[ ! -f ]] guards above. Also fixes
+# tls-certificate-file/tls-privatekey-file for installs created before this was corrected —
+# the original path (/etc/pki/tls/certs/localhost.crt, an RHEL snakeoil-cert convention that
+# doesn't exist on Ubuntu at all) meant spamdyke never had a real cert to offer, so it never
+# advertised STARTTLS on either port. /var/qmail/control/servercert.pem is a single combined
+# cert+key file that SmtpCertService keeps in sync with every hosted domain's real LE cert, so
+# tls-privatekey-file is dropped entirely (not needed — spamdyke reads the key from the same file).
 for f in /etc/spamdyke/spamdyke.conf /etc/spamdyke/spamdyke-submission.conf; do
   if [[ -f "$f" ]]; then
-    sed -i '/^#\?tls-cipher-list=/d' "$f"
+    sed -i '/^#\?tls-cipher-list=/d;/^#\?tls-certificate-file=/d;/^#\?tls-privatekey-file=/d' "$f"
     echo "tls-cipher-list=$SPAMDYKE_CIPHER_LIST" >> "$f"
+    echo "tls-certificate-file=/var/qmail/control/servercert.pem" >> "$f"
   fi
 done
+if [[ -f /etc/spamdyke/spamdyke-submission.conf ]] && ! grep -q '^filter-level=' /etc/spamdyke/spamdyke-submission.conf; then
+  echo "filter-level=require-auth" >> /etc/spamdyke/spamdyke-submission.conf
+fi
 
 # ── qmail supervise-style run scripts + systemd units (same as AlmaLinux) ──
 if [[ -d /var/qmail ]]; then
@@ -927,6 +936,58 @@ if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh
   info "qmail-queue wrapper installed — rate limiting + DKIM signing active"
 else
   info "Step 8.5: qmail not present or wrapper not found — skipping queue wrapper"
+fi
+
+# ─── Step 8.6: SMTPS (implicit TLS, port 465) via stunnel ───────────────────
+# qmail-smtpd only ever supported STARTTLS (upgrading an already-open plaintext connection on
+# port 25/587) - there was no listener at all for port 465 (SMTPS, TLS from the very first byte),
+# even after the firewall was opened for it. Confirmed live: a real mail client (Thunderbird)
+# failed to connect entirely - "the server may be unavailable or is refusing connections" -
+# because nothing was bound to that port. ucspi-ssl (sslserver) isn't part of this mail-stack's
+# source-built component list and stunnel isn't installed by default, so add both: stunnel
+# terminates TLS using the exact same shared servercert.pem SmtpCertService already keeps in sync
+# with every hosted domain's mail.<domain> hostname, then forwards the decrypted plaintext
+# session to the existing port 587 submission daemon over loopback - no second qmail-smtpd
+# instance needed. servercert.pem is guaranteed to exist by this point in the install (qmail-
+# toaster's own install-time placeholder cert, replaced later by SmtpCertService with a real one
+# once a domain is issued), so stunnel has something valid to read from its very first start.
+if [[ -f /var/qmail/control/servercert.pem ]]; then
+  info "Step 8.6: Installing stunnel for SMTPS (port 465)..."
+  apt-get install -y stunnel4 2>&1 | tail -5
+  STUNNEL_BIN=$(command -v stunnel4 || command -v stunnel || true)
+  if [[ -n "$STUNNEL_BIN" ]]; then
+    mkdir -p /etc/stunnel
+    cat > /etc/stunnel/smtps.conf << 'STUNNELEOF'
+pid = /run/stunnel-smtps.pid
+foreground = yes
+[smtps]
+accept = 0.0.0.0:465
+connect = 127.0.0.1:587
+cert = /var/qmail/control/servercert.pem
+STUNNELEOF
+    cat > /etc/systemd/system/qmail-smtps.service << SVCEOF
+[Unit]
+Description=SysAdminHCP SMTPS (implicit TLS, port 465) via stunnel
+After=network.target qmail-submission.service
+Wants=qmail-submission.service
+
+[Service]
+Type=simple
+ExecStart=$STUNNEL_BIN /etc/stunnel/smtps.conf
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target
+SVCEOF
+    systemctl daemon-reload
+    systemctl enable --now qmail-smtps
+    info "SMTPS (port 465) active via stunnel"
+  else
+    warn "stunnel4 install failed — port 465 (SMTPS) will be unavailable until installed manually"
+  fi
+else
+  info "Step 8.6: qmail control dir not present yet — skipping SMTPS setup"
 fi
 
 # ─── Step 9: Configure Environment ─────────────────────────────────────────

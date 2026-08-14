@@ -477,6 +477,8 @@ cat > /var/qmail/supervise/submission/run << 'EOF'
 QMAILDUID=`id -u vpopmail`
 NOFILESGID=`id -g vpopmail`
 MAXSMTPD=`cat /var/qmail/control/concurrencyincoming 2>/dev/null || echo 20`
+SPAMDYKE="/usr/bin/spamdyke"
+SPAMDYKE_CONF="/etc/spamdyke/spamdyke-submission.conf"
 SMTPD="/var/qmail/bin/qmail-smtpd"
 TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
 HOSTNAME=`hostname`
@@ -486,6 +488,7 @@ export SMTPAUTH="!"
 exec /usr/bin/softlimit -m 128000000 \
     /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
     -u "$QMAILDUID" -g "$NOFILESGID" 0 587 \
+    $SPAMDYKE --config-file $SPAMDYKE_CONF \
     $SMTPD $VCHKPW /bin/true 2>&1
 EOF
 chmod 755 /var/qmail/supervise/submission/run
@@ -526,6 +529,16 @@ reject-sender=no-mx
 dns-blacklist-entry=bl.rbl-dns.com
 SPAMDYKECONF
 fi
+# Submission (587) gets its own, lighter spamdyke config: authenticated senders only, no
+# IP-reputation/RBL/rDNS checks — those wrongly reject legitimate users on residential/mobile
+# IPs, and the SMTP AUTH requirement below (filter-level=require-auth) is the real gate here,
+# not connection-level heuristics meant for anonymous inbound mail on port 25.
+if [ ! -s /etc/spamdyke/spamdyke-submission.conf ]; then
+  cat > /etc/spamdyke/spamdyke-submission.conf << 'SPAMDYKESUBEOF'
+filter-level=require-auth
+greeting-delay-secs=0
+SPAMDYKESUBEOF
+fi
 # Fix spamdyke's broken default TLS cipher list — it passes TLS 1.3 ciphersuite names
 # ("TLS_AES_256_GCM_SHA384:..." — that's the package-shipped spamdyke.conf default here) to
 # OpenSSL's legacy SSL_CTX_set_cipher_list() (the TLS <=1.2 API, which never accepted TLS 1.3
@@ -540,6 +553,27 @@ for f in /etc/spamdyke/spamdyke.conf /etc/spamdyke/spamdyke-submission.conf; do
     echo 'tls-cipher-list=ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384' >> "$f"
   fi
 done
+# Wire a real TLS certificate + SMTP AUTH into both spamdyke configs. This mail stack's
+# source-built qmail-smtpd (notqmail 1.08, plain `make`, no QMT patches) has neither TLS nor
+# AUTH support compiled in at all — confirmed via strace: it never even opens servercert.pem.
+# spamdyke is what actually terminates STARTTLS and checks credentials for both ports; without
+# tls-certificate-file, spamdyke never advertises STARTTLS (confirmed live: EHLO showed no
+# STARTTLS on either port 25 or 587 until this was added). smtp-auth-level differs per port:
+# "ondemand" on 25 (offer AUTH but don't require it — anonymous inbound mail is still valid),
+# "always" on 587 (submission must never be usable as an open relay — filter-level=require-auth
+# above backs this up by rejecting unauthenticated connections outright). Idempotent: strips
+# and re-appends on every run so upgrades of existing installs converge on the same result.
+for f in /etc/spamdyke/spamdyke.conf /etc/spamdyke/spamdyke-submission.conf; do
+  if [ -f "$f" ]; then
+    sed -i '/^#\?tls-certificate-file=/d;/^#\?smtp-auth-command=/d' "$f"
+    echo 'tls-certificate-file=/var/qmail/control/servercert.pem' >> "$f"
+    echo 'smtp-auth-command=/home/vpopmail/bin/vchkpw /bin/true' >> "$f"
+  fi
+done
+sed -i '/^#\?smtp-auth-level=/d' /etc/spamdyke/spamdyke.conf
+echo 'smtp-auth-level=ondemand' >> /etc/spamdyke/spamdyke.conf
+sed -i '/^#\?smtp-auth-level=/d' /etc/spamdyke/spamdyke-submission.conf
+echo 'smtp-auth-level=always' >> /etc/spamdyke/spamdyke-submission.conf
 
 if [ -f /var/qmail/supervise/smtp/run ] && ! grep -q '\$SPAMDYKE --config-file' /var/qmail/supervise/smtp/run; then
   sed -i 's|^# # SPAMDYKE="/usr/bin/spamdyke"|SPAMDYKE="/usr/bin/spamdyke"|' /var/qmail/supervise/smtp/run
@@ -919,6 +953,57 @@ if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh
   info "qmail-queue wrapper installed — rate limiting + DKIM signing active"
 else
   info "Step 8.5: qmail not present or wrapper not found — skipping queue wrapper"
+fi
+
+# ─── Step 8.6: SMTPS (implicit TLS, port 465) via stunnel ───────────────────
+# qmail-smtpd only ever supported STARTTLS (upgrading an already-open plaintext connection on
+# port 25/587) - there was no listener at all for port 465 (SMTPS, TLS from the very first byte),
+# even after the firewall was opened for it. Confirmed live: a real mail client (Thunderbird)
+# failed to connect entirely - "the server may be unavailable or is refusing connections" -
+# because nothing was bound to that port. ucspi-ssl (sslserver) isn't part of this mail-stack's
+# source-built component list and stunnel isn't installed by default, so add both: stunnel
+# terminates TLS using the exact same shared servercert.pem SmtpCertService already keeps in sync
+# with every hosted domain's mail.<domain> hostname, then forwards the decrypted plaintext
+# session to the existing port 587 submission daemon over loopback - no second qmail-smtpd
+# instance needed. servercert.pem is guaranteed to exist by this point in the install (qmail-
+# toaster's own install-time placeholder cert, replaced later by SmtpCertService with a real one
+# once a domain is issued), so stunnel has something valid to read from its very first start.
+if [[ -f /var/qmail/control/servercert.pem ]]; then
+  info "Step 8.6: Installing stunnel for SMTPS (port 465)..."
+  dnf install -y stunnel 2>&1 | tail -5
+  if command -v stunnel &>/dev/null; then
+    mkdir -p /etc/stunnel
+    cat > /etc/stunnel/smtps.conf << 'STUNNELEOF'
+pid = /run/stunnel-smtps.pid
+foreground = yes
+[smtps]
+accept = 0.0.0.0:465
+connect = 127.0.0.1:587
+cert = /var/qmail/control/servercert.pem
+STUNNELEOF
+    cat > /etc/systemd/system/qmail-smtps.service << 'SVCEOF'
+[Unit]
+Description=SysAdminHCP SMTPS (implicit TLS, port 465) via stunnel
+After=network.target qmail-submission.service
+Wants=qmail-submission.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/stunnel /etc/stunnel/smtps.conf
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target
+SVCEOF
+    systemctl daemon-reload
+    systemctl enable --now qmail-smtps
+    info "SMTPS (port 465) active via stunnel"
+  else
+    warn "stunnel install failed — port 465 (SMTPS) will be unavailable until installed manually"
+  fi
+else
+  info "Step 8.6: qmail control dir not present yet — skipping SMTPS setup"
 fi
 
 # ─── Step 9: Configure Environment ─────────────────────────────────────────
