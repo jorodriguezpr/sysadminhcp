@@ -462,7 +462,14 @@ SMTPD="/var/qmail/bin/qmail-smtpd"
 TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
 HOSTNAME=`hostname`
 VCHKPW="/home/vpopmail/bin/vchkpw"
-export SMTPAUTH="!"
+# "!" (not "-") here breaks AUTH once spamdyke is wrapped around qmail-smtpd: this RPM's
+# qmail-smtpd is QMT-patched and enforces its own native SMTPAUTH-gated auth state, which
+# spamdyke's smtp-auth-command interception never satisfies (spamdyke consumes the AUTH
+# LOGIN/PLAIN exchange itself, so qmail-smtpd never sees one) - confirmed live: AUTH
+# succeeded (235 Proceed) but every MAIL FROM was then rejected with "530 Authorization
+# required" until this was changed to "-", matching port 25's smtp/run value (which never
+# hit this because qmail-smtpd's own auth isn't required there in the first place).
+export SMTPAUTH="-"
 export SYSADMINHCP_SMTP_DIRECTION="outbound"
 
 exec /usr/bin/softlimit -m 128000000 \
@@ -483,7 +490,14 @@ SMTPD="/var/qmail/bin/qmail-smtpd"
 TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
 HOSTNAME=`hostname`
 VCHKPW="/home/vpopmail/bin/vchkpw"
-export SMTPAUTH="!"
+# "!" (not "-") here breaks AUTH once spamdyke is wrapped around qmail-smtpd: this RPM's
+# qmail-smtpd is QMT-patched and enforces its own native SMTPAUTH-gated auth state, which
+# spamdyke's smtp-auth-command interception never satisfies (spamdyke consumes the AUTH
+# LOGIN/PLAIN exchange itself, so qmail-smtpd never sees one) - confirmed live: AUTH
+# succeeded (235 Proceed) but every MAIL FROM was then rejected with "530 Authorization
+# required" until this was changed to "-", matching port 25's smtp/run value (which never
+# hit this because qmail-smtpd's own auth isn't required there in the first place).
+export SMTPAUTH="-"
 export SYSADMINHCP_SMTP_DIRECTION="outbound"
 
 exec /usr/bin/softlimit -m 128000000 \
