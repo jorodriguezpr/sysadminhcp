@@ -443,6 +443,107 @@ make -C "$MAIL_STACK_DIR/build/vqadmin" build || error "vqadmin source build fai
 make -C "$MAIL_STACK_DIR/build/qmailadmin" build || error "qmailadmin source build failed — see output above"
 info "qmailadmin/vqadmin built from vendored source (mail-stack/), linked against MariaDB Connector/C"
 
+# ── stunnel SMTP TLS front-end capability probe ──────────────────────────────────────────
+# qmail-smtpd has no TLS support compiled in at all, and spamdyke only supports a single
+# static tls-certificate-file with no per-connection cert switching - with multiple hosted
+# domains sharing one server, whichever domain's cert last landed in servercert.pem "won"
+# and every other domain's mail.<domain> served the wrong certificate. stunnel supports true
+# per-domain SNI natively and can negotiate STARTTLS in server mode via `protocol = smtp`,
+# fronting a plaintext-only backend. In that mode stunnel relays the plaintext SMTP banner
+# and EHLO/capability exchange between client and backend itself, synthesizing its own
+# greeting only once the backend has sent one - it does NOT invent a banner on its own. A
+# probe with a silent (never-responds) dummy backend therefore hangs on EVERY stunnel build,
+# working or not, and previously produced a false "broken on stunnel 5.71/AlmaLinux 8"
+# finding purely as a test artifact: with a backend that actually sends a real 220 banner and
+# answers EHLO, a full EHLO -> STARTTLS -> TLS 1.3 handshake was confirmed live on stunnel
+# 5.71 too. So this probe's dummy backend must behave like a minimal real SMTP server.
+#
+# Rather than hardcode this per-OS (fragile - a different repo or future point release could
+# change either platform's actual behavior), this probes the real, installed stunnel binary
+# directly: stand up a throwaway protocol=smtp listener in front of a backend that sends a
+# real banner and STARTTLS-capable EHLO response, then check whether the client side
+# actually completes the plaintext STARTTLS negotiation (sees "220" after issuing STARTTLS)
+# within a few seconds. If yes, ports 25/587 get true per-domain SNI just like port 465. If
+# no, they keep terminating TLS directly in spamdyke (tls-level=smtp, unchanged from before
+# this feature) using the combined multi-domain-SAN cert SmtpCertService already maintains in
+# servercert.pem - not per-domain isolated, but correct and never silently broken. Port 465
+# (implicit TLS, no negotiation involved) always gets true SNI regardless of this probe.
+dnf install -y stunnel 2>&1 | tail -5
+SYSADMINHCP_SMTP_STARTTLS_SNI="no"
+if command -v stunnel >/dev/null 2>&1 && [ -f /var/qmail/control/servercert.pem ]; then
+  PROBE_DIR=$(mktemp -d)
+  python3 - "$PROBE_DIR" << 'PROBEBACKENDEOF' &
+import socket, sys
+d = sys.argv[1]
+s = socket.socket()
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('127.0.0.1', 19999))
+s.listen(1)
+open(d + '/listening', 'w').close()
+conn, _ = s.accept()
+try:
+    conn.sendall(b'220 probe.local ESMTP\r\n')
+    data = conn.recv(200)
+    if b'EHLO' in data or b'ehlo' in data:
+        conn.sendall(b'250-probe.local\r\n250 STARTTLS\r\n')
+        conn.recv(200)
+except Exception:
+    pass
+PROBEBACKENDEOF
+  PROBE_BACKEND_PID=$!
+  for i in $(seq 1 20); do [ -f "$PROBE_DIR/listening" ] && break; sleep 0.2; done
+
+  cat > "$PROBE_DIR/probe.conf" << PROBECONFEOF
+pid = $PROBE_DIR/probe.pid
+foreground = yes
+[probetest]
+accept = 127.0.0.1:19998
+connect = 127.0.0.1:19999
+protocol = smtp
+cert = /var/qmail/control/servercert.pem
+PROBECONFEOF
+  /usr/bin/stunnel "$PROBE_DIR/probe.conf" > "$PROBE_DIR/stunnel.log" 2>&1 &
+  PROBE_STUNNEL_PID=$!
+  sleep 1
+
+  PROBE_RESULT=$(python3 - << 'PROBECLIENTEOF'
+import socket
+
+def read_smtp_reply(sock):
+    buf = b''
+    while True:
+        chunk = sock.recv(200)
+        if not chunk:
+            break
+        buf += chunk
+        lines = buf.split(b'\r\n')[:-1]
+        if lines and lines[-1][3:4] != b'-':
+            break
+    return buf
+
+try:
+    s = socket.create_connection(('127.0.0.1', 19998), timeout=3)
+    s.settimeout(3)
+    banner = read_smtp_reply(s)
+    if not banner:
+        raise RuntimeError('no banner')
+    s.sendall(b'EHLO probe.local\r\n')
+    caps = read_smtp_reply(s)
+    if b'STARTTLS' not in caps:
+        raise RuntimeError('no STARTTLS advertised')
+    s.sendall(b'STARTTLS\r\n')
+    resp = read_smtp_reply(s)
+    print('yes' if resp.startswith(b'220') else 'no')
+except Exception:
+    print('no')
+PROBECLIENTEOF
+)
+  kill "$PROBE_STUNNEL_PID" "$PROBE_BACKEND_PID" 2>/dev/null
+  rm -rf "$PROBE_DIR"
+  SYSADMINHCP_SMTP_STARTTLS_SNI="$PROBE_RESULT"
+fi
+info "stunnel STARTTLS+SNI probe result: $SYSADMINHCP_SMTP_STARTTLS_SNI (ports 25/587 will use $([ "$SYSADMINHCP_SMTP_STARTTLS_SNI" = "yes" ] && echo "true per-domain SNI" || echo "the shared combined-cert fallback"))"
+
 # ── qmail supervise run scripts — source-built qmail/vpopmail don't ship these; the QMT
 # "qmail" RPM we no longer install used to. SMTPAUTH values below match what was confirmed
 # live on a real server today: "!" on submission (587) requires TLS before AUTH is even
@@ -451,6 +552,54 @@ info "qmailadmin/vqadmin built from vendored source (mail-stack/), linked agains
 # spamdyke's own anti-spam checks apply instead of client AUTH. ───────────────────────────
 mkdir -p /var/qmail/supervise/smtp/log/supervise /var/qmail/supervise/submission/log/supervise /var/qmail/supervise/send/log/supervise 2>/dev/null || true
 
+if [ "$SYSADMINHCP_SMTP_STARTTLS_SNI" = "yes" ]; then
+cat > /var/qmail/supervise/smtp/run << 'EOF'
+#!/bin/sh
+QMAILDUID=`id -u vpopmail`
+NOFILESGID=`id -g vpopmail`
+MAXSMTPD=`cat /var/qmail/control/concurrencyincoming 2>/dev/null || echo 20`
+SPAMDYKE="/usr/bin/spamdyke"
+SPAMDYKE_CONF="/etc/spamdyke/spamdyke.conf"
+SMTPD="/var/qmail/bin/qmail-smtpd"
+TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
+HOSTNAME=`hostname`
+VCHKPW="/home/vpopmail/bin/vchkpw"
+export SMTPAUTH="-"
+export SYSADMINHCP_SMTP_DIRECTION="inbound"
+
+exec /usr/bin/softlimit -m 256000000 \
+     /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
+     -u "$QMAILDUID" -g "$NOFILESGID" 127.0.0.1 10025 \
+     $SPAMDYKE --config-file $SPAMDYKE_CONF \
+     $SMTPD $VCHKPW /bin/true 2>&1
+EOF
+chmod 755 /var/qmail/supervise/smtp/run
+
+cat > /var/qmail/supervise/submission/run << 'EOF'
+#!/bin/sh
+QMAILDUID=`id -u vpopmail`
+NOFILESGID=`id -g vpopmail`
+MAXSMTPD=`cat /var/qmail/control/concurrencyincoming 2>/dev/null || echo 20`
+SPAMDYKE="/usr/bin/spamdyke"
+SPAMDYKE_CONF="/etc/spamdyke/spamdyke-submission.conf"
+SMTPD="/var/qmail/bin/qmail-smtpd"
+TCP_CDB="/etc/tcprules.d/tcp.smtp.cdb"
+HOSTNAME=`hostname`
+VCHKPW="/home/vpopmail/bin/vchkpw"
+export SMTPAUTH="!"
+export SYSADMINHCP_SMTP_DIRECTION="outbound"
+
+exec /usr/bin/softlimit -m 128000000 \
+    /usr/bin/tcpserver -v -R -H -l $HOSTNAME -x $TCP_CDB -c "$MAXSMTPD" \
+    -u "$QMAILDUID" -g "$NOFILESGID" 127.0.0.1 10587 \
+    $SPAMDYKE --config-file $SPAMDYKE_CONF \
+    $SMTPD $VCHKPW /bin/true 2>&1
+EOF
+chmod 755 /var/qmail/supervise/submission/run
+else
+# stunnel's protocol=smtp doesn't work on this box (probe above) - spamdyke keeps
+# terminating TLS directly on the public ports, exactly as before this feature existed,
+# using the combined multi-domain-SAN cert SmtpCertService maintains in servercert.pem.
 cat > /var/qmail/supervise/smtp/run << 'EOF'
 #!/bin/sh
 QMAILDUID=`id -u vpopmail`
@@ -494,17 +643,34 @@ exec /usr/bin/softlimit -m 128000000 \
     $SMTPD $VCHKPW /bin/true 2>&1
 EOF
 chmod 755 /var/qmail/supervise/submission/run
+fi
 
 # tcp.smtp source + compiled .cdb — previously provided by the QMT "qmail" RPM we no
 # longer install; ucspi-tcp (still RPM-installed, unchanged) provides the `tcprules`
 # binary but not this default ruleset. Only created if missing, so an existing real
 # ruleset (e.g. one already customized by the panel) is never overwritten.
+#
+# No RELAYCLIENT on the 127. rule when the stunnel SNI front-end is active for 25/587: in
+# that case smtp/run and submission/run bind to 127.0.0.1 instead of 0.0.0.0, so every real
+# client's connection (local or across the internet) reaches tcpserver via stunnel's own
+# loopback connection - "the client IP is 127.x" no longer means "this is genuinely local,
+# trusted traffic", and auto-granting RELAYCLIENT here would make port 25 an open relay for
+# anyone passing through stunnel. When the fallback (spamdyke terminates TLS directly on the
+# public ports) is active instead, tcpserver still sees real client IPs, so the original
+# RELAYCLIENT-for-127 convenience rule remains safe and is left untouched.
 mkdir -p /etc/tcprules.d
 if [ ! -f /etc/tcprules.d/tcp.smtp ]; then
-  cat > /etc/tcprules.d/tcp.smtp << 'EOF'
+  if [ "$SYSADMINHCP_SMTP_STARTTLS_SNI" = "yes" ]; then
+    cat > /etc/tcprules.d/tcp.smtp << 'EOF'
+127.:allow,RBLSMTPD="",NOP0FCHECK="1"
+:allow,BADMIMETYPE="",BADLOADERTYPE="M",CHKUSER_RCPTLIMIT="50",CHKUSER_WRONGRCPTLIMIT="10",QMAILQUEUE="/var/qmail/bin/simscan",NOP0FCHECK="1"
+EOF
+  else
+    cat > /etc/tcprules.d/tcp.smtp << 'EOF'
 127.:allow,RELAYCLIENT="",RBLSMTPD="",NOP0FCHECK="1"
 :allow,BADMIMETYPE="",BADLOADERTYPE="M",CHKUSER_RCPTLIMIT="50",CHKUSER_WRONGRCPTLIMIT="10",QMAILQUEUE="/var/qmail/bin/simscan",NOP0FCHECK="1"
 EOF
+  fi
 fi
 command -v tcprules >/dev/null 2>&1 && tcprules /etc/tcprules.d/tcp.smtp.cdb /etc/tcprules.d/tcp.smtp.tmp < /etc/tcprules.d/tcp.smtp 2>/dev/null || warn "tcprules not found — SMTP will refuse all connections until /etc/tcprules.d/tcp.smtp.cdb exists"
 
@@ -957,41 +1123,97 @@ else
   info "Step 8.5: qmail not present or wrapper not found — skipping queue wrapper"
 fi
 
-# ─── Step 8.6: SMTPS (implicit TLS, port 465) via stunnel ───────────────────
-# qmail-smtpd only ever supported STARTTLS (upgrading an already-open plaintext connection on
-# port 25/587) - there was no listener at all for port 465 (SMTPS, TLS from the very first byte),
-# even after the firewall was opened for it. Confirmed live: a real mail client (Thunderbird)
-# failed to connect entirely - "the server may be unavailable or is refusing connections" -
-# because nothing was bound to that port. ucspi-ssl (sslserver) isn't part of this mail-stack's
-# source-built component list and stunnel isn't installed by default, so add both: stunnel
-# terminates TLS using the exact same shared servercert.pem SmtpCertService already keeps in sync
-# with every hosted domain's mail.<domain> hostname, then forwards the decrypted plaintext
-# session to the existing port 587 submission daemon over loopback - no second qmail-smtpd
-# instance needed. servercert.pem is guaranteed to exist by this point in the install (qmail-
-# toaster's own install-time placeholder cert, replaced later by SmtpCertService with a real one
-# once a domain is issued), so stunnel has something valid to read from its very first start.
+# ─── Step 8.6: SMTP TLS front-end via stunnel (port 465 always; 25/587 if the probe passed) ─
+# Port 465 (SMTPS) had no listener at all before this feature existed - "the server may be
+# unavailable" in Thunderbird - and gets a genuine implicit-TLS stunnel front-end unconditionally,
+# with true per-domain SNI (no negotiation involved, so the version-dependent probe above
+# doesn't apply to it). Ports 25/587 join it too when SYSADMINHCP_SMTP_STARTTLS_SNI=yes
+# (spamdyke/qmail-smtpd already bound to internal-only 127.0.0.1:10025/10587 above in that
+# case); otherwise spamdyke keeps terminating TLS directly on the public ports as before, using
+# the combined multi-domain-SAN cert SmtpCertService maintains in servercert.pem.
+#
+#   SNI-capable: client --TLS/STARTTLS+SNI--> stunnel --plaintext--> spamdyke (AUTH only) --> qmail-smtpd
+#   fallback:    client --STARTTLS (shared cert)--> spamdyke (TLS+AUTH) --> qmail-smtpd
 if [[ -f /var/qmail/control/servercert.pem ]]; then
-  info "Step 8.6: Installing stunnel for SMTPS (port 465)..."
-  dnf install -y stunnel 2>&1 | tail -5
+  info "Step 8.6: Installing stunnel SMTPS front-end (port 465)$([ "$SYSADMINHCP_SMTP_STARTTLS_SNI" = "yes" ] && echo " + ports 25/587 (SNI)")..."
   if command -v stunnel &>/dev/null; then
-    mkdir -p /etc/stunnel
-    cat > /etc/stunnel/smtps.conf << 'STUNNELEOF'
-pid = /run/stunnel-smtps.pid
+    mkdir -p /etc/stunnel/smtp-sni.d
+
+    if [ "$SYSADMINHCP_SMTP_STARTTLS_SNI" = "yes" ]; then
+      # TLS is terminated upstream by stunnel for 25/587 too - spamdyke only needs to keep
+      # doing AUTH + anti-spam filtering on the plaintext stream it receives.
+      for f in /etc/spamdyke/spamdyke.conf /etc/spamdyke/spamdyke-submission.conf; do
+        if [ -f "$f" ]; then
+          sed -i '/^#\?tls-level=/d' "$f"
+          echo 'tls-level=none' >> "$f"
+        fi
+      done
+
+      cat > /etc/stunnel/smtp-sni.conf << 'STUNNELEOF'
+; Managed by SysAdminHCP - static primary services for per-domain SMTP TLS SNI.
+; Per-domain secondary (SNI-matched) blocks are written to smtp-sni.d/ by SmtpSniService
+; (src/services/smtpSniService.ts) and picked up automatically via the include directive.
+pid = /run/qmail-smtp-sni.pid
 foreground = yes
-[smtps]
+
+[smtp-in]
+accept = 0.0.0.0:25
+connect = 127.0.0.1:10025
+protocol = smtp
+cert = /var/qmail/control/servercert.pem
+
+[submission-in]
+accept = 0.0.0.0:587
+connect = 127.0.0.1:10587
+protocol = smtp
+cert = /var/qmail/control/servercert.pem
+
+[smtps-in]
+accept = 0.0.0.0:465
+connect = 127.0.0.1:10587
+cert = /var/qmail/control/servercert.pem
+
+; include must come last - stunnel resolves each secondary block's "sni = PRIMARY:host"
+; reference at the point the line is processed, so the primary services above must already
+; be defined by the time this runs (confirmed empirically: placing include first produces
+; "SNI section name not found" even though `include` is documented as a global option).
+include = /etc/stunnel/smtp-sni.d
+STUNNELEOF
+    else
+      # Fallback: stunnel only fronts port 465 (implicit TLS, no negotiation, always works),
+      # forwarding to submission's real public port 587 (spamdyke binds there directly in
+      # this case, not the internal-only 10587 used in the SNI-capable branch). Ports 25/587
+      # aren't in this config at all - spamdyke owns them directly.
+      cat > /etc/stunnel/smtp-sni.conf << 'STUNNELEOF'
+; Managed by SysAdminHCP - port 465 only (stunnel STARTTLS+SNI not supported by this
+; server's stunnel build - see the probe earlier in this script). Ports 25/587 are handled
+; directly by spamdyke with the shared combined-cert servercert.pem instead.
+pid = /run/qmail-smtp-sni.pid
+foreground = yes
+
+[smtps-in]
 accept = 0.0.0.0:465
 connect = 127.0.0.1:587
 cert = /var/qmail/control/servercert.pem
 STUNNELEOF
-    cat > /etc/systemd/system/qmail-smtps.service << 'SVCEOF'
+    fi
+
+    # Superseded by qmail-smtp-sni.service below (which now also covers 25/587, not just 465).
+    if systemctl is-enabled qmail-smtps &>/dev/null || [ -f /etc/systemd/system/qmail-smtps.service ]; then
+      systemctl disable --now qmail-smtps 2>/dev/null || true
+      rm -f /etc/systemd/system/qmail-smtps.service /etc/stunnel/smtps.conf
+      systemctl daemon-reload
+    fi
+
+    cat > /etc/systemd/system/qmail-smtp-sni.service << 'SVCEOF'
 [Unit]
-Description=SysAdminHCP SMTPS (implicit TLS, port 465) via stunnel
-After=network.target qmail-submission.service
-Wants=qmail-submission.service
+Description=SysAdminHCP SMTP TLS front-end (port 465, plus 25/587 when supported) via stunnel
+After=network.target qmail-smtp.service qmail-submission.service
+Wants=qmail-smtp.service qmail-submission.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/stunnel /etc/stunnel/smtps.conf
+ExecStart=/usr/bin/stunnel /etc/stunnel/smtp-sni.conf
 Restart=on-failure
 RestartSec=15
 
@@ -999,13 +1221,15 @@ RestartSec=15
 WantedBy=multi-user.target
 SVCEOF
     systemctl daemon-reload
-    systemctl enable --now qmail-smtps
-    info "SMTPS (port 465) active via stunnel"
+    systemctl enable qmail-smtp-sni
+    systemctl restart qmail-smtp qmail-submission
+    systemctl restart qmail-smtp-sni
+    info "stunnel SMTP TLS front-end active (port 465$([ "$SYSADMINHCP_SMTP_STARTTLS_SNI" = "yes" ] && echo " + 25/587, all with per-domain SNI" || echo " only; 25/587 use spamdyke's shared cert"))"
   else
-    warn "stunnel install failed — port 465 (SMTPS) will be unavailable until installed manually"
+    warn "stunnel not available — SMTPS (port 465) will be unavailable until installed manually"
   fi
 else
-  info "Step 8.6: qmail control dir not present yet — skipping SMTPS setup"
+  info "Step 8.6: qmail control dir not present yet — skipping SMTP TLS front-end setup"
 fi
 
 # ─── Step 9: Configure Environment ─────────────────────────────────────────
