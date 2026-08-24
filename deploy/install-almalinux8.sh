@@ -118,6 +118,27 @@ fi
 
 # ─── Step 1: System Update ─────────────────────────────────────────────────
 info "Step 1: Updating system packages..."
+# A leftover control-panel install can exclude packages this installer needs (php*,
+# dovecot*, exim*, etc.) from ever being candidates, via /etc/dnf/dnf.conf's `exclude=`
+# line or a per-repo `exclude=` in /etc/yum.repos.d/*.repo — dnf/yum's equivalent of apt's
+# negative pin-priority. Precautionary check, not yet empirically hit on EL — added after
+# finding and fixing the confirmed apt-pin equivalent of this exact failure mode live on a
+# cPanel/Ubuntu 22.04 box (CPConverter project, 2026-08-23; see install-ubuntu22.sh for the
+# verified version of this fix). EA4 on EL normally avoids the collision entirely via its
+# own `ea-phpNN` package naming rather than excluding stock `php*`, so this may never
+# actually trigger here — kept as a defensive check rather than assumed-safe to skip.
+if grep -qE '^exclude=.*\bphp' /etc/dnf/dnf.conf 2>/dev/null || grep -qE '^exclude=.*\bphp' /etc/yum.conf 2>/dev/null; then
+  warn "Removing 'exclude=' line from dnf/yum.conf (blocks package installation, likely leftover from a prior control panel)"
+  sed -i '/^exclude=.*\bphp/d' /etc/dnf/dnf.conf 2>/dev/null || true
+  sed -i '/^exclude=.*\bphp/d' /etc/yum.conf 2>/dev/null || true
+fi
+for repofile in /etc/yum.repos.d/*.repo; do
+  [[ -f "$repofile" ]] || continue
+  if grep -qE '^exclude=.*(\bphp\b|dovecot|exim|proftpd|pure-ftpd)' "$repofile" 2>/dev/null; then
+    warn "Removing hostile 'exclude=' line from $repofile (likely leftover from a prior control panel)"
+    sed -i '/^exclude=.*\(php\|dovecot\|exim\|proftpd\|pure-ftpd\)/d' "$repofile"
+  fi
+done
 # network-scripts (legacy ifup/ifdown tooling, superseded by NetworkManager)
 # pins an old initscripts version that conflicts with the newer one `yum
 # update` wants to pull in ("cannot install both initscripts-X and
@@ -1002,6 +1023,12 @@ if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh
     chown root:root /var/qmail/bin/dkim-sign-message.py
     restorecon /var/qmail/bin/dkim-sign-message.py 2>/dev/null || true
   fi
+  if [[ -f "$REPO_DIR/deploy/extract-mail-metadata.py" ]]; then
+    cp "$REPO_DIR/deploy/extract-mail-metadata.py" /var/qmail/bin/extract-mail-metadata.py
+    chmod 755 /var/qmail/bin/extract-mail-metadata.py
+    chown root:root /var/qmail/bin/extract-mail-metadata.py
+    restorecon /var/qmail/bin/extract-mail-metadata.py 2>/dev/null || true
+  fi
   mkdir -p /var/lib/sysadminhcp/email-rate
   # 1777 (sticky + world-writable, same model /tmp uses), not a single chown target - this
   # directory is written by both the qmail-queue wrapper (execs as a low-privilege qmail-family
@@ -1011,6 +1038,10 @@ if [[ -f /var/qmail/bin/qmail-queue && -f "$REPO_DIR/deploy/qmail-queue-check.sh
   # directory" because mkdir -p had failed silently against a parent it couldn't write into.
   chmod 1777 /var/lib/sysadminhcp/email-rate 2>/dev/null || true
   mkdir -p /var/log/sysadminhcp
+  # Same reasoning as email-rate above: the panel's Node process (sysadminhcp) creates this dir
+  # 0755, which the qmail-queue wrapper's low-privilege UID can't write into for
+  # email-subjects.jsonl (Recent Mail's Subject capture) — confirmed live via `id qmaild`.
+  chmod 1777 /var/log/sysadminhcp 2>/dev/null || true
   touch /var/qmail/control/sysadminhcp-ratelimits 2>/dev/null || true
   info "qmail-queue wrapper installed — rate limiting + DKIM signing active"
 else
@@ -1164,7 +1195,7 @@ chmod 750 "$SYSADMINHCP_ROOT/etc/sysadminhcp.env"
 # Remove legacy sysadminhcp-logs file if present from older installs
 rm -f /etc/sudoers.d/sysadminhcp-logs
 cat > /etc/sudoers.d/sysadminhcp << 'SUDOEOF'
-sysadminhcp ALL=(root) NOPASSWD: /usr/bin/tail, /usr/bin/cat, /usr/bin/touch, /usr/bin/journalctl, /usr/sbin/tail, /usr/local/sysadminhcp/scripts/install-qmail-toaster.sh, /usr/local/sysadminhcp/httpdocs/scripts/install-sysadminhcp-dav.sh, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/find, /usr/bin/mkdir, /usr/bin/rm, /usr/bin/systemctl, /usr/bin/tcprules, /usr/sbin/useradd, /usr/sbin/groupadd, /usr/bin/id, /usr/sbin/usermod, /home/vpopmail/bin/vadddomain, /home/vpopmail/bin/vdeldomain, /home/vpopmail/bin/vadduser, /home/vpopmail/bin/vdeluser, /home/vpopmail/bin/vchangepw, /home/vpopmail/bin/vpasswd, /home/vpopmail/bin/vsetuserquota, /home/vpopmail/bin/vmoduser, /home/vpopmail/bin/vmoddomlimits, /home/vpopmail/bin/vdominfo, /home/vpopmail/bin/vuserinfo, /usr/bin/yum, /usr/bin/rpm, /usr/bin/setfacl, /usr/sbin/restorecon, /usr/bin/firewall-cmd, /usr/sbin/ipset, /usr/sbin/iptables, /sbin/iptables, /usr/bin/freshclam, /usr/bin/fail2ban-client, /bin/bash, /usr/bin/bash, /root/.acme.sh/acme.sh, /usr/bin/openssl
+sysadminhcp ALL=(root) NOPASSWD: /usr/bin/tail, /usr/bin/cat, /usr/bin/touch, /usr/bin/journalctl, /usr/sbin/tail, /usr/local/sysadminhcp/scripts/install-qmail-toaster.sh, /usr/local/sysadminhcp/httpdocs/scripts/install-sysadminhcp-dav.sh, /usr/bin/cp, /usr/bin/mv, /usr/bin/chmod, /usr/bin/chown, /usr/bin/find, /usr/bin/mkdir, /usr/bin/rm, /usr/bin/systemctl, /usr/bin/tcprules, /usr/sbin/useradd, /usr/sbin/groupadd, /usr/bin/id, /usr/sbin/usermod, /home/vpopmail/bin/vadddomain, /home/vpopmail/bin/vdeldomain, /home/vpopmail/bin/vadduser, /home/vpopmail/bin/vdeluser, /home/vpopmail/bin/vchangepw, /home/vpopmail/bin/vpasswd, /home/vpopmail/bin/vsetuserquota, /home/vpopmail/bin/vmoduser, /home/vpopmail/bin/vmoddomlimits, /home/vpopmail/bin/vdominfo, /home/vpopmail/bin/vuserinfo, /usr/bin/yum, /usr/bin/rpm, /usr/bin/setfacl, /usr/sbin/restorecon, /usr/bin/firewall-cmd, /usr/sbin/ipset, /usr/sbin/iptables, /sbin/iptables, /usr/bin/freshclam, /usr/bin/fail2ban-client, /bin/bash, /usr/bin/bash, /root/.acme.sh/acme.sh, /usr/bin/openssl, /usr/bin/test, /usr/bin/doveadm
 SUDOEOF
 chmod 440 /etc/sudoers.d/sysadminhcp
 visudo -c && info "sudoers validated OK" || warn "sudoers validation failed — check /etc/sudoers.d/sysadminhcp"
@@ -1482,8 +1513,31 @@ info "Step 14: Starting services..."
 
 # Start MariaDB
 info "Starting MariaDB..."
+# A leftover /etc/my.cnf from a prior MySQL install (Oracle MySQL Community Server, or a control
+# panel's own MySQL integration) can carry directives MariaDB doesn't recognize at all — found
+# live via CPConverter (2026-08-23, on install-ubuntu22.sh, same underlying MariaDB behavior
+# applies here): a leftover Oracle MySQL 8-era /etc/my.cnf with `mysqlx=0` made mariadbd abort
+# outright on every start attempt. This installer never writes to /etc/my.cnf itself, so any file
+# found there is definitionally leftover from something else.
+if [[ -f /etc/my.cnf ]]; then
+  warn "Removing leftover /etc/my.cnf (not written by this installer — likely a prior MySQL/control-panel install; can contain directives MariaDB doesn't recognize)"
+  rm -f /etc/my.cnf
+fi
 systemctl enable mariadb
 systemctl start mariadb
+# A full wipe of /var/lib/mysql can leave the package's own postinst state out of sync with
+# reality — don't trust bootstrap-on-first-run unconditionally, verify and fix directly.
+if ! systemctl is-active --quiet mariadb; then
+  warn "MariaDB failed to start — checking whether its system schema needs bootstrapping..."
+  mariadb-install-db --user=mysql --datadir=/var/lib/mysql 2>&1 | tail -10
+  systemctl reset-failed mariadb 2>/dev/null || true
+  systemctl start mariadb
+  if systemctl is-active --quiet mariadb; then
+    info "MariaDB system schema bootstrapped and service started successfully"
+  else
+    warn "MariaDB still won't start after bootstrapping the system schema — check 'journalctl -xeu mariadb.service' manually"
+  fi
+fi
 
 # Bind MariaDB to localhost only (security: prevent external access)
 info "Binding MariaDB to 127.0.0.1 (localhost only)..."

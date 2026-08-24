@@ -1,1 +1,9 @@
 sysadminhcp filter=lfs diff=lfs merge=lfs -text
+
+# Force LF line endings for scripts that run on Linux, regardless of the committing machine's
+# core.autocrlf setting — a Windows checkout with autocrlf=true silently converts these to CRLF
+# on `git add`/commit, which breaks every one of them at runtime (bad shebang line, `$'\r'`
+# embedded in every command). Found live 2026-08-23 (CPConverter project) before it shipped.
+*.sh text eol=lf
+*.py text eol=lf
+*.pl text eol=lf
