@@ -1689,14 +1689,18 @@ if [[ -f /etc/my.cnf ]]; then
   rm -f /etc/my.cnf
 fi
 systemctl enable mariadb
-systemctl start mariadb
+# `|| true` here is load-bearing, not decorative: under this script's `set -e`, a failed
+# `systemctl start` on its own aborts the ENTIRE installer immediately — the recovery check right
+# below would never run. Found live via CPConverter (2026-08-23): this exact line, unguarded,
+# killed the whole install before the bootstrap-and-retry logic ever got a chance to fire.
+systemctl start mariadb || true
 # A full wipe of /var/lib/mysql can leave the package's own postinst state out of sync with
 # reality — don't trust bootstrap-on-first-run unconditionally, verify and fix directly.
 if ! systemctl is-active --quiet mariadb; then
   warn "MariaDB failed to start — checking whether its system schema needs bootstrapping..."
   mariadb-install-db --user=mysql --datadir=/var/lib/mysql 2>&1 | tail -10
   systemctl reset-failed mariadb 2>/dev/null || true
-  systemctl start mariadb
+  systemctl start mariadb || true
   if systemctl is-active --quiet mariadb; then
     info "MariaDB system schema bootstrapped and service started successfully"
   else
