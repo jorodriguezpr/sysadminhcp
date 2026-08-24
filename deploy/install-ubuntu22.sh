@@ -205,7 +205,14 @@ apt-get install -y build-essential make gcc g++ python3
 info "Step 5: Installing service dependencies..."
 
 # ── Web server (Apache) ─────────────────────────────────────────────────────
-apt-get install -y apache2 apache2-utils libapache2-mod-fcgid ssl-cert
+# --reinstall: dpkg tracks "apache2 is installed" independently of whether its config files
+# (/etc/apache2/*) actually still exist on disk. If something wiped that directory after a
+# previous partial install already got this far (e.g. a retried conversion re-running an
+# earlier teardown step that clears /etc/apache2/*), a plain `apt-get install` sees the package
+# already at the latest version and silently no-ops — leaving /etc/apache2/envvars and everything
+# else missing, breaking the very next step. --reinstall forces dpkg to recreate the conffiles
+# regardless of its own "already installed" bookkeeping. Found live via CPConverter (2026-08-23).
+apt-get install --reinstall -y apache2 apache2-utils libapache2-mod-fcgid ssl-cert
 
 # RHEL-compat: create the 'apache' user/group and run Apache as it.
 # All panel code chowns/ACLs use client:apache — this makes them work unchanged.
