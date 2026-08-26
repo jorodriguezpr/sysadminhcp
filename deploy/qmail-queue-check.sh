@@ -199,6 +199,40 @@ if [[ -f "$DKIM_MARKER" && -n "$DOMAIN" && -f "/var/qmail/control/domainkeys/${D
   fi
 fi
 
+# ── Capture Subject + envelope for the panel's "Recent Mail" feature ─────────
+# Must run here, after SpamAssassin/DKIM and before the temp files are deleted below — this is
+# the only point in the whole delivery path that ever sees the message content; qmail-send's own
+# log (what the panel otherwise reads for Recent Mail) never records Subject, and by the time
+# that log is read the queue file is long gone. Placed after DKIM signing specifically so the
+# byte count captured here exactly matches what qmail-send later reports (its "info msg ...:
+# bytes B" line reflects the fully-processed, post-signing message) — the panel correlates the
+# two logs by (from, to, bytes), and capturing the pre-signing size here would silently break
+# that match for every DKIM-signed message.
+# Synchronous with a short timeout (not backgrounded): backgrounding would race the "rm -f"
+# below, which could unlink $MSG_TMP before a background python3 process gets around to opening
+# it by path. Best-effort like every other step here — a failure never blocks delivery.
+RECIPIENTS=()
+while IFS= read -r -d '' _envtok; do
+  [[ "$_envtok" == T* ]] && RECIPIENTS+=("${_envtok#T}")
+done < "$ENV_TMP"
+if [[ ${#RECIPIENTS[@]} -gt 0 ]]; then
+  # /var/log/sysadminhcp is created 0755 sysadminhcp:sysadminhcp by the panel's own Node process
+  # (for email-stats.log etc) — this wrapper runs as a low-privilege qmail-family user (qmaild/
+  # qmailr) that is NOT in that group, so plain 0755 leaves it unable to create a file here at all
+  # (confirmed live: qmaild has only r-x on that directory). Same fix, same reasoning as RATE_DIR
+  # above — 1777 (sticky + world-writable, /tmp's own model) rather than a single chown target,
+  # since this directory is legitimately written by multiple unrelated UIDs.
+  mkdir -p /var/log/sysadminhcp 2>/dev/null || true
+  chmod 1777 /var/log/sysadminhcp 2>/dev/null || true
+  # touch+chmod 666, same reasoning for the file itself — logrotate (copytruncate — see
+  # deploy/sysadminhcp-logrotate) keeps the same inode/permissions forever after this first
+  # creation, so this only actually does anything once per server.
+  [[ -f /var/log/sysadminhcp/email-subjects.jsonl ]] || { touch /var/log/sysadminhcp/email-subjects.jsonl 2>/dev/null && chmod 666 /var/log/sysadminhcp/email-subjects.jsonl 2>/dev/null; }
+  timeout 5 python3 /var/qmail/bin/extract-mail-metadata.py \
+    "${SYSADMINHCP_SMTP_DIRECTION:-inbound}" "$SENDER" "${RECIPIENTS[@]}" -- "$MSG_TMP" \
+    2>/dev/null || true
+fi
+
 # ── Open temp files on spare fds, delete them, then exec ─────────────
 # Opening on fds 3/4 first keeps the inodes alive after rm so they are
 # auto-cleaned when the exec'd process closes those fds.

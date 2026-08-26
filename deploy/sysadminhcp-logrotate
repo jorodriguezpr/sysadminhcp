@@ -14,3 +14,20 @@
         systemctl reload sysadminhcp > /dev/null 2>&1 || true
     endscript
 }
+
+# email-subjects.jsonl is written directly by the qmail-queue wrapper (deploy/qmail-queue-check.sh),
+# which execs as a low-privilege qmail-family user (qmaild/qmailr) — NOT root, NOT sysadminhcp. The
+# `create` directive above would hand the post-rotation file to sysadminhcp:sysadminhcp at 0640,
+# which that user can't write to (and can't chmod either, since it doesn't own the file) — silently
+# breaking Subject capture from the next rotation onward. copytruncate sidesteps this entirely: it
+# copies the current content out then truncates the SAME inode in place, so the original
+# permissions/ownership (set once by the wrapper's own touch+chmod 666) persist forever.
+/var/log/sysadminhcp/email-subjects.jsonl {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}

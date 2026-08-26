@@ -968,7 +968,8 @@ dnf install -y mariadb-server
 dnf install -y --allowerasing php php-fpm php-mysqlnd php-xml php-gd php-mbstring
 
 # Utilities
-dnf install -y wget curl rsync sshpass logrotate htop unzip tar openssl
+dnf install -y --skip-broken wget curl rsync sshpass logrotate htop unzip tar openssl 2>/dev/null \
+  || warn "One or more optional packages failed to install (sshpass isn't in every EL mirror's EPEL snapshot) — continuing"
 
 # Security tools
 # ipset: needed by the Country Blocking feature's firewalld ipsets (usually already present
@@ -1576,29 +1577,37 @@ elif command -v firewall-cmd &>/dev/null; then
     systemctl enable --now firewalld 2>/dev/null || true
   fi
   if systemctl is-active firewalld &>/dev/null; then
-    firewall-cmd --permanent --add-port=7778/tcp
-    firewall-cmd --permanent --add-port=7777/tcp
-    firewall-cmd --permanent --add-service=http
-    firewall-cmd --permanent --add-service=https
-    firewall-cmd --permanent --add-service=dns
-    firewall-cmd --permanent --add-service=ftp
+    # Every firewall-cmd call below is best-effort (|| true) — found live on a box converted
+    # from another panel (2026-08-25): firewalld's python-nftables backend threw
+    # "COMMAND_FAILED: 'python-nftables' failed" (a leftover libvirtd nftables table coexisting
+    # badly with firewalld's own), and under set -e a single failing firewall-cmd call here
+    # silently killed the rest of the entire install (dovecot/named never got enabled/started).
+    firewall-cmd --permanent --add-port=7778/tcp || true
+    firewall-cmd --permanent --add-port=7777/tcp || true
+    firewall-cmd --permanent --add-service=http || true
+    firewall-cmd --permanent --add-service=https || true
+    firewall-cmd --permanent --add-service=dns || true
+    firewall-cmd --permanent --add-service=ftp || true
     # Mail (SMTP 25, submission 587, IMAP 143/993, POP3 110/995) - previously never opened by
     # this installer at all, so a fresh server's mail ports were only reachable if someone
     # noticed and opened them by hand. Also 10022/tcp: every server in this fleet gets SSH moved
     # there via the panel's own SSH Config page after install, but the firewall had no matching
     # rule prepared for it - confirmed live: this exact gap locked out SSH access on a real
     # server until opened manually through the panel's own Firewall API.
-    firewall-cmd --permanent --add-service=smtp
-    firewall-cmd --permanent --add-service=smtps
-    firewall-cmd --permanent --add-service=imap
-    firewall-cmd --permanent --add-service=imaps
-    firewall-cmd --permanent --add-service=pop3
-    firewall-cmd --permanent --add-service=pop3s
-    firewall-cmd --permanent --add-port=587/tcp
-    firewall-cmd --permanent --add-port=10022/tcp
-    firewall-cmd --permanent --add-port=30000-31000/tcp
-    firewall-cmd --reload
-    info "Firewall rules added for ports 7778, 7777, 80, 443, 21, 25, 465, 587, 143, 993, 110, 995, 10022, 30000-31000"
+    firewall-cmd --permanent --add-service=smtp || true
+    firewall-cmd --permanent --add-service=smtps || true
+    firewall-cmd --permanent --add-service=imap || true
+    firewall-cmd --permanent --add-service=imaps || true
+    firewall-cmd --permanent --add-service=pop3 || true
+    firewall-cmd --permanent --add-service=pop3s || true
+    firewall-cmd --permanent --add-port=587/tcp || true
+    firewall-cmd --permanent --add-port=10022/tcp || true
+    firewall-cmd --permanent --add-port=30000-31000/tcp || true
+    if firewall-cmd --reload 2>&1; then
+      info "Firewall rules added for ports 7778, 7777, 80, 443, 21, 25, 465, 587, 143, 993, 110, 995, 10022, 30000-31000"
+    else
+      warn "firewall-cmd --reload failed — firewalld's nftables backend may be in a bad state (e.g. a leftover libvirtd nftables table). Continuing install; verify/fix firewall rules manually afterward with 'firewall-cmd --list-all'."
+    fi
   else
     warn "firewalld could not be started. Skipping firewall configuration."
   fi
