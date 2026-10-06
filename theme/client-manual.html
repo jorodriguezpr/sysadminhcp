@@ -121,7 +121,7 @@
     files, backups and support tickets from your SysAdminHCP hosting account.
   </div>
   <div class="meta">
-    Document version 1.1<br>
+    Document version 1.2<br>
     Covers the Client Portal (not the Admin Portal)<br>
     In memory of Kloxo CP
   </div>
@@ -156,8 +156,9 @@
         <li><a href="#s6-1">Mail accounts</a></li>
         <li><a href="#s6-2">Mail domains</a></li>
         <li><a href="#s6-3">Forwards</a></li>
-        <li><a href="#s6-4">Spam whitelist</a></li>
-        <li><a href="#s6-5">Spam blacklist</a></li>
+        <li><a href="#s6-4">Recent mail</a></li>
+        <li><a href="#s6-5">Spam whitelist</a></li>
+        <li><a href="#s6-6">Spam blacklist</a></li>
       </ol>
     </li>
     <li><a href="#s7">Webmail</a></li>
@@ -178,6 +179,7 @@
     <li><a href="#s17">AI Spam Filter &amp; Email Log</a>
       <ol>
         <li><a href="#s17-1">Email Log — Recent Entries</a></li>
+        <li><a href="#s17-2">Per-Account Filtering</a></li>
       </ol>
     </li>
     <li><a href="#s18">Support Tickets <span class="pro-badge">Pro</span></a></li>
@@ -407,8 +409,8 @@
 <section id="s6">
   <h1 class="part">Chapter 6</h1>
   <h2><span class="num">6.</span>Email</h2>
-  <p>The Email page has five tabs: <strong>Mail Accounts</strong>, <strong>Mail Domains</strong>, <strong>Forwards</strong>,
-  <strong>Spam Whitelist</strong>, and <strong>Spam Blacklist</strong>.</p>
+  <p>The Email page has six tabs: <strong>Mail Accounts</strong>, <strong>Mail Domains</strong>, <strong>Forwards</strong>,
+  <strong>Recent Mail</strong>, <strong>Spam Whitelist</strong>, and <strong>Spam Blacklist</strong>.</p>
 
   <h3 id="s6-1">6.1 Mail Accounts</h3>
   <p>This tab lists every mailbox on your account with its domain, quota, and status.</p>
@@ -421,9 +423,24 @@
     <li>Set a <strong>Quota in MB</strong> (enter <code>0</code> for unlimited).</li>
     <li>Click <span class="ui">Create</span>.</li>
   </ol>
-  <p>To change a mailbox's password, click <span class="ui">Password</span> on its row. To remove a mailbox
-  entirely (including its stored mail), click <span class="ui">Delete</span> and confirm. You can also click
-  <span class="ui">Webmail</span> on any row to jump straight into that domain's webmail login.</p>
+  <p>Click <span class="ui">⚙️ Manage</span> on any row to open that mailbox's management panel — this is where
+  you change its password, storage quota, and enable/suspend status, and find the manual email client (IMAP/SMTP)
+  settings, all in one place. You can also click <span class="ui">Webmail</span> to jump straight into that
+  domain's webmail login, or <span class="ui">Delete</span> to remove the mailbox entirely (including its stored
+  mail).</p>
+  <h4>The Manage panel</h4>
+  <ul>
+    <li><strong>Status</strong> — shows whether the mailbox is Active or Suspended, with a button to toggle it.
+    Suspending disables IMAP/POP3/webmail login immediately, but new mail keeps arriving and will be waiting for
+    you once you re-enable access — it is never rejected or bounced while suspended.</li>
+    <li><strong>Storage</strong> — shows current usage against your quota (with a color bar once a quota is set),
+    and a field to change the quota (in MB; <code>0</code> means unlimited).</li>
+    <li><strong>Password</strong> — set a new password for this mailbox.</li>
+    <li><strong>Email Client Setup</strong> — the exact Incoming (IMAP) and Outgoing (SMTP) server, port, and
+    security settings for configuring this mailbox in Apple Mail, Outlook, Thunderbird, or the Gmail app ("Add
+    account → Other"). Each value has a small copy button next to it. Desktop clients usually auto-detect these
+    settings once you enter your email and password — manual entry is normally only needed on phones and tablets.</li>
+  </ul>
 
   <h3 id="s6-2">6.2 Mail Domains</h3>
   <p>A read-only list of which of your domains have mail enabled, and their catchall address status.</p>
@@ -440,7 +457,20 @@
   </ol>
   <p>Click <span class="ui">Delete</span> on a forward's row to remove it.</p>
 
-  <h3 id="s6-4">6.4 Spam Whitelist</h3>
+  <h3 id="s6-4">6.4 Recent Mail</h3>
+  <p>A live log of what actually happened to your mail — proof that a message arrived or went out, and when.
+  It reads directly from the mail server's own delivery log, so it covers every message regardless of whether
+  the AI Spam Filter is enabled for that mailbox.</p>
+  <ol class="steps">
+    <li>If you have more than one mail domain, pick one from the dropdown, or leave it on <em>All my domains</em>.</li>
+    <li>Click <span class="ui">Load Incoming</span> to see mail delivered to your mailbox(es), or
+    <span class="ui">Load Outgoing</span> to see mail sent from them.</li>
+  </ol>
+  <p>Each row shows the time, sender, recipient, subject, and size. <strong>Subject</strong> is only available
+  for mail sent or received after this feature was turned on for your server — older messages show a dash instead
+  of a blank, so you can tell the difference between "no subject" and "not tracked yet."</p>
+
+  <h3 id="s6-5">6.5 Spam Whitelist</h3>
   <p>Senders on your whitelist always bypass the AI spam filter for your mailboxes.</p>
   <ol class="steps">
     <li>Choose a <strong>Scope</strong>: <em>My Domain</em> (applies to every mailbox on a domain) or <em>My Mailbox</em> (applies to one address only).</li>
@@ -453,7 +483,7 @@
   link</strong> (added via a quarantine notification email link). Click <span class="ui">Remove</span> to delete
   an entry.</p>
 
-  <h3 id="s6-5">6.5 Spam Blacklist</h3>
+  <h3 id="s6-6">6.6 Spam Blacklist</h3>
   <p>Senders on your blacklist are instantly marked as spam without being analyzed — this also saves AI processing
   cost. Works identically to the whitelist above (same Scope / Entry Type / Target / Value fields).</p>
 
@@ -760,6 +790,21 @@
     the whole AI Spam Filter menu item is missing, filtering isn't enabled for it; ask your administrator if you'd
     like this turned on.
   </div>
+
+  <h3 id="s17-2">17.2 Per-Account Filtering</h3>
+  <p>Below the Email Log is a <strong>Per-Account Filtering</strong> card, letting you override the AI Spam
+  Filter for one specific mailbox — the same control your administrator has, scoped to mailboxes you own.</p>
+  <ol class="steps">
+    <li>If you have more than one domain with filtering enabled, pick one from the dropdown, or leave it on
+    <em>All my domains</em>.</li>
+    <li>Click <span class="ui">↻ Load Accounts</span>.</li>
+    <li>For any mailbox, use the <strong>Set Mode</strong> dropdown to choose <em>Inherit</em> (use the domain's
+    default setting), <em>Force ON</em> (always filter this mailbox, even if the domain default is off), or
+    <em>Exempt</em> (never filter this mailbox, even if the domain default is on).</li>
+  </ol>
+  <p>The <strong>Effective</strong> column shows what actually happens right now for each mailbox, after taking
+  any override into account — this is the one to check if you're unsure whether a specific mailbox is currently
+  protected.</p>
 </section>
 
 <!-- ============ 18. SUPPORT TICKETS ============ -->

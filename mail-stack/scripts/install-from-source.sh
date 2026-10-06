@@ -71,6 +71,23 @@ install -m 755 config/qmail/supervise/submission/run /var/qmail/supervise/submis
 install -m 644 config/qmail/control/defaultdelivery  /var/qmail/control/defaultdelivery
 install -m 755 config/qmail/rc                       /var/qmail/rc
 
+# System alias forward files (root/postmaster/mailer-daemon) — a from-source build never
+# creates these on its own (unlike the QmailToaster RPM path), and without them any system
+# mail to root@/postmaster@ bounces into an unbreakable bounce-of-a-bounce loop, since the
+# bounce target doesn't exist either. Same fix as install-almalinux10.sh/install-ubuntu22.sh.
+if [[ ! -d /var/qmail/alias/Maildir/cur ]]; then
+  /var/qmail/bin/maildirmake /var/qmail/alias/Maildir 2>/dev/null || true
+  chown -R alias:qmail /var/qmail/alias/Maildir 2>/dev/null || true
+fi
+for target in root postmaster mailer-daemon; do
+  f="/var/qmail/alias/.qmail-$target"
+  if [[ ! -f "$f" ]]; then
+    echo "./Maildir/" > "$f"
+    chown alias:nofiles "$f"
+    chmod 644 "$f"
+  fi
+done
+
 mkdir -p /etc/tcprules.d
 if [[ ! -f /etc/tcprules.d/tcp.smtp ]]; then
   install -m 644 config/qmail/tcprules/tcp.smtp /etc/tcprules.d/tcp.smtp

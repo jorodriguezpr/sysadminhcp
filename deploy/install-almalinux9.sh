@@ -830,9 +830,10 @@ if [[ -f "$REPO_DIR/sysadminhcp" ]]; then
   cp -r "$REPO_DIR/theme" "$SYSADMINHCP_ROOT/httpdocs/"
   mkdir -p "$SYSADMINHCP_ROOT/httpdocs/web-console"
 
-  # node-pty's native .node binding can't be embedded in the pkg snapshot -
-  # it's excluded at build time and must be installed standalone here,
-  # against the same package.json every server installs it against.
+  # node-pty and better-sqlite3 both ship a native .node binding that can't
+  # be embedded in the pkg snapshot - both are excluded at build time and
+  # must be installed standalone here, against the same package.json every
+  # server installs them against.
   if [[ -f "$REPO_DIR/package.json" ]]; then
     cp "$REPO_DIR/package.json" "$SYSADMINHCP_ROOT/httpdocs/package.json"
     cp "$REPO_DIR/package-lock.json" "$SYSADMINHCP_ROOT/httpdocs/" 2>/dev/null || true
@@ -842,6 +843,31 @@ if [[ -f "$REPO_DIR/sysadminhcp" ]]; then
   npm install node-pty --no-audit --no-fund 2>/dev/null \
     && info "node-pty compiled OK" \
     || warn "node-pty compilation failed — SSH terminal will be unavailable"
+  # Pinned to 10.1.0 (last release built on C++17, not C++20) - older AlmaLinux
+  # gcc-c++ (e.g. 8.5.0 on AlmaLinux 8) can't compile 11.x+, and no prebuilt
+  # binary reliably matches every host in this fleet, so build-from-source
+  # compatibility across the widest GCC range wins over using the latest release.
+  #
+  # Unlike node-pty (N-API, ABI-stable across Node versions), better-sqlite3
+  # uses the older NAN bindings and is tied to a specific NODE_MODULE_VERSION.
+  # This binary runs on the Node runtime pkg embeds (see package.json's
+  # "pkg.targets": "node22-linux-x64"), NOT whatever `node` happens to be on
+  # this host's PATH - a plain `npm install` here builds against the host's
+  # own Node and produces a module the binary refuses to load at startup
+  # ("NODE_MODULE_VERSION 115... requires ... 127"). npm_config_target forces
+  # node-gyp to fetch Node 22's ABI headers regardless of the host's actual
+  # Node version. If package.json's pkg.targets major version ever changes,
+  # this must change with it.
+  info "Installing better-sqlite3 (crash-safe DB, not enabled by default — see Settings > Database)..."
+  npm_config_target=22.0.0 \
+  npm_config_arch=x64 \
+  npm_config_target_arch=x64 \
+  npm_config_disturl=https://nodejs.org/dist \
+  npm_config_runtime=node \
+  npm_config_build_from_source=true \
+  npm install better-sqlite3@10.1.0 --no-audit --no-fund \
+    && info "better-sqlite3 compiled OK (Node 22 ABI, matches the pkg binary's embedded runtime)" \
+    || warn "better-sqlite3 compilation failed — Settings > Database > Switch to Real SQLite will be unavailable until this is resolved manually"
 elif [[ -f "$REPO_DIR/package.json" ]]; then
   # ─── Traditional install: build (or deploy pre-built dist/) from TypeScript source ───
   PKG_MODE=0

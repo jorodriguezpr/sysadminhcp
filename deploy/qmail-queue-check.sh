@@ -23,6 +23,9 @@
 #
 # Rate limits config: /var/qmail/control/sysadminhcp-ratelimits
 #   One line per domain:  example.com 100    (0 or missing = unlimited)
+# Per-account daily SMTP AUTH limit: /var/qmail/control/sysadminhcp-userlimits
+#   "default 200" plus optional "user@example.com 1000" overrides (0 = unlimited; no file = no limit,
+#   but per-account daily counters are still kept under $RATE_DIR/_users/ for abuse detection)
 #
 # DKIM signing (all OS families — see enableDkim() in mailService.ts):
 #   Gated on /var/qmail/control/dkim-signing-enabled (global switch, panel Settings
@@ -139,6 +142,55 @@ if [[ -n "$DOMAIN" ]]; then
   fi
   # Always track — stats and rate limiting
   increment_counter "$DOMAIN"
+fi
+
+# ── Per-account daily limit for authenticated SMTP ────────────────────
+# The domain limit above is per sender domain and per hour, and a stolen mailbox password
+# stays under it by spreading the load (confirmed live: 6.7k spam in 2.5h from one account).
+# This one counts RECIPIENTS per authenticated account per calendar day, so one message with
+# 500 BCCs costs 500. It only applies to SMTP AUTH sessions: qmail-smtpd's auth patch exports the
+# authenticated user as TCPREMOTEINFO, and tcpserver runs with -R, so the variable is empty for
+# inbound mail, bounces and local qmail-inject. No config file / 0 = count only, no limit -
+# the counters are always kept, because the panel's compromised-account detection
+# (SmtpAbuseService, polled by Autonomous Mode) reads them.
+#   /var/qmail/control/sysadminhcp-userlimits:  default 200  /  user@example.com 1000  (0 = unlimited)
+USER_LIMITS_CONF=/var/qmail/control/sysadminhcp-userlimits
+AUTH_USER="${TCPREMOTEINFO,,}"
+# Where spamdyke performs SMTP AUTH on the submission port (smtp-auth-command=vchkpw, as on
+# Servers 1 and 6), qmail-smtpd never sees the login and TCPREMOTEINFO stays empty. Every session on
+# that service is a mail client submitting, so count by the envelope sender instead - but only for a
+# sender in a domain this server hosts, so a forged outside address can't use up anyone's quota.
+if [[ -z "$AUTH_USER" && "${SYSADMINHCP_SMTP_DIRECTION:-}" == "outbound" && -n "$DOMAIN" ]] \
+   && cat /var/qmail/control/rcpthosts /var/qmail/control/morercpthosts 2>/dev/null | grep -qixF "$DOMAIN"; then
+  AUTH_USER="${SENDER,,}"
+fi
+if [[ -n "$AUTH_USER" && "$AUTH_USER" =~ ^[a-z0-9._%+=-]+(@[a-z0-9.-]+)?$ ]]; then
+  ULIMIT=0
+  [[ -f "$USER_LIMITS_CONF" ]] && ULIMIT=$(awk -v u="$AUTH_USER" 'tolower($1)==u {v=$2} $1=="default" && d=="" {d=$2} END {print (v!="" ? v : d)}' "$USER_LIMITS_CONF" 2>/dev/null)
+  [[ "$ULIMIT" =~ ^[0-9]+$ ]] || ULIMIT=0
+  RCPTS=$(tr '\0' '\n' < "$ENV_TMP" | grep -c '^T')
+  UDIR="${RATE_DIR}/_users/${AUTH_USER}"
+  mkdir -p "$UDIR" 2>/dev/null || true
+  chmod 1777 "${RATE_DIR}/_users" "$UDIR" 2>/dev/null || true
+  UCF="${UDIR}/$(date +%Y%m%d)"
+  # flock: parallel SMTP sessions of the same account must not both read the same count
+  OVER=$( {
+    flock -w 10 9
+    cur=$(cat "$UCF" 2>/dev/null || echo 0); [[ "$cur" =~ ^[0-9]+$ ]] || cur=0
+    if (( ULIMIT > 0 && cur + RCPTS > ULIMIT )); then echo "$cur"; else echo $(( cur + RCPTS )) > "$UCF"; fi
+    # Sending IPs of the day, for the lockdown's session kill + admin report. vchkpw only logs
+    # successful logins on some builds (Server 2 logs failures only), so record them here.
+    if [[ "${TCPREMOTEIP:-}" =~ ^[0-9a-fA-F.:]+$ ]] && ! grep -qxF "$TCPREMOTEIP" "${UCF}.ips" 2>/dev/null; then
+      echo "$TCPREMOTEIP" >> "${UCF}.ips"
+    fi
+  } 9>>"${UCF}.lock" )
+  chmod 666 "$UCF" "${UCF}.lock" "${UCF}.ips" 2>/dev/null || true
+  find "$UDIR" -type f -mtime +3 -delete 2>/dev/null &
+  if [[ -n "$OVER" ]]; then
+    logger -t sysadminhcp-ratelimit "daily SMTP limit reached: user=$AUTH_USER sent=$OVER limit=$ULIMIT rcpts=$RCPTS ip=${TCPREMOTEIP:-?}"
+    rm -f "$MSG_TMP" "$ENV_TMP"
+    exit 71
+  fi
 fi
 
 # ── SpamAssassin content scanning (panel Mail > Spam toggle; inbound/outbound gated separately) ─

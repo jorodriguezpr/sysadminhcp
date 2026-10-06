@@ -866,7 +866,7 @@ async function doChangeIpClient(zone){const ip=(document.getElementById('m_chIp'
 // MAIL
 // ═══════════════════════════════════════════════════════════════════════
 async function renderMail(el){
-    el.innerHTML=`<div class="tab-bar" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex"><div class="tab active" onclick="showMailTab('accounts')">Mail Accounts</div><div class="tab" onclick="showMailTab('domains')">Mail Domains</div><div class="tab" onclick="showMailTab('forwards')">Forwards</div><div class="tab" onclick="showMailTab('whitelist')">Spam Whitelist</div><div class="tab" onclick="showMailTab('blacklist')">Spam Blacklist</div></div><button class="btn btn-sm btn-help" onclick="showModuleHelp('mail')">❓ Help</button></div><div id="mailContent"></div>`;
+    el.innerHTML=`<div class="tab-bar" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex"><div class="tab active" onclick="showMailTab('accounts')">Mail Accounts</div><div class="tab" onclick="showMailTab('domains')">Mail Domains</div><div class="tab" onclick="showMailTab('forwards')">Forwards</div><div class="tab" onclick="showMailTab('recent')">Recent Mail</div><div class="tab" onclick="showMailTab('whitelist')">Spam Whitelist</div><div class="tab" onclick="showMailTab('blacklist')">Spam Blacklist</div></div><button class="btn btn-sm btn-help" onclick="showModuleHelp('mail')">❓ Help</button></div><div id="mailContent"></div>`;
     showMailTab('accounts');
 }
 async function showMailTab(tab){
@@ -880,7 +880,7 @@ async function showMailTab(tab){
         const data=await api('/client/mail/accounts');
         const a=data.accounts||[];
         const domains=[...new Set(a.map(m=>m.domainName))];
-        el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'mat')"></div><div class="toolbar-right"><button class="btn btn-secondary" id="matRecalcBtn" onclick="recalcMailUsageClient(${JSON.stringify(domains).replace(/"/g,'&quot;')})" title="Scan disk and refresh the Used column below (can take a while for large mailboxes)">🔄 Recalculate Storage</button> <button class="btn btn-primary" onclick="showAddMailAccount()">+ Add Account</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Email</th><th>Domain</th><th>Quota</th><th>Used</th><th>Status</th><th>Actions</th></tr></thead><tbody id="mat">${a.map(m=>{const lp=m.nname.includes('@')?m.nname.split('@')[0]:m.nname;return`<tr><td><strong>${lp}@${m.domainName}</strong></td><td>${m.domainName}</td><td>${m.quota>0?formatBytes(m.quota*1024*1024):'Unlimited'}</td><td>${formatBytes(m.diskUsage||0)}</td><td><span class="status-badge status-${m.status==='on'?'on':'off'}">${m.status}</span></td><td><button class="btn btn-xs btn-secondary" onclick="openWebmailForDomain('${m.domainName}')">Webmail</button> <button class="btn btn-xs btn-warning" onclick="showChangeMailPassword('${lp}','${m.domainName}')">Password</button> <button class="btn btn-xs btn-danger" onclick="delMailAccount('${lp}','${m.domainName}')">Delete</button></td></tr>`;}).join('')}</tbody></table></div>`;
+        el.innerHTML=`<div class="toolbar"><div class="toolbar-left"><input class="search-input" placeholder="Search..." oninput="ft(this,'mat')"></div><div class="toolbar-right"><button class="btn btn-secondary" id="matRecalcBtn" onclick="recalcMailUsageClient(${JSON.stringify(domains).replace(/"/g,'&quot;')})" title="Scan disk and refresh the Used column below (can take a while for large mailboxes)">🔄 Recalculate Storage</button> <button class="btn btn-primary" onclick="showAddMailAccount()">+ Add Account</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Email</th><th>Domain</th><th>Quota</th><th>Used</th><th>Status</th><th>Actions</th></tr></thead><tbody id="mat">${a.map(m=>{const lp=m.nname.includes('@')?m.nname.split('@')[0]:m.nname;return`<tr><td><strong>${lp}@${m.domainName}</strong></td><td>${m.domainName}</td><td>${m.quota>0?formatBytes(m.quota*1024*1024):'Unlimited'}</td><td>${formatBytes(m.diskUsage||0)}</td><td><span class="status-badge status-${m.status==='on'?'on':'off'}">${m.status}</span></td><td><button class="btn btn-xs btn-primary" onclick="showManageMailAccount('${lp}','${m.domainName}',${m.quota||0},'${m.status}',${m.diskUsage||0})">⚙️ Manage</button> <button class="btn btn-xs btn-secondary" onclick="openWebmailForDomain('${m.domainName}')">Webmail</button> <button class="btn btn-xs btn-danger" onclick="delMailAccount('${lp}','${m.domainName}')">Delete</button></td></tr>`;}).join('')}</tbody></table></div>`;
         }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
     }else if(tab==='domains'){
         try{
@@ -894,6 +894,21 @@ async function showMailTab(tab){
         const f=data.forwards||[];
         el.innerHTML=`<div class="toolbar"><div class="toolbar-right"><button class="btn btn-primary" onclick="showAddMailForward()">+ Add Forward</button></div></div><div class="card"><table class="data-table"><thead><tr><th>Source</th><th>Destination</th><th>Actions</th></tr></thead><tbody>${f.map(fw=>{const src=fw.alias||fw.nname;return`<tr><td><strong>${src}</strong></td><td>${Array.isArray(fw.destinations)?fw.destinations.join(', '):fw.destination||'-'}</td><td><button class="btn btn-xs btn-danger" onclick="delMailForward('${src}')">Delete</button></td></tr>`;}).join('')}</tbody></table></div>`;
         }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
+    }else if(tab==='recent'){
+        try{
+        const domainsData=await api('/client/mail/domains');
+        const domains=(domainsData.mailDomains||[]).map(d=>d.domainName);
+        const domainSelectHtml=domains.length>1?`<select id="cl_recentDomain" style="width:auto"><option value="">All my domains</option>${domains.map(dn=>`<option value="${escHtml(dn)}">${escHtml(dn)}</option>`).join('')}</select>`:'';
+        el.innerHTML=`<div class="card"><div class="card-title">Recent Mail Activity</div>
+        <p style="font-size:12px;color:#888;margin:4px 0 12px">Every message delivered to your mailbox(es) (Incoming) or sent from them (Outgoing) — proof a message actually arrived or went out. Subject shows "—" for mail that arrived before this column was added.</p>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          ${domainSelectHtml}
+          <button class="btn btn-sm btn-secondary" onclick="clLoadRecentMail('incoming')">Load Incoming</button>
+          <button class="btn btn-sm btn-secondary" onclick="clLoadRecentMail('outgoing')">Load Outgoing</button>
+        </div>
+        <div id="cl_recentMailWrap"><p style="color:#888;font-size:13px">Click a button above to load your recent mail activity.</p></div>
+        </div>`;
+        }catch(e){el.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}
     }else if(tab==='whitelist'){
         el.innerHTML=`<div class="card"><div class="card-title">Spam Whitelist <span style="font-size:12px;font-weight:400;color:#888">— senders that bypass the AI spam filter for your mailboxes</span></div><div style="padding:12px"><div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><select id="cl_wlScope" onchange="clWlScopeChange()" style="width:130px"><option value="domain">My Domain</option><option value="user">My Mailbox</option></select><select id="cl_wlEntryType" style="width:120px"><option value="email">Email address</option><option value="domain">Domain (all @)</option></select><input id="cl_wlTarget" placeholder="yourmail@yourdomain.com or yourdomain.com" style="width:200px"><input id="cl_wlValue" placeholder="sender@example.com or example.com" style="flex:1;min-width:180px"><button class="btn btn-success" onclick="clAddWhitelist()">+ Add</button></div><div style="font-size:12px;color:#888;margin-bottom:12px" id="cl_wlHint">Domain: applies to all your mailboxes on a domain. Mailbox: applies only to a specific mailbox you own.</div><div id="cl_wlTable"><div style="color:#888;text-align:center;padding:20px">Loading...</div></div></div></div>`;
         clLoadWhitelist();
@@ -901,6 +916,20 @@ async function showMailTab(tab){
         el.innerHTML=`<div class="card"><div class="card-title">Spam Blacklist <span style="font-size:12px;font-weight:400;color:#888">— blacklisted senders are instantly marked as spam, skipping AI analysis to save tokens</span></div><div style="padding:12px"><div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><select id="cl_blScope" onchange="clBlScopeChange()" style="width:130px"><option value="domain">My Domain</option><option value="user">My Mailbox</option></select><select id="cl_blEntryType" style="width:120px"><option value="email">Email address</option><option value="domain">Domain (all @)</option></select><input id="cl_blTarget" placeholder="yourdomain.com" style="width:200px"><input id="cl_blValue" placeholder="spammer@example.com or spam.com" style="flex:1;min-width:180px"><button class="btn btn-danger" onclick="clAddBlacklist()">+ Add</button></div><div style="font-size:12px;color:#888;margin-bottom:12px" id="cl_blHint">Domain: blocks this sender for all mailboxes on a domain you own. Mailbox: blocks only for a specific mailbox you own.</div><div id="cl_blTable"><div style="color:#888;text-align:center;padding:20px">Loading...</div></div></div></div>`;
         clLoadBlacklist();
     }
+}
+
+async function clLoadRecentMail(direction){
+    const wrap=document.getElementById('cl_recentMailWrap');if(!wrap)return;
+    wrap.innerHTML='<p style="color:#888">Loading...</p>';
+    try{
+        const domainSel=document.getElementById('cl_recentDomain');
+        const domain=domainSel?domainSel.value:'';
+        const qs=domain?('&domain='+encodeURIComponent(domain)):'';
+        const data=await api('/client/mail/recent?direction='+direction+'&limit=100'+qs);
+        const label=`<div style="font-size:11px;font-weight:600;color:${direction==='outgoing'?'#fdcb6e':'#74b9ff'};margin-bottom:6px">${direction==='outgoing'?'⬆ OUTGOING (sent by you)':'⬇ INCOMING (delivered to you)'}</div>`;
+        const rows=(data.entries||[]).map(e=>`<tr><td style="white-space:nowrap;font-size:12px;color:#666">${escHtml(e.time||'—')}</td><td style="font-size:12px">${escHtml(e.from)}</td><td style="font-size:12px">${escHtml(e.to)}</td><td style="font-size:12px;color:#666" title="${escHtml(e.subject||'')}">${escHtml(e.subject||'—')}</td><td style="font-size:12px;text-align:right">${(e.bytes/1024).toFixed(1)} KB</td></tr>`).join('');
+        wrap.innerHTML=label+`<table class="data-table"><thead><tr><th>Time</th><th>From</th><th>To</th><th>Subject</th><th>Size</th></tr></thead><tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:#888">No recent mail found.</td></tr>'}</tbody></table>`;
+    }catch(e){wrap.innerHTML='<div class="alert alert-error">'+escHtml(e.message)+'</div>';}
 }
 
 async function clLoadWhitelist(){
@@ -976,9 +1005,97 @@ function showAddMailAccount(){
     });
 }
 async function doAddMailAccount(){try{await api('/client/mail/accounts',{method:'POST',body:JSON.stringify({email:document.getElementById('m_maE').value+'@'+document.getElementById('m_maD').value,password:document.getElementById('m_maP').value,quota:parseInt(document.getElementById('m_maQ').value)||0,domainName:document.getElementById('m_maD').value})});closeModal();showAlert('Mail account created','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
-function showChangeMailPassword(local,domain){showModal('Change Password',`<div class="form-group"><label>New Password</label><input id="m_mpP" type="password"></div>`,[{label:'Change',cls:'btn-primary',onclick:`doChangeMailPassword('${local}','${domain}')`}]);}
 async function doChangeMailPassword(local,domain){try{await api(`/client/mail/accounts/${encodeURIComponent(local+'@'+domain)}/password`,{method:'PUT',body:JSON.stringify({password:document.getElementById('m_mpP').value})});closeModal();showAlert('Password changed','success');}catch(e){showAlert(e.message,'error');}}
 async function delMailAccount(local,domain){if(!confirm(`Delete ${local}@${domain}?`))return;try{await api(`/client/mail/accounts/${encodeURIComponent(local+'@'+domain)}`,{method:'DELETE'});showAlert('Deleted','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
+
+// ═══ Manage Mail Account (consolidated: status, quota, password, client setup) ═══════════════
+async function showManageMailAccount(local,domain,quota,status,diskUsage){
+    const email=`${local}@${domain}`;
+    let settings={imapHost:`mail.${domain}`,imapPort:993,imapSecurity:'SSL/TLS',smtpHost:`mail.${domain}`,smtpPort:587,smtpSecurity:'STARTTLS',webmailUrl:`https://webmail.${domain}/`};
+    try{settings=await api(`/client/mail/domains/${encodeURIComponent(domain)}/client-settings`);}catch(e){/* fall back to the convention defaults above */}
+
+    const usedMb=Math.round((diskUsage||0)/1024/1024);
+    const quotaMb=quota||0;
+    const pct=quotaMb>0?Math.min(100,Math.round(usedMb/quotaMb*100)):0;
+    const barColor=pct>=90?'#e17055':pct>=70?'#fdcb6e':'#00b894';
+    const isActive=status==='on';
+
+    const settingRow=(label,value,id)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f0f0f0"><span style="color:#888;font-size:12px">${label}</span><span style="display:flex;align-items:center;gap:6px"><code id="${id}" style="font-size:12px">${escHtml(String(value))}</code><button class="btn btn-xs btn-secondary" onclick="mgrCopy('${id}',this)" title="Copy">📋</button></span></div>`;
+
+    const body=`
+    <div style="margin-bottom:14px"><strong style="font-size:15px">${escHtml(email)}</strong></div>
+
+    <div style="margin-bottom:6px;font-weight:600;font-size:13px;color:#555">Status</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:6px">
+      <span>${isActive?'🟢 Active — receiving and accessible normally':'🔴 Suspended — login disabled'}</span>
+      <button class="btn btn-sm ${isActive?'btn-warning':'btn-success'}" onclick="mgrToggleStatus('${local}','${domain}',${isActive})">${isActive?'Suspend Access':'Enable Access'}</button>
+    </div>
+    <p style="font-size:11px;color:#888;margin:-8px 0 14px">Suspending disables IMAP/POP3/webmail login immediately. New mail still arrives and will be waiting for you when access is re-enabled — it is not rejected or bounced.</p>
+
+    <div style="margin-bottom:6px;font-weight:600;font-size:13px;color:#555">Storage</div>
+    <div style="margin-bottom:4px;font-size:12px;color:#666">${formatBytes((diskUsage||0))} used${quotaMb>0?` of ${formatBytes(quotaMb*1024*1024)}`:' (unlimited quota)'}</div>
+    ${quotaMb>0?`<div style="height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-bottom:10px"><div style="height:100%;width:${pct}%;background:${barColor}"></div></div>`:''}
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+      <input id="m_mgrQuota" type="number" min="0" value="${quotaMb}" style="width:110px" title="MB, 0 = unlimited">
+      <span style="font-size:12px;color:#888">MB (0 = unlimited)</span>
+      <button class="btn btn-sm btn-secondary" onclick="mgrSaveQuota('${local}','${domain}')">Save Quota</button>
+    </div>
+
+    <div style="margin-bottom:6px;font-weight:600;font-size:13px;color:#555">Password</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+      <input id="m_mpP" type="password" placeholder="New password" style="flex:1">
+      <button class="btn btn-sm btn-secondary" onclick="doChangeMailPassword('${local}','${domain}')">Change Password</button>
+    </div>
+
+    <div style="margin-bottom:6px;font-weight:600;font-size:13px;color:#555">Email Client Setup</div>
+    <p style="font-size:11px;color:#888;margin:0 0 8px">Use these settings in Apple Mail, Outlook, Thunderbird, the Gmail app ("Add account → Other"), or any app that supports IMAP.</p>
+    <div style="background:#f9fafb;border-radius:6px;padding:8px 12px;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:600;color:#888;margin:4px 0">Incoming (IMAP)</div>
+      ${settingRow('Server',settings.imapHost,'m_mgrImapHost')}
+      ${settingRow('Port',settings.imapPort,'m_mgrImapPort')}
+      ${settingRow('Security',settings.imapSecurity,'m_mgrImapSec')}
+      ${settingRow('Username',email,'m_mgrUser1')}
+      <div style="font-size:11px;font-weight:600;color:#888;margin:10px 0 4px">Outgoing (SMTP)</div>
+      ${settingRow('Server',settings.smtpHost,'m_mgrSmtpHost')}
+      ${settingRow('Port',settings.smtpPort,'m_mgrSmtpPort')}
+      ${settingRow('Security',settings.smtpSecurity,'m_mgrSmtpSec')}
+      ${settingRow('Username',email,'m_mgrUser2')}
+    </div>
+    <p style="font-size:11px;color:#888">Desktop clients (Outlook, Thunderbird, Apple Mail) usually detect these automatically once you enter your email and password — manual entry is normally only needed on phones/tablets.</p>
+    <div style="margin-top:8px"><a href="${settings.webmailUrl}" target="_blank" class="btn btn-sm btn-secondary">🌐 Open Webmail</a></div>
+    `;
+    showModal(`⚙️ Manage ${email}`,body,[{label:'Close',cls:'btn-secondary',onclick:'closeModal()'}]);
+}
+
+function mgrCopy(id,btn){
+    const el=document.getElementById(id);if(!el)return;
+    const text=el.textContent;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(()=>{const orig=btn.textContent;btn.textContent='✓';setTimeout(()=>{btn.textContent=orig;},1200);}).catch(()=>{});
+    }
+}
+
+async function mgrToggleStatus(local,domain,currentlyActive){
+    const email=`${local}@${domain}`;
+    if(currentlyActive&&!confirm(`Suspend access to ${email}? This disables login (IMAP/POP3/webmail) until you re-enable it. New mail keeps arriving either way.`))return;
+    try{
+        await api(`/client/mail/accounts/${encodeURIComponent(email)}/status`,{method:'PUT',body:JSON.stringify({enable:!currentlyActive})});
+        showAlert(currentlyActive?'Access suspended':'Access enabled','success');
+        closeModal();
+        showMailTab('accounts');
+    }catch(e){showAlert(e.message,'error');}
+}
+
+async function mgrSaveQuota(local,domain){
+    const email=`${local}@${domain}`;
+    const quota=parseInt(document.getElementById('m_mgrQuota')?.value)||0;
+    try{
+        await api(`/client/mail/accounts/${encodeURIComponent(email)}/quota`,{method:'PUT',body:JSON.stringify({quota})});
+        showAlert('Quota updated','success');
+        closeModal();
+        showMailTab('accounts');
+    }catch(e){showAlert(e.message,'error');}
+}
 function showAddMailForward(){showModal('Add Mail Forward',`<div class="form-group"><label>Source Address</label><input id="m_mfS" placeholder="user@domain.com"></div><div class="form-group"><label>Destination</label><input id="m_mfD" placeholder="dest@example.com"></div><div class="form-group"><label>Keep Copy</label><select id="m_mfK"><option value="false">No</option><option value="true">Yes</option></select></div>`,[{label:'Create',cls:'btn-primary',onclick:'doAddMailForward()'}]);}
 async function doAddMailForward(){try{await api('/client/mail/forwards',{method:'POST',body:JSON.stringify({source:document.getElementById('m_mfS').value,destination:document.getElementById('m_mfD').value,keepCopy:document.getElementById('m_mfK').value==='true'})});closeModal();showAlert('Forward created','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
 async function delMailForward(name){if(!confirm('Delete this forward?'))return;try{await api(`/client/mail/forwards/${encodeURIComponent(name)}`,{method:'DELETE'});showAlert('Deleted','success');renderPage('mail');}catch(e){showAlert(e.message,'error');}}
@@ -1803,6 +1920,15 @@ async function renderSpamStats(el){
     </div>
     <div id="spamRecentTableWrap"><p style="color:#888;font-size:13px">Click "Load Recent Entries" to view your email log.</p></div>
   </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">📥 Per-Account Filtering</div>
+    <p style="font-size:12px;color:#888;margin:4px 0 12px">Force the spam filter on or off for a specific mailbox, overriding your domain's default — the same control the admin has, scoped to your own mailboxes.</p>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      ${domainSelectHtml.replace('spamRecentDomain','spamAcctDomain')}
+      <button class="btn btn-sm btn-secondary" onclick="spamLoadAccounts()">↻ Load Accounts</button>
+    </div>
+    <div id="spamAccountsWrap"><p style="color:#888;font-size:13px">Click "Load Accounts" to view your mailboxes.</p></div>
+  </div>
   <div class="card">
     <div class="card-title">🪙 Token Usage <span style="font-size:12px;font-weight:400;color:#888">(total all-time: ${fmtN(tu.total)} tokens)</span></div>
     <p style="font-size:12px;color:#888;margin:4px 0 12px">Token consumption across your domains — useful for estimating monthly AI costs.</p>
@@ -1844,6 +1970,27 @@ function spamFilterRecentRows(){
   if(!q){spamRenderRecentRows(_spamRecentRows);return;}
   const filtered=_spamRecentRows.filter(e=>(e.from||'').toLowerCase().includes(q)||(e.to||'').toLowerCase().includes(q)||(e.subject||'').toLowerCase().includes(q));
   spamRenderRecentRows(filtered);
+}
+
+async function spamLoadAccounts(){
+  const wrap=document.getElementById('spamAccountsWrap');if(!wrap)return;
+  wrap.innerHTML='<p style="color:#888">Loading...</p>';
+  try{
+    const domainSel=document.getElementById('spamAcctDomain');
+    const domain=domainSel?domainSel.value:'';
+    const data=await api('/client/spam-accounts'+(domain?'?domain='+encodeURIComponent(domain):''));
+    const modeLabel={on:'ON (override)',off:'OFF (exempt)',inherit:'Inherit domain'};
+    const modeColor={on:'#00b894',off:'#e17055',inherit:'#b2bec3'};
+    const rows=(data.accounts||[]).map(a=>{
+      const eff=a.effectiveFilter;
+      return `<tr><td>${escHtml(a.emailAddress)}</td><td><span style="font-size:11px;color:${a.domainFilterEnabled?'#00b894':'#e17055'}">${a.domainFilterEnabled?'On':'Off'}</span></td><td><span class="status-badge" style="background:${modeColor[a.filterMode]||'#b2bec3'};color:#fff;font-size:10px">${modeLabel[a.filterMode]||a.filterMode}</span></td><td><span class="status-badge status-${eff?'on':'off'}" style="font-size:10px">${eff?'Filtered':'Unfiltered'}</span></td><td><select style="font-size:12px;padding:2px 4px" onchange="spamSetAccountMode('${escHtml(a.emailAddress)}',this.value)"><option value="inherit"${a.filterMode==='inherit'?' selected':''}>Inherit</option><option value="on"${a.filterMode==='on'?' selected':''}>Force ON</option><option value="off"${a.filterMode==='off'?' selected':''}>Exempt</option></select></td></tr>`;
+    }).join('');
+    wrap.innerHTML=`<table class="data-table"><thead><tr><th>Account</th><th>Domain Filter</th><th>Override</th><th>Effective</th><th>Set Mode</th></tr></thead><tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:#888">No accounts found</td></tr>'}</tbody></table>`;
+  }catch(e){wrap.innerHTML='<div class="alert alert-error">'+escHtml(e.message)+'</div>';}
+}
+
+async function spamSetAccountMode(addr,mode){
+  try{await api(`/client/spam-accounts/${encodeURIComponent(addr)}/filter-mode`,{method:'PUT',body:JSON.stringify({filterMode:mode})});showAlert(`${addr} set to ${mode}`,'success');}catch(e){showAlert(e.message,'error');}
 }
 
 // ═══ Support Tickets (Pro feature) ═══════════════════════════════════════════

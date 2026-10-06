@@ -23,7 +23,7 @@ This is the standard way to install or upgrade on a fresh server. `autoinstall.s
 4. Verifies the `sysadminhcp` file is a real ELF binary, not an unresolved Git LFS pointer
 5. Hands off to the OS-specific installer
 
-**Important:** this repository ships a pre-built, license-gated **pkg single-binary** (`sysadminhcp`, produced by `npm run gitdeploy:build` from a Linux/WSL2 build — see the main repo's build tooling), not application source code. The per-OS installers detect the binary and install it directly — no `npm install`/`tsc` build happens on the target server. `node-pty` (SSH terminal support) is the one dependency compiled fresh on the target host, since native modules aren't portable across kernels.
+**Important:** this repository ships a pre-built, license-gated **pkg single-binary** (`sysadminhcp`, produced by `npm run gitdeploy:build` from a Linux/WSL2 build — see the main repo's build tooling), not application source code. The per-OS installers detect the binary and install it directly — no `npm install`/`tsc` build happens on the target server. `node-pty` (SSH terminal support) and `better-sqlite3` (an alternative, crash-safe database engine — see Settings > Database in the app; the panel still defaults to `sqljs`) are the two dependencies compiled fresh on the target host, since native modules aren't portable across kernels.
 
 Re-running the one-liner on an already-installed server performs an **in-place upgrade**: it fetches the latest binary, swaps it in (atomic `cp` to a `.new` sibling + `mv`, safe against the running process's open fd), and restarts the service. It does not re-run destructive setup steps (existing DBs, vhosts, and certificates are left alone).
 
