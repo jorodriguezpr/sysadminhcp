@@ -71,7 +71,7 @@ replacing them, so you keep full control of the underlying system.
 
 | | Free | Pro |
 |---|---|---|
-| Price | $0 — lifetime | $24 / year |
+| Price | $0 — lifetime | $36 / year (early-bird) |
 | License scope | Unlimited installs (self-registered) | 1 host/IP per license |
 | Hosting menu (Domains, Web Servers, DNS, Mail, FTP, Databases, phpMyAdmin, Webmail, Email Stats) | ✅ | ✅ |
 | Backups (manual + scheduled, cPanel/KloxoNG import) | ✅ | ✅ |
@@ -79,6 +79,12 @@ replacing them, so you keep full control of the underlying system.
 | AI Spam Filter | ❌ | ✅ |
 | Migration Tools (cPanel / KloxoNG / SysAdminHCP) | ❌ | ✅ |
 | DNS Import & Multi-Server Sync | ❌ | ✅ |
+
+Pro's $36/yr is a locked-in early-bird price through October 30, 2026 — order before then
+and that rate is guaranteed for 4 years from the date you order. Pro ordered after
+October 30, 2026 will be $99/yr. **Pro + Support** ($120/yr) adds priority ticket support
+and 4 remote-support incidents per year for control-panel issues. Pro and Pro + Support
+are licensed per host / IP; final pricing is confirmed at checkout.
 
 A license (Free or Pro) is required to unlock the Hosting menu — new installs get a
 5-day grace period to register before it locks. Manage your license and upgrade to
