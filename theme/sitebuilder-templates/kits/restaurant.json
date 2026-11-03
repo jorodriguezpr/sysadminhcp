@@ -1,0 +1,255 @@
+{
+  "schema": 1,
+  "id": "restaurant",
+  "name": "Restaurant & café",
+  "industry": "Food & drink",
+  "description": "Warm, appetising site for a restaurant, café or bakery: menu, story, gallery and a reservation form.",
+  "tokens": {
+    "colors": {
+      "primary": "#b45309",
+      "onPrimary": "#ffffff",
+      "secondary": "#292524",
+      "accent": "#dc2626",
+      "text": "#292524",
+      "muted": "#78716c",
+      "background": "#fffbf5",
+      "surface": "#f5ede1",
+      "border": "#e7dccb"
+    },
+    "fontHeading": "serif",
+    "fontBody": "system",
+    "radius": 10,
+    "spacing": 16,
+    "maxWidth": 1140,
+    "fontSize": 16
+  },
+  "globals": {
+    "footerText": "© {year} {site} · Open every day from 11:00",
+    "footerLinks": [
+      {
+        "label": "Reservations",
+        "href": "contact.html"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "file": "index.html",
+      "menu": "Home",
+      "title": "Home",
+      "description": "Fresh, seasonal food made from scratch. Book a table or stop by for lunch and dinner.",
+      "sections": [
+        {
+          "id": "hero-split",
+          "texts": [
+            "Since 2012",
+            "Fresh food, made from scratch every day",
+            "Seasonal dishes, local ingredients and a table waiting for you. Lunch, dinner and weekend brunch.",
+            "Book a table",
+            "See the menu"
+          ]
+        },
+        {
+          "id": "features-3",
+          "texts": [
+            "Why guests come back",
+            "More than a meal",
+            "We cook what we would serve our own family — honest food in a relaxed place.",
+            "Local ingredients",
+            "Vegetables, fish and meat from farmers and fishermen we know by name.",
+            "Cooked to order",
+            "Every plate is prepared when you order it. Nothing sits under a heat lamp.",
+            "Easy to share",
+            "Plenty of plates for the table, plus vegetarian and gluten-free options."
+          ],
+          "icons": [
+            "🥕",
+            "🍳",
+            "🍽️"
+          ]
+        },
+        {
+          "id": "testimonials-3",
+          "texts": [
+            "What our guests say",
+            "“The best brunch in town — we come every Sunday.”",
+            "María R.",
+            "— Regular guest",
+            "“Friendly staff, beautiful food and fair prices.”",
+            "David K.",
+            "— Google review",
+            "“We held our anniversary dinner here. Perfect evening.”",
+            "Laura & Tom",
+            "— Private dinner"
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Hungry yet?",
+            "Reserve a table online — it takes less than a minute.",
+            "Book a table"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "menu.html",
+      "menu": "Menu",
+      "title": "Menu",
+      "description": "Our menu: starters, mains, desserts and drinks, with vegetarian and gluten-free choices.",
+      "sections": [
+        {
+          "id": "content-text",
+          "texts": [
+            "Our menu",
+            "Seasonal and changing — ask your server about today's specials.",
+            "Our kitchen works with what is fresh this week, so the menu below changes a little with the seasons. All dishes can be prepared without nuts on request.",
+            "Vegetarian & gluten-free",
+            "Look for the dishes marked V and GF, or let us know about any allergy when you order."
+          ]
+        },
+        {
+          "id": "features-6",
+          "texts": [
+            "Favourites",
+            "Grilled fish of the day",
+            "With roasted vegetables and lemon butter.",
+            "Slow-cooked short rib",
+            "Twelve hours in red wine, with creamy polenta.",
+            "Garden risotto (V)",
+            "Seasonal vegetables and aged parmesan.",
+            "House burger",
+            "Local beef, cheddar, pickles and hand-cut fries.",
+            "Brunch plate",
+            "Eggs your way, toast, avocado and bacon. Weekends only.",
+            "Chocolate tart",
+            "Dark chocolate, sea salt and vanilla cream."
+          ],
+          "icons": [
+            "🐟",
+            "🥩",
+            "🌿",
+            "🍔",
+            "🍳",
+            "🍰"
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Planning a group dinner?",
+            "We take bookings for up to 40 guests — set menus available.",
+            "Ask about groups"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "about.html",
+      "menu": "About",
+      "title": "Our story",
+      "description": "Meet the family and the team behind our kitchen.",
+      "sections": [
+        {
+          "id": "media-text",
+          "texts": [
+            "Our story",
+            "We opened our doors in 2012 with eight tables and a menu written on a chalkboard. Today the tables are more, but the idea is the same: good food, made with care.",
+            "Our team of cooks, bakers and servers treats every guest like a neighbour.",
+            "Book a table"
+          ]
+        },
+        {
+          "id": "stats-4",
+          "texts": [
+            "12",
+            "Years serving the neighbourhood",
+            "40+",
+            "Dishes cooked from scratch",
+            "95%",
+            "Local ingredients",
+            "4.8★",
+            "Average guest rating"
+          ]
+        },
+        {
+          "id": "team-4",
+          "texts": [
+            "The people behind the food",
+            "MR",
+            "Marco Rossi",
+            "Head chef",
+            "SL",
+            "Sofia López",
+            "Pastry chef",
+            "JP",
+            "James Park",
+            "Front of house",
+            "AN",
+            "Ana Núñez",
+            "Owner"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "gallery.html",
+      "menu": "Gallery",
+      "title": "Gallery",
+      "description": "Photos of our dishes, our dining room and our team.",
+      "sections": [
+        {
+          "id": "gallery-6",
+          "texts": [
+            "A look inside"
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Come see it for yourself",
+            "Tables fill up on weekends — book ahead.",
+            "Book a table"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "contact.html",
+      "menu": "Reservations",
+      "title": "Reservations & contact",
+      "description": "Book a table, ask about private events, or find our address and opening hours.",
+      "sections": [
+        {
+          "id": "contact-info",
+          "texts": [
+            "Visit us",
+            "Walk-ins welcome — reservations recommended on weekends.",
+            "Phone",
+            "+1 (000) 000-0000",
+            "Email",
+            "hello@example.com",
+            "Address",
+            "123 Main Street",
+            "City, State",
+            "Hours",
+            "Every day 11:00–22:00"
+          ]
+        },
+        {
+          "id": "contact-form",
+          "texts": [
+            "Book a table",
+            "Tell us the date, time and number of guests — we will confirm by email.",
+            "Name",
+            "Email",
+            "Phone",
+            "Date, time and number of guests",
+            "Request a table"
+          ]
+        }
+      ]
+    }
+  ]
+}

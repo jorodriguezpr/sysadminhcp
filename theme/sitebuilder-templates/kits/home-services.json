@@ -1,0 +1,290 @@
+{
+  "schema": 1,
+  "id": "home-services",
+  "name": "Home services & contractors",
+  "industry": "Trades & repairs",
+  "description": "Trustworthy site for plumbers, electricians, landscapers, cleaners and builders: services, prices, reviews and a quote form.",
+  "tokens": {
+    "colors": {
+      "primary": "#15803d",
+      "onPrimary": "#ffffff",
+      "secondary": "#14532d",
+      "accent": "#f59e0b",
+      "text": "#1f2937",
+      "muted": "#6b7280",
+      "background": "#ffffff",
+      "surface": "#f0fdf4",
+      "border": "#d1e7d7"
+    },
+    "fontHeading": "system",
+    "fontBody": "system",
+    "radius": 8,
+    "spacing": 16,
+    "maxWidth": 1140,
+    "fontSize": 16
+  },
+  "globals": {
+    "footerText": "© {year} {site} · Licensed & insured",
+    "footerLinks": [
+      {
+        "label": "Free estimate",
+        "href": "contact.html"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "file": "index.html",
+      "menu": "Home",
+      "title": "Home",
+      "description": "Reliable local service with upfront prices. Call or book a free estimate today.",
+      "sections": [
+        {
+          "id": "hero-center",
+          "texts": [
+            "Local · Licensed · Insured",
+            "Reliable home services, done right the first time",
+            "Repairs, installations and maintenance with upfront prices and a workmanship guarantee.",
+            "Get a free estimate",
+            "Our services"
+          ]
+        },
+        {
+          "id": "steps-3",
+          "texts": [
+            "How it works",
+            "1",
+            "Tell us what you need",
+            "Call us or send the form — we reply the same day.",
+            "2",
+            "Get a clear quote",
+            "A fixed price before we start. No surprises.",
+            "3",
+            "We get it done",
+            "On time, cleaned up, and guaranteed."
+          ]
+        },
+        {
+          "id": "features-3",
+          "texts": [
+            "Why choose us",
+            "Work you can count on",
+            "Hundreds of homeowners trust us with their homes every year.",
+            "On time",
+            "We show up when we say we will, and we keep you updated.",
+            "Upfront pricing",
+            "You approve the price before any work begins.",
+            "Guaranteed work",
+            "If something is not right, we come back and fix it."
+          ],
+          "icons": [
+            "⏱️",
+            "💲",
+            "✅"
+          ]
+        },
+        {
+          "id": "testimonials-3",
+          "texts": [
+            "What customers say",
+            "“Fast, tidy and exactly the price they quoted.”",
+            "Carlos M.",
+            "— Homeowner",
+            "“They fixed what two other companies could not.”",
+            "Linda P.",
+            "— Google review",
+            "“Friendly team, great communication from start to finish.”",
+            "Mike T.",
+            "— Repeat customer"
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Need a hand at home?",
+            "Get a free, no-obligation estimate today.",
+            "Get my estimate"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "services.html",
+      "menu": "Services",
+      "title": "Services",
+      "description": "Repairs, installations, maintenance and emergency call-outs for homes and small businesses.",
+      "sections": [
+        {
+          "id": "features-6",
+          "texts": [
+            "Our services",
+            "Repairs",
+            "Leaks, breakdowns and wear and tear, fixed quickly.",
+            "Installations",
+            "New fixtures and appliances, fitted to code.",
+            "Maintenance plans",
+            "Regular check-ups that prevent costly problems.",
+            "Emergency call-outs",
+            "Available evenings and weekends for urgent jobs.",
+            "Renovations",
+            "Kitchens, bathrooms and small remodels.",
+            "Inspections",
+            "Honest reports before you buy or sell."
+          ],
+          "icons": [
+            "🔧",
+            "🛠️",
+            "📋",
+            "🚨",
+            "🏠",
+            "🔍"
+          ]
+        },
+        {
+          "id": "text-media",
+          "texts": [
+            "Done properly, every time",
+            "✔ Licensed and insured professionals",
+            "✔ Clean, protected work areas",
+            "✔ Written warranty on every job"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "pricing.html",
+      "menu": "Pricing",
+      "title": "Pricing",
+      "description": "Clear, upfront prices and maintenance plans. Free estimates for larger jobs.",
+      "sections": [
+        {
+          "id": "pricing-3",
+          "texts": [
+            "Simple, upfront pricing",
+            "Free estimates for larger projects. No hidden fees.",
+            "Call-out",
+            "$89",
+            "/visit",
+            "Diagnosis on site",
+            "First 30 minutes of work",
+            "Written quote for repairs",
+            "Book a visit",
+            "Most popular",
+            "Care plan",
+            "$19",
+            "/month",
+            "Yearly inspection",
+            "Priority scheduling",
+            "10% off all repairs",
+            "Join the plan",
+            "Project",
+            "Quote",
+            "/free",
+            "Renovations and installs",
+            "Fixed project price",
+            "Dedicated project lead",
+            "Request a quote"
+          ]
+        },
+        {
+          "id": "faq",
+          "texts": [
+            "Questions we hear often",
+            "Do you charge for estimates?",
+            "Estimates for larger projects are free. Small repairs use our call-out rate, which includes the first 30 minutes.",
+            "Are you licensed and insured?",
+            "Yes — fully licensed and insured. We are happy to share our documents.",
+            "How soon can you come?",
+            "Usually within 1–2 business days, and the same day for emergencies.",
+            "Do you guarantee your work?",
+            "Yes. Every job comes with a written workmanship guarantee."
+          ]
+        }
+      ]
+    },
+    {
+      "file": "about.html",
+      "menu": "About",
+      "title": "About us",
+      "description": "A local, family-run team with years of experience in home repairs and installations.",
+      "sections": [
+        {
+          "id": "media-text",
+          "texts": [
+            "A local team you can trust",
+            "We are a family-run business serving our area for over 15 years. Most of our work comes from neighbours recommending us to neighbours.",
+            "We treat your home with the same care we would want in ours.",
+            "Meet the team"
+          ]
+        },
+        {
+          "id": "stats-4",
+          "texts": [
+            "15+",
+            "Years in business",
+            "3,000",
+            "Jobs completed",
+            "4.9★",
+            "Customer rating",
+            "24/7",
+            "Emergency line"
+          ]
+        },
+        {
+          "id": "team-4",
+          "texts": [
+            "Meet the team",
+            "RG",
+            "Roberto Gómez",
+            "Owner & master technician",
+            "KL",
+            "Kevin Lee",
+            "Senior technician",
+            "NS",
+            "Nina Santos",
+            "Scheduling & customer care",
+            "DP",
+            "Daniel Pérez",
+            "Apprentice"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "contact.html",
+      "menu": "Free estimate",
+      "title": "Free estimate & contact",
+      "description": "Request a free estimate or book a visit. We reply the same day.",
+      "sections": [
+        {
+          "id": "contact-info",
+          "texts": [
+            "Get in touch",
+            "We reply to every request the same business day.",
+            "Phone",
+            "+1 (000) 000-0000",
+            "Email",
+            "jobs@example.com",
+            "Service area",
+            "City and surrounding",
+            "areas",
+            "Hours",
+            "Mon–Sat 7:00–18:00"
+          ]
+        },
+        {
+          "id": "contact-form",
+          "texts": [
+            "Request a free estimate",
+            "Describe the job and we will send you a clear price.",
+            "Name",
+            "Email",
+            "Phone",
+            "What do you need done?",
+            "Send my request"
+          ]
+        }
+      ]
+    }
+  ]
+}

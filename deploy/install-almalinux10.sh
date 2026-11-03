@@ -744,8 +744,15 @@ max-recipients=50
 reject-empty-rdns
 reject-unresolvable-rdns
 reject-sender=no-mx
-dns-blacklist-entry=bl.rbl-dns.com
 SPAMDYKECONF
+  # RBLs: SpamCop always; Spamhaus ZEN only when this server's resolver may query it - Spamhaus answers
+  # 127.255.255.x to public/shared resolvers, which spamdyke would read as "listed" and then refuse ALL mail.
+  # (bl.rbl-dns.com is no longer used: it lists some Gmail/Google sending servers -> permanent 554 bounces.)
+  if [ -n "$(dig +short +time=3 +tries=1 2.0.0.127.zen.spamhaus.org A 2>/dev/null | grep '^127\.0\.0\.')" ] && \
+     [ -z "$(dig +short +time=3 +tries=1 1.0.0.127.zen.spamhaus.org A 2>/dev/null)" ]; then
+    echo "dns-blacklist-entry=zen.spamhaus.org" >> /etc/spamdyke/spamdyke.conf
+  fi
+  echo "dns-blacklist-entry=bl.spamcop.net" >> /etc/spamdyke/spamdyke.conf
 fi
 # Submission (587) gets its own, lighter spamdyke config: authenticated senders only, no
 # IP-reputation/RBL/rDNS checks — those wrongly reject legitimate users on residential/mobile
@@ -1465,6 +1472,13 @@ info "Created /var/named/slaves/ for DNS cluster slave zones"
 info "Setting File Manager ACLs on existing client home directories..."
 for homedir in /home/*/; do
   owner=$(stat -c '%U' "$homedir" 2>/dev/null)
+  # Admin / login accounts are not hosting clients: an rwx ACL makes their home look group-writable and sshd
+  # (StrictModes) then refuses every SSH key — found 2026-10-15 on a fresh AlmaLinux 10 server, where it locked
+  # out the cloud image's login user and a sudo admin. Skip sudo/wheel members and anyone with SSH keys.
+  if id -nG "$owner" 2>/dev/null | grep -qwE 'wheel|sudo|adm' || [[ -s "${homedir}.ssh/authorized_keys" ]]; then
+    info "  skipped (admin/SSH login account): $homedir"
+    continue
+  fi
   if id "$owner" &>/dev/null && [[ "$owner" != "root" && "$owner" != "$SYSADMINHCP_USER" ]]; then
     setfacl -m u:$SYSADMINHCP_USER:rwx "$homedir" 2>/dev/null || true
     setfacl -d -m u:$SYSADMINHCP_USER:rwX "$homedir" 2>/dev/null || true
@@ -1828,7 +1842,10 @@ if [[ -f /etc/named.conf ]]; then
   sed -i 's/listen-on port 53 { 127\.0\.0\.1; };/listen-on port 53 { any; };/' /etc/named.conf
   sed -i 's/listen-on-v6 port 53 { ::1; };/listen-on-v6 port 53 { any; };/' /etc/named.conf
   sed -i 's/allow-query[[:space:]]*{[[:space:]]*localhost;[[:space:]]*};/allow-query     { any; };/' /etc/named.conf
-  named-checkconf && info "named.conf updated (listen-on any, allow-query any)" || warn "named.conf validation failed"
+  # allow-query any + "recursion yes" with no allow-recursion makes BIND resolve ANY name for the whole internet
+  # (open resolver → DNS amplification abuse). Hosted zones stay public; recursion/cache only for this server.
+  grep -qE '^\s*allow-recursion' /etc/named.conf || sed -i -E 's/^(\s*)allow-query(\s+)\{ any; \};/&\n\1allow-recursion { localhost; localnets; };\n\1allow-query-cache { localhost; localnets; };/' /etc/named.conf
+  named-checkconf && info "named.conf updated (listen-on any, allow-query any, recursion local only)" || warn "named.conf validation failed"
 fi
 systemctl enable named 2>/dev/null || true
 systemctl start named 2>/dev/null || warn "BIND failed to start"
@@ -2243,6 +2260,10 @@ php_admin_value[open_basedir] = /var/www/roundcube:/var/www/roundcube/public_htm
 php_admin_value[disable_functions] = exec,passthru,shell_exec,system
 FPMEOF
 
+# php-fpm was started long before this pool existed (Step ~12): without a restart the webmail.sock socket is
+# never created and webmail answers 503 on every fresh install (found 2026-10-15 on a new AlmaLinux 10 server)
+systemctl restart php-fpm 2>/dev/null || warn "PHP-FPM restart failed — run: systemctl restart php-fpm"
+[[ -S /run/php-fpm/webmail.sock ]] && info "Webmail PHP-FPM pool running (/run/php-fpm/webmail.sock)" || warn "webmail.sock missing after php-fpm restart — check: php-fpm -t"
 info "Webmail Apache vhost and PHP-FPM pool configured"
 
 # ─── Step 14.7: Install Roundcube Webmail ────────────────────────────────────
@@ -2368,6 +2389,9 @@ PHP83EOF
       chmod 1733 /var/lib/php/session/webmail
       systemctl enable php83-php-fpm 2>/dev/null || true
       systemctl restart php83-php-fpm 2>/dev/null || systemctl start php83-php-fpm 2>/dev/null || warn "php83-fpm start failed"
+    elif php -r 'exit(PHP_VERSION_ID >= 80100 ? 0 : 1);' 2>/dev/null; then
+      # AlmaLinux 10 ships PHP 8.3 as the system PHP: the system php-fpm "webmail" pool above already serves it
+      info "System PHP $(php -r 'echo PHP_VERSION;') is 8.1+ — Roundcube uses the system php-fpm webmail pool (no Remi PHP needed)"
     else
       warn "php83-fpm not found — Roundcube may need manual PHP 8.1+ setup"
     fi

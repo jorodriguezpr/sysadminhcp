@@ -10,6 +10,52 @@
   grapesjs.plugins.add('sysadminhcp-blocks', (editor) => {
     const bm = editor.BlockManager;
 
+    // ── Site style (Site Builder S2) — classes only; colours/fonts/spacing come from the site's
+    // design tokens in /sb-site.css (Page Builder → 🎨 Design). No inline styles, so a token change
+    // restyles every page that uses these blocks. ──
+    bm.add('sb-section', {
+      label: '🎨 Section',
+      category: 'Site style',
+      content: `<section class="sb-section"><div class="sb-container">
+        <h2 class="sb-heading">Section title</h2>
+        <p class="sb-text">Tell visitors what this part of the page is about. Colours and fonts follow your site design.</p>
+        <a class="sb-btn" href="#">Call to action</a>
+      </div></section>`,
+    });
+    bm.add('sb-cards', {
+      label: '🎨 Three cards',
+      category: 'Site style',
+      content: `<section class="sb-section sb-section-alt"><div class="sb-container">
+        <h2 class="sb-heading">What we offer</h2>
+        <div class="sb-grid">
+          <div class="sb-card"><h3 class="sb-heading">First</h3><p class="sb-text sb-muted">A short description of this item.</p></div>
+          <div class="sb-card"><h3 class="sb-heading">Second</h3><p class="sb-text sb-muted">A short description of this item.</p></div>
+          <div class="sb-card"><h3 class="sb-heading">Third</h3><p class="sb-text sb-muted">A short description of this item.</p></div>
+        </div>
+      </div></section>`,
+    });
+    bm.add('sb-cta-dark', {
+      label: '🎨 Dark call to action',
+      category: 'Site style',
+      content: `<section class="sb-section sb-section-dark"><div class="sb-container" style="text-align:center">
+        <h2 class="sb-heading">Ready to get started?</h2>
+        <p class="sb-text" style="color:inherit">One sentence that makes the next step obvious.</p>
+        <a class="sb-btn sb-btn-accent" href="#">Contact us</a>
+      </div></section>`,
+    });
+    bm.add('sb-button', {
+      label: '🎨 Button',
+      category: 'Site style',
+      content: `<a class="sb-btn" href="#">Button</a>`,
+    });
+
+    // ── Sections — the Site Builder section library (sb-sections.js), token-styled like Site style.
+    // Also offered with live previews by the editor's "➕ Section" picker. ──
+    const lib = window.SB_SECTIONS;
+    if (lib && Array.isArray(lib.SECTIONS)) {
+      lib.SECTIONS.forEach(s => bm.add(`sbs-${s.id}`, { label: `▦ ${s.label}`, category: 'Sections', content: s.html, attributes: { title: s.description } }));
+    }
+
     // ── Layout ──
     bm.add('navbar', {
       label: '🔀 Navigation Bar',
@@ -131,8 +177,10 @@
     bm.add('contact-form-handler', {
       label: '📧 Contact Form (with handler)',
       category: 'Interactive',
-      content: `<form action="/api/site-builder-form/submit" method="POST" style="max-width:500px;margin:0 auto;padding:40px 20px;">
-        <input type="hidden" name="_domain" value="__SB_DOMAIN__">
+      // Posts to /sb-form on the site itself (routed to the panel by the web server — see
+      // siteFormService.ts); messages are emailed and kept in Page Builder → 📨 Forms.
+      content: `<form action="/sb-form" method="POST" data-sb-form="contact" style="max-width:500px;margin:0 auto;padding:40px 20px;">
+        <input type="hidden" name="_form" value="contact">
         <div style="position:absolute;left:-9999px;" aria-hidden="true"><label>Leave this field empty</label><input type="text" name="_hp" tabindex="-1" autocomplete="off"></div>
         <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:5px;font-weight:bold;">Name</label><input type="text" name="name" required style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;"></div>
         <div style="margin-bottom:15px;"><label style="display:block;margin-bottom:5px;font-weight:bold;">Email</label><input type="email" name="email" required style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;"></div>

@@ -1,0 +1,251 @@
+{
+  "schema": 1,
+  "id": "health-clinic",
+  "name": "Health clinic",
+  "industry": "Medical, dental & wellness",
+  "description": "Reassuring site for clinics, dentists, therapists and wellness studios: services, team, insurance FAQ and an appointment request form.",
+  "tokens": {
+    "colors": {
+      "primary": "#0e7490",
+      "onPrimary": "#ffffff",
+      "secondary": "#164e63",
+      "accent": "#f59e0b",
+      "text": "#1f2937",
+      "muted": "#64748b",
+      "background": "#ffffff",
+      "surface": "#ecfeff",
+      "border": "#cdeef3"
+    },
+    "fontHeading": "system",
+    "fontBody": "system",
+    "radius": 14,
+    "spacing": 16,
+    "maxWidth": 1120,
+    "fontSize": 17
+  },
+  "globals": {
+    "footerText": "© {year} {site} · In an emergency, call your local emergency number",
+    "footerLinks": [
+      {
+        "label": "Request an appointment",
+        "href": "contact.html"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "file": "index.html",
+      "menu": "Home",
+      "title": "Home",
+      "description": "Caring, modern healthcare for the whole family. Request an appointment online.",
+      "sections": [
+        {
+          "id": "hero-split",
+          "texts": [
+            "Accepting new patients",
+            "Caring for you and your family",
+            "Modern, friendly care with short waiting times and appointments that fit your day.",
+            "Request an appointment",
+            "Our services"
+          ]
+        },
+        {
+          "id": "features-3",
+          "texts": [
+            "Why patients choose us",
+            "Care that puts you first",
+            "We take the time to listen and explain every step.",
+            "Short waits",
+            "Online requests and on-time appointments.",
+            "Experienced team",
+            "Qualified professionals who keep up with the latest care.",
+            "Most insurance accepted",
+            "We help you understand your coverage before treatment."
+          ],
+          "icons": [
+            "⏱️",
+            "🩺",
+            "🛡️"
+          ]
+        },
+        {
+          "id": "testimonials-3",
+          "texts": [
+            "What our patients say",
+            "“Kind, patient and very professional. My kids love coming here.”",
+            "Andrea V.",
+            "— Patient since 2019",
+            "“I was seen on time and everything was explained clearly.”",
+            "George H.",
+            "— Google review",
+            "“The best experience I have had at a clinic.”",
+            "Isabel F.",
+            "— New patient"
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Ready to book your visit?",
+            "Request an appointment online — we will confirm by phone or email.",
+            "Request an appointment"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "services.html",
+      "menu": "Services",
+      "title": "Services",
+      "description": "Check-ups, treatments and preventive care for adults and children.",
+      "sections": [
+        {
+          "id": "features-6",
+          "texts": [
+            "Our services",
+            "Check-ups",
+            "Regular exams to keep you healthy.",
+            "Preventive care",
+            "Screenings, vaccines and healthy-habit advice.",
+            "Treatments",
+            "Personalised care plans for your needs.",
+            "Children's care",
+            "Gentle care for our youngest patients.",
+            "Follow-up",
+            "We stay with you after every treatment.",
+            "Telehealth",
+            "Short consultations by video call."
+          ],
+          "icons": [
+            "🩺",
+            "💉",
+            "💊",
+            "🧸",
+            "📞",
+            "💻"
+          ]
+        },
+        {
+          "id": "steps-3",
+          "texts": [
+            "Your first visit",
+            "1",
+            "Request a time",
+            "Use the form or call us — we confirm quickly.",
+            "2",
+            "Meet your clinician",
+            "We listen, examine and explain your options.",
+            "3",
+            "Your care plan",
+            "A clear plan and follow-up that fits your life."
+          ]
+        }
+      ]
+    },
+    {
+      "file": "team.html",
+      "menu": "Our team",
+      "title": "Our team",
+      "description": "Meet the clinicians and staff who will take care of you.",
+      "sections": [
+        {
+          "id": "team-4",
+          "texts": [
+            "Meet our team",
+            "SP",
+            "Dr. Sara Pinto",
+            "Medical director",
+            "MO",
+            "Dr. Michael Osei",
+            "Clinician",
+            "RL",
+            "Rosa Lima",
+            "Nurse practitioner",
+            "TW",
+            "Tina Wu",
+            "Patient coordinator"
+          ]
+        },
+        {
+          "id": "stats-4",
+          "texts": [
+            "10+",
+            "Years caring for the community",
+            "5,000",
+            "Patients served",
+            "4.9★",
+            "Patient rating",
+            "Same week",
+            "Typical appointment"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "faq.html",
+      "menu": "Insurance & FAQ",
+      "title": "Insurance & FAQ",
+      "description": "Insurance, payments, first visits and cancellations.",
+      "sections": [
+        {
+          "id": "faq",
+          "texts": [
+            "Insurance & frequently asked questions",
+            "Which insurance plans do you accept?",
+            "We accept most major plans. Contact us with your plan details and we will confirm your coverage.",
+            "What should I bring to my first visit?",
+            "A photo ID, your insurance card and a list of any medicines you take.",
+            "How do I cancel or reschedule?",
+            "Call us or reply to your confirmation at least 24 hours before your appointment.",
+            "Do you offer payment plans?",
+            "Yes — ask our team about flexible payment options for larger treatments."
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Have another question?",
+            "Our patient coordinator is happy to help.",
+            "Contact us"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "contact.html",
+      "menu": "Appointments",
+      "title": "Appointments & contact",
+      "description": "Request an appointment, find our address and opening hours.",
+      "sections": [
+        {
+          "id": "contact-info",
+          "texts": [
+            "Visit the clinic",
+            "Free parking and step-free access.",
+            "Phone",
+            "+1 (000) 000-0000",
+            "Email",
+            "care@example.com",
+            "Address",
+            "123 Main Street",
+            "City, State",
+            "Hours",
+            "Mon–Fri 8:00–18:00, Sat 9:00–13:00"
+          ]
+        },
+        {
+          "id": "contact-form",
+          "texts": [
+            "Request an appointment",
+            "Please do not include detailed medical information — we will call you to confirm.",
+            "Name",
+            "Email",
+            "Phone",
+            "Preferred days and times",
+            "Request appointment"
+          ]
+        }
+      ]
+    }
+  ]
+}

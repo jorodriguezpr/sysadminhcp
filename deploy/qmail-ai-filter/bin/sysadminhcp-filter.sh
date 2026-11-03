@@ -97,7 +97,10 @@ echo isset(\$m[1]) ? strtolower(\$m[1]) : '';
     # ── Inject approve notice into the quarantine email ───────────────────────
     FINAL_FILE=$(mktemp /tmp/saf-final-XXXXXX.eml)
     if [ -n "$APPROVE_LINK" ]; then
-        $PHP - <<PHPCODE > "$FINAL_FILE" 2>/dev/null
+        # No "-" argument: the PHP CLI reads the script from stdin by itself. "php -" makes it look
+        # for a FILE named "-" and print "Could not open input file: -" — that text then replaced
+        # every quarantined email (Server 1, 2026-08-31 → 10-09: 126 messages lost).
+        $PHP <<PHPCODE > "$FINAL_FILE" 2>/dev/null
 <?php
 \$content = file_get_contents('$TAGGED_FILE');
 \$link    = '$APPROVE_LINK';
@@ -119,8 +122,9 @@ if (\$pos !== false) {
     echo \$content . \$notice;
 }
 PHPCODE
-        if [ ! -s "$FINAL_FILE" ]; then
-            # PHP failed — fall back to original
+        # The notice only ADDS text, so a result smaller than the original means PHP failed
+        # (an error message is not empty, so "-s" alone let it through) — keep the original email.
+        if [ ! -s "$FINAL_FILE" ] || [ "$(stat -c %s "$FINAL_FILE")" -lt "$(stat -c %s "$TAGGED_FILE")" ]; then
             cp "$TAGGED_FILE" "$FINAL_FILE"
         fi
     else

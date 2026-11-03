@@ -170,8 +170,15 @@ max-recipients=50
 reject-empty-rdns
 reject-unresolvable-rdns
 reject-sender=no-mx
-dns-blacklist-entry=bl.rbl-dns.com
 SPAMDYKECONF
+  # RBLs: SpamCop always; Spamhaus ZEN only when this server's resolver may query it - Spamhaus answers
+  # 127.255.255.x to public/shared resolvers, which spamdyke would read as "listed" and then refuse ALL mail.
+  # (bl.rbl-dns.com is no longer used: it lists some Gmail/Google sending servers -> permanent 554 bounces.)
+  if [ -n "$(dig +short +time=3 +tries=1 2.0.0.127.zen.spamhaus.org A 2>/dev/null | grep '^127\.0\.0\.')" ] && \
+     [ -z "$(dig +short +time=3 +tries=1 1.0.0.127.zen.spamhaus.org A 2>/dev/null)" ]; then
+    echo "dns-blacklist-entry=zen.spamhaus.org" >> /etc/spamdyke/spamdyke.conf
+  fi
+  echo "dns-blacklist-entry=bl.spamcop.net" >> /etc/spamdyke/spamdyke.conf
   info "spamdyke.conf created"
 fi
 if [ -f /var/qmail/supervise/smtp/run ] && ! grep -q '\$SPAMDYKE --config-file' /var/qmail/supervise/smtp/run; then

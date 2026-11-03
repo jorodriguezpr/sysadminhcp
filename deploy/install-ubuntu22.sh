@@ -708,8 +708,15 @@ max-recipients=50
 reject-empty-rdns
 reject-unresolvable-rdns
 reject-sender=no-mx
-dns-blacklist-entry=bl.rbl-dns.com
 EOF
+  # RBLs: SpamCop always; Spamhaus ZEN only when this server's resolver may query it - Spamhaus answers
+  # 127.255.255.x to public/shared resolvers, which spamdyke would read as "listed" and then refuse ALL mail.
+  # (bl.rbl-dns.com is no longer used: it lists some Gmail/Google sending servers -> permanent 554 bounces.)
+  if [ -n "$(dig +short +time=3 +tries=1 2.0.0.127.zen.spamhaus.org A 2>/dev/null | grep '^127\.0\.0\.')" ] && \
+     [ -z "$(dig +short +time=3 +tries=1 1.0.0.127.zen.spamhaus.org A 2>/dev/null)" ]; then
+    echo "dns-blacklist-entry=zen.spamhaus.org" >> /etc/spamdyke/spamdyke.conf
+  fi
+  echo "dns-blacklist-entry=bl.spamcop.net" >> /etc/spamdyke/spamdyke.conf
   info "spamdyke.conf created"
 fi
 if [[ ! -f /etc/spamdyke/spamdyke-submission.conf ]]; then
@@ -1412,6 +1419,13 @@ setfacl -d -m u:$SYSADMINHCP_USER:rwX /var/named/ 2>/dev/null || true
 info "Setting File Manager ACLs on existing client home directories..."
 for homedir in /home/*/; do
   owner=$(stat -c '%U' "$homedir" 2>/dev/null)
+  # Admin / login accounts are not hosting clients: an rwx ACL makes their home look group-writable and sshd
+  # (StrictModes) then refuses every SSH key — found 2026-10-15 on a fresh AlmaLinux 10 server, where it locked
+  # out the cloud image's login user and a sudo admin. Skip sudo/wheel members and anyone with SSH keys.
+  if id -nG "$owner" 2>/dev/null | grep -qwE 'wheel|sudo|adm' || [[ -s "${homedir}.ssh/authorized_keys" ]]; then
+    info "  skipped (admin/SSH login account): $homedir"
+    continue
+  fi
   if id "$owner" &>/dev/null && [[ "$owner" != "root" && "$owner" != "$SYSADMINHCP_USER" && "$owner" != "vpopmail" ]]; then
     setfacl -m u:$SYSADMINHCP_USER:rwx "$homedir" 2>/dev/null || true
     setfacl -d -m u:$SYSADMINHCP_USER:rwX "$homedir" 2>/dev/null || true

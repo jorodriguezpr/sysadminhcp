@@ -22,7 +22,10 @@ def main():
         message, selector, domain, privkey,
         include_headers=[b'from', b'to', b'subject', b'date', b'message-id'],
     )
-    sys.stdout.buffer.write(sig)
+    # dkimpy folds the header with CRLF, but qmail stores mail with bare LF and adds the CR
+    # itself on the wire - so a CRLF-folded header arrives as CR CR LF and receivers reject
+    # the signature (port25: permerror "s= tag missing or empty"). Fold with LF like the rest.
+    sys.stdout.buffer.write(sig.replace(b'\r\n', b'\n'))
     sys.stdout.buffer.write(message)
 
 if __name__ == '__main__':

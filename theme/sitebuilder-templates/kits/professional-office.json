@@ -1,0 +1,240 @@
+{
+  "schema": 1,
+  "id": "professional-office",
+  "name": "Professional office",
+  "industry": "Law, accounting & consulting",
+  "description": "Calm, credible site for law firms, accountants, consultants and agencies: practice areas, team, FAQ and a consultation request form.",
+  "tokens": {
+    "colors": {
+      "primary": "#1e3a8a",
+      "onPrimary": "#ffffff",
+      "secondary": "#0f172a",
+      "accent": "#b45309",
+      "text": "#1e293b",
+      "muted": "#64748b",
+      "background": "#ffffff",
+      "surface": "#f1f5f9",
+      "border": "#dbe2ea"
+    },
+    "fontHeading": "serif",
+    "fontBody": "sans",
+    "radius": 4,
+    "spacing": 16,
+    "maxWidth": 1100,
+    "fontSize": 16
+  },
+  "globals": {
+    "footerText": "© {year} {site} · All rights reserved",
+    "footerLinks": [
+      {
+        "label": "Book a consultation",
+        "href": "contact.html"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "file": "index.html",
+      "menu": "Home",
+      "title": "Home",
+      "description": "Clear, practical advice from an experienced team. Book a first consultation.",
+      "sections": [
+        {
+          "id": "hero-split",
+          "texts": [
+            "Trusted advisers",
+            "Clear advice when it matters most",
+            "We help individuals and businesses make confident decisions — explained in plain language, with no surprises on the bill.",
+            "Book a consultation",
+            "Our services"
+          ]
+        },
+        {
+          "id": "features-3",
+          "texts": [
+            "How we work",
+            "Experience you can rely on",
+            "Every client works directly with a senior adviser.",
+            "Plain language",
+            "We explain your options clearly so you can decide with confidence.",
+            "Transparent fees",
+            "A written estimate before we start — no hidden costs.",
+            "Responsive",
+            "We answer calls and emails within one business day."
+          ],
+          "icons": [
+            "💬",
+            "📄",
+            "⏱️"
+          ]
+        },
+        {
+          "id": "stats-4",
+          "texts": [
+            "20+",
+            "Years of practice",
+            "1,200",
+            "Clients advised",
+            "98%",
+            "Would recommend us",
+            "1 day",
+            "Typical reply time"
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Let's talk about your situation",
+            "The first 30-minute consultation is free and confidential.",
+            "Book a consultation"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "services.html",
+      "menu": "Services",
+      "title": "Services",
+      "description": "Our practice areas for individuals, families and businesses.",
+      "sections": [
+        {
+          "id": "features-6",
+          "texts": [
+            "Practice areas",
+            "Business & contracts",
+            "Formation, agreements and day-to-day advice.",
+            "Tax & accounting",
+            "Returns, planning and bookkeeping support.",
+            "Real estate",
+            "Purchases, sales, leases and closings.",
+            "Estates & wills",
+            "Plan ahead and protect your family.",
+            "Employment",
+            "Policies, contracts and disputes.",
+            "Compliance",
+            "Stay on top of the rules that apply to you."
+          ],
+          "icons": [
+            "💼",
+            "📊",
+            "🏠",
+            "📜",
+            "👥",
+            "✅"
+          ]
+        },
+        {
+          "id": "text-media",
+          "texts": [
+            "What to expect",
+            "✔ A free first consultation",
+            "✔ A written plan and fee estimate",
+            "✔ One senior adviser from start to finish"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "team.html",
+      "menu": "Team",
+      "title": "Our team",
+      "description": "Meet the advisers who will work on your matter.",
+      "sections": [
+        {
+          "id": "content-text",
+          "texts": [
+            "Our team",
+            "Small enough to know every client, experienced enough to handle complex matters.",
+            "Our partners and associates bring decades of combined experience. We keep our team deliberately small so that you always know who is working on your matter.",
+            "Professional standards",
+            "All advisers are fully licensed and complete continuing education every year."
+          ]
+        },
+        {
+          "id": "team-4",
+          "texts": [
+            "Partners & associates",
+            "EM",
+            "Elena Martín",
+            "Managing partner",
+            "RC",
+            "Richard Cole",
+            "Partner",
+            "PS",
+            "Priya Shah",
+            "Senior associate",
+            "LV",
+            "Luis Vega",
+            "Associate"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "faq.html",
+      "menu": "FAQ",
+      "title": "Frequently asked questions",
+      "description": "Fees, first meetings, confidentiality and how we work.",
+      "sections": [
+        {
+          "id": "faq",
+          "texts": [
+            "Frequently asked questions",
+            "Is the first consultation free?",
+            "Yes. The first 30-minute meeting is free and without obligation.",
+            "How are your fees calculated?",
+            "Fixed fees for most matters, hourly rates for complex ones — always agreed in writing first.",
+            "Is everything confidential?",
+            "Yes. Everything you share with us is strictly confidential.",
+            "Can we meet online?",
+            "Of course — we meet in person, by phone or by video call."
+          ]
+        },
+        {
+          "id": "cta-band",
+          "texts": [
+            "Still have questions?",
+            "Send us a message and we will reply within one business day.",
+            "Contact us"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "contact.html",
+      "menu": "Contact",
+      "title": "Contact & consultations",
+      "description": "Book a free first consultation or send us a confidential message.",
+      "sections": [
+        {
+          "id": "contact-info",
+          "texts": [
+            "Contact us",
+            "Appointments in person, by phone or by video call.",
+            "Phone",
+            "+1 (000) 000-0000",
+            "Email",
+            "office@example.com",
+            "Office",
+            "Suite 400, 123 Main Street",
+            "City, State",
+            "Hours",
+            "Mon–Fri 9:00–17:30"
+          ]
+        },
+        {
+          "id": "contact-form",
+          "texts": [
+            "Request a consultation",
+            "Briefly describe your situation — we will reply within one business day.",
+            "Name",
+            "Email",
+            "Phone (optional)",
+            "How can we help?",
+            "Send confidentially"
+          ]
+        }
+      ]
+    }
+  ]
+}

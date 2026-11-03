@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "portfolio",
+  "name": "Portfolio & freelancer",
+  "industry": "Creative & freelance",
+  "description": "Bold, image-led site for photographers, designers, developers and freelancers: work, services with prices, about and a project inquiry form.",
+  "tokens": { "colors": { "primary": "#7c3aed", "onPrimary": "#ffffff", "secondary": "#111827", "accent": "#ec4899", "text": "#1f2937", "muted": "#6b7280", "background": "#ffffff", "surface": "#f5f3ff", "border": "#e4defa" }, "fontHeading": "sans", "fontBody": "system", "radius": 12, "spacing": 18, "maxWidth": 1180, "fontSize": 16 },
+  "globals": { "footerText": "© {year} {site} · Available for new projects", "footerLinks": [{ "label": "Start a project", "href": "contact.html" }] },
+  "pages": [
+    {
+      "file": "index.html", "menu": "Home", "title": "Home", "description": "Independent designer and creator. See selected work and start a project.",
+      "sections": [
+        { "id": "hero-center", "texts": ["Independent designer", "I design brands and websites people remember", "Clear ideas, thoughtful details and work delivered on time — for small businesses and growing teams.", "Start a project", "See my work"] },
+        { "id": "gallery-6", "texts": ["Selected work"] },
+        { "id": "testimonials-3", "texts": ["Kind words", "“Understood our brand better than we did.”", "Paula G.", "— Founder, Bloom Studio", "“Fast, organised and a joy to work with.”", "Omar F.", "— Marketing lead", "“Our new site doubled our inquiries.”", "Hannah W.", "— Café owner"] },
+        { "id": "cta-band", "texts": ["Have a project in mind?", "Tell me about it — I reply within two days.", "Start a project"] }
+      ]
+    },
+    {
+      "file": "work.html", "menu": "Work", "title": "Work", "description": "Case studies: brand identities, websites and print.",
+      "sections": [
+        { "id": "gallery-6", "texts": ["Projects"] },
+        { "id": "text-media", "texts": ["Every project includes", "✔ A short discovery call to understand your goals", "✔ Two rounds of revisions", "✔ All final files, ready to use"] }
+      ]
+    },
+    {
+      "file": "services.html", "menu": "Services", "title": "Services & prices", "description": "Brand identity, websites and design support with clear starting prices.",
+      "sections": [
+        { "id": "steps-3", "texts": ["How we work together", "1", "Discovery", "A short call to understand your goals and budget.", "2", "Design", "Concepts, feedback and refinement — together.", "3", "Delivery", "Final files and a launch you are proud of."] },
+        { "id": "pricing-3", "texts": ["Services", "Starting prices — every project gets a fixed quote.", "Brand starter", "$900", "/project", "Logo and colour palette", "Typography guide", "Social media kit", "Ask about branding", "Most popular", "Website", "$2,400", "/project", "Up to 6 pages", "Mobile-friendly design", "Launch support", "Plan my website", "Design partner", "$600", "/month", "Ongoing design help", "Priority turnaround", "Monthly strategy call", "Let's talk"] }
+      ]
+    },
+    {
+      "file": "about.html", "menu": "About", "title": "About", "description": "A little about me, how I work and the tools I use.",
+      "sections": [
+        { "id": "media-text", "texts": ["Hi, I'm Alex", "I am an independent designer with ten years of experience helping small businesses look their best — from first logo to full website.", "When I am not designing, you will find me with a camera or a good book.", "Work with me"] },
+        { "id": "stats-4", "texts": ["10", "Years designing", "120+", "Projects delivered", "60", "Happy clients", "2 days", "Reply time"] }
+      ]
+    },
+    {
+      "file": "contact.html", "menu": "Contact", "title": "Start a project", "description": "Tell me about your project and timeline — I reply within two days.",
+      "sections": [
+        { "id": "contact-form", "texts": ["Start a project", "A few lines about what you need, your timeline and budget is perfect.", "Name", "Email", "Website (optional)", "Tell me about your project", "Send inquiry"] },
+        { "id": "contact-info", "texts": ["Other ways to reach me", "Remote-friendly, working with clients worldwide.", "Phone", "+1 (000) 000-0000", "Email", "hello@example.com", "Based in", "City,", "Country", "Availability", "Booking projects 3–4 weeks ahead"] }
+      ]
+    }
+  ]
+}

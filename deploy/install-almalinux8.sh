@@ -393,8 +393,15 @@ max-recipients=50
 reject-empty-rdns
 reject-unresolvable-rdns
 reject-sender=no-mx
-dns-blacklist-entry=bl.rbl-dns.com
 SPAMDYKECONF
+  # RBLs: SpamCop always; Spamhaus ZEN only when this server's resolver may query it - Spamhaus answers
+  # 127.255.255.x to public/shared resolvers, which spamdyke would read as "listed" and then refuse ALL mail.
+  # (bl.rbl-dns.com is no longer used: it lists some Gmail/Google sending servers -> permanent 554 bounces.)
+  if [ -n "$(dig +short +time=3 +tries=1 2.0.0.127.zen.spamhaus.org A 2>/dev/null | grep '^127\.0\.0\.')" ] && \
+     [ -z "$(dig +short +time=3 +tries=1 1.0.0.127.zen.spamhaus.org A 2>/dev/null)" ]; then
+    echo "dns-blacklist-entry=zen.spamhaus.org" >> /etc/spamdyke/spamdyke.conf
+  fi
+  echo "dns-blacklist-entry=bl.spamcop.net" >> /etc/spamdyke/spamdyke.conf
 fi
 # Submission (587) gets its own, lighter spamdyke config: authenticated senders only, no
 # IP-reputation/RBL/rDNS checks — those wrongly reject legitimate users on residential/mobile
@@ -1285,6 +1292,13 @@ info "Created /var/named/slaves/ for DNS cluster slave zones"
 info "Setting File Manager ACLs on existing client home directories..."
 for homedir in /home/*/; do
   owner=$(stat -c '%U' "$homedir" 2>/dev/null)
+  # Admin / login accounts are not hosting clients: an rwx ACL makes their home look group-writable and sshd
+  # (StrictModes) then refuses every SSH key — found 2026-10-15 on a fresh AlmaLinux 10 server, where it locked
+  # out the cloud image's login user and a sudo admin. Skip sudo/wheel members and anyone with SSH keys.
+  if id -nG "$owner" 2>/dev/null | grep -qwE 'wheel|sudo|adm' || [[ -s "${homedir}.ssh/authorized_keys" ]]; then
+    info "  skipped (admin/SSH login account): $homedir"
+    continue
+  fi
   # Skip system accounts (vpopmail, root, sysadminhcp, named, apache, mysql, etc.)
   if id "$owner" &>/dev/null && [[ "$owner" != "root" && "$owner" != "$SYSADMINHCP_USER" ]]; then
     setfacl -m u:$SYSADMINHCP_USER:rwx "$homedir" 2>/dev/null || true
@@ -1665,7 +1679,10 @@ if [[ -f /etc/named.conf ]]; then
   sed -i 's/listen-on-v6 port 53 { ::1; };/listen-on-v6 port 53 { any; };/' /etc/named.conf
   # allow-query: answer queries from anywhere (authoritative server for hosted zones)
   sed -i 's/allow-query[[:space:]]*{[[:space:]]*localhost;[[:space:]]*};/allow-query     { any; };/' /etc/named.conf
-  named-checkconf && info "named.conf updated and validated (listen-on any, allow-query any)" \
+  # allow-query any + "recursion yes" with no allow-recursion makes BIND resolve ANY name for the whole internet
+  # (open resolver → DNS amplification abuse). Hosted zones stay public; recursion/cache only for this server.
+  grep -qE '^\s*allow-recursion' /etc/named.conf || sed -i -E 's/^(\s*)allow-query(\s+)\{ any; \};/&\n\1allow-recursion { localhost; localnets; };\n\1allow-query-cache { localhost; localnets; };/' /etc/named.conf
+  named-checkconf && info "named.conf updated and validated (listen-on any, allow-query any, recursion local only)" \
     || warn "named.conf validation failed — check /etc/named.conf manually"
 else
   warn "/etc/named.conf not found — BIND may not be installed correctly"
