@@ -41,16 +41,21 @@ replacing them, so you keep full control of the underlying system.
 - **Mail** — qmail-based mail server, mailboxes, forwards, mailing lists, webmail (RainLoop), spam whitelist/blacklist
 - **Databases** — MySQL/MariaDB database and user management with phpMyAdmin single sign-on
 - **FTP** — Pure-FTPd account management
-- **Security** — firewall management, IP whitelist/blacklist, Fail2ban, ClamAV
+- **SSL self-healing** — panel records, certificate files on disk and what the services actually serve are checked against each other; stale or missing certificates are repaired automatically and only what really needs it is renewed
+- **Mail protection** — per-account daily SMTP sending limits (a stolen mailbox password can't flood the internet with spam), Spamhaus DQS key setting in the panel, per-domain mail TLS (SNI) and automatic DKIM
+- **Security** — firewall management, IP whitelist/blacklist, Fail2ban, ClamAV, intrusion detection with auto-block, country blocking, two-factor login (TOTP) for admin and client portals
 - **File Manager** — browser-based file management with proper Unix ACL/permission handling
 - **Backups** — full client and domain backup/restore, including cPanel and KloxoNG import
 - **Client Management** — multi-client hosting accounts with resource plans
 - **Web Statistics** — GoAccess-powered traffic stats per domain
 - **Cron Jobs** — scheduled task management per client
 - **AI Agent** *(Pro)* — AI-assisted SSH terminal and system administration from the browser, plus **Autonomous Mode**: continuous background monitoring of system health, support tickets, security activity, and backups, with specific actions (restart a service, reply to a ticket, retry a failed backup, etc.) available for delegation — every action stays off until explicitly enabled, each with its own confirmation
+- **Compromised account lockdown** *(Pro)* — with Autonomous Mode on, a mail account that goes over its daily SMTP limit is locked automatically (SMTP, POP/IMAP and webmail), its live sessions are cut, and the mailbox owner, client and admin are notified
 - **AI Spam Filter** *(Pro)* — AI-powered email spam filtering (OpenAI, Claude, Gemini, Ollama, or GitHub Copilot providers)
 - **Migration Tools** *(Pro)* — import hosting accounts from cPanel, KloxoNG, or another SysAdminHCP server
 - **DNS Import & Multi-Server Sync** *(Pro)* — import zones from any remote BIND server (including split/`include`-based configs) and keep DNS in sync across a multi-server cluster
+- **Signed updates** — panel releases are cryptographically signed and verified before they are applied; downloads are available only to licensed servers
+- **Crash-safe database** — new installs use SQLite in WAL mode; re-running the installer keeps the database engine you already have
 
 > **AI features require your own account with a compatible AI provider** (Ollama
 > Cloud, OpenAI, Anthropic/Claude, Google Gemini, or GitHub Copilot) — you supply
@@ -60,7 +65,14 @@ replacing them, so you keep full control of the underlying system.
 > [ollama.com/settings/keys](https://ollama.com/settings/keys) — the `glm-5.2:cloud`
 > model is a strong default choice.
 
-## Recent Highlights (v8.0.19x)
+## Recent Highlights (v8.0.48x)
+
+- **8.0.485 — Installers keep your database engine** — re-running an installer no longer switches an existing server's database engine; new installs default to crash-safe SQLite (WAL).
+- **8.0.484 — SSL self-healing** — expiry alerts based on stale records are gone; certificates renewed outside the panel are picked up, and missing or mismatched certificates are fixed automatically.
+- **8.0.484 — Spamhaus DQS key in the panel** — enter your free Spamhaus DQS key once and the mail server uses it for RBL checks, with a safe default when no key is set.
+- **8.0.480 — Quarantine filter fix** — spam/quarantine messages are always stored intact.
+
+## Earlier Highlights (v8.0.19x)
 
 - **Autonomous Mode expanded** — AI Agent monitoring now covers backups (overdue/failed detection, disk usage) and system resources (memory, disk), alongside the existing tickets/services/security scopes, each with its own opt-in delegated action.
 - **Scheduled backups fixed end-to-end** — the backup schedule feature now actually runs on cron, on both traditional and single-binary installs, with correct retention pruning and a real timeout that can't leave a runaway process behind.
@@ -71,7 +83,7 @@ replacing them, so you keep full control of the underlying system.
 
 | | Free | Pro |
 |---|---|---|
-| Price | $0 — lifetime | $36 / year (early-bird) |
+| Price | $0 — lifetime | $66 / year (special price) |
 | License scope | Unlimited installs (self-registered) | 1 host/IP per license |
 | Hosting menu (Domains, Web Servers, DNS, Mail, FTP, Databases, phpMyAdmin, Webmail, Email Stats) | ✅ | ✅ |
 | Backups (manual + scheduled, cPanel/KloxoNG import) | ✅ | ✅ |
@@ -80,10 +92,10 @@ replacing them, so you keep full control of the underlying system.
 | Migration Tools (cPanel / KloxoNG / SysAdminHCP) | ❌ | ✅ |
 | DNS Import & Multi-Server Sync | ❌ | ✅ |
 
-Pro's $36/yr is a locked-in early-bird price through October 30, 2026 — order before then
-and that rate is guaranteed for 4 years from the date you order. Pro ordered after
-October 30, 2026 will be $99/yr. **Pro + Support** ($120/yr) adds priority ticket support
-and 4 remote-support incidents per year for control-panel issues. Pro and Pro + Support
+Pro's $66/yr is a special price for orders placed by October 31, 2027 — that rate is
+locked for 2 years from the date you order. Pro ordered after October 31, 2027 is $120/yr.
+**Pro + Support** ($120/yr, $180/yr for orders after October 31, 2027) adds priority ticket
+support and 4 remote-support incidents per year for control-panel issues. Pro and Pro + Support
 are licensed per host / IP; final pricing is confirmed at checkout.
 
 A license (Free or Pro) is required to unlock the Hosting menu — new installs get a
