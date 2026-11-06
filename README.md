@@ -48,17 +48,17 @@ replacing them, so you keep full control of the underlying system.
 - **Backups** — full client and domain backup/restore, including cPanel and KloxoNG import
 - **Client Management** — multi-client hosting accounts with resource plans
 - **Web Statistics** — GoAccess-powered traffic stats per domain
-- **Cron Jobs** — scheduled task management per client
+- **Cron Jobs** — admin cron manager for the server's scheduled tasks
 - **AI Agent** *(Pro)* — AI-assisted SSH terminal and system administration from the browser, plus **Autonomous Mode**: continuous background monitoring of system health, support tickets, security activity, and backups, with specific actions (restart a service, reply to a ticket, retry a failed backup, etc.) available for delegation — every action stays off until explicitly enabled, each with its own confirmation
 - **Compromised account lockdown** *(Pro)* — with Autonomous Mode on, a mail account that goes over its daily SMTP limit is locked automatically (SMTP, POP/IMAP and webmail), its live sessions are cut, and the mailbox owner, client and admin are notified
-- **AI Spam Filter** *(Pro)* — AI-powered email spam filtering (OpenAI, Claude, Gemini, Ollama, or GitHub Copilot providers)
+- **AI Spam Filter** *(Pro)* — AI-powered email spam filtering (Ollama Cloud, OpenAI, Claude, or Gemini providers)
 - **Migration Tools** *(Pro)* — import hosting accounts from cPanel, KloxoNG, or another SysAdminHCP server
 - **DNS Import & Multi-Server Sync** *(Pro)* — import zones from any remote BIND server (including split/`include`-based configs) and keep DNS in sync across a multi-server cluster
 - **Signed updates** — panel releases are cryptographically signed and verified before they are applied; downloads are available only to licensed servers
 - **Crash-safe database** — new installs use SQLite in WAL mode; re-running the installer keeps the database engine you already have
 
 > **AI features require your own account with a compatible AI provider** (Ollama
-> Cloud, OpenAI, Anthropic/Claude, Google Gemini, or GitHub Copilot) — you supply
+> Cloud, OpenAI, Anthropic/Claude, Google Gemini, or GitHub Copilot — AI Agent only) — you supply
 > the API key, and usage is billed by that provider, not SysAdminHCP. **Ollama
 > Cloud is recommended**: it's inexpensive, supports the tool-calling AI Agent and
 > Autonomous Mode needs, and an API key is quick to generate at
