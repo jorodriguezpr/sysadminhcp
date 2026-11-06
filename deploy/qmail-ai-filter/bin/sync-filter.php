@@ -152,17 +152,7 @@ try {
     $providerName = $config['ai_provider']['provider'];
     $aiProvider = null;
     
-    if ($providerName === 'github_copilot') {
-        $apiKey = $config['ai_provider']['github_copilot']['api_key'] ?? '';
-        $model = $config['ai_provider']['github_copilot']['model'] ?? 'gpt-4o';
-        
-        $aiProvider = new \QmailAiFilter\AI\Providers\GitHubCopilotProvider(
-            $apiKey,
-            $model,
-            $logger,
-            $config['spam_detection']['api_timeout'] ?? 30
-        );
-    } elseif ($providerName === 'openai') {
+    if ($providerName === 'openai') {
         $apiKey = $config['ai_provider']['openai']['api_key'] ?? '';
         $model = $config['ai_provider']['openai']['model'] ?? 'gpt-3.5-turbo';
         

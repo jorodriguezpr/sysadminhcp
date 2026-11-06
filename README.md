@@ -48,7 +48,12 @@ replacing them, so you keep full control of the underlying system.
 - **Backups** — full client and domain backup/restore, including cPanel and KloxoNG import
 - **Client Management** — multi-client hosting accounts with resource plans
 - **Web Statistics** — GoAccess-powered traffic stats per domain
-- **Cron Jobs** — admin cron manager for the server's scheduled tasks
+- **Cron Jobs** — admin cron manager for the server's scheduled tasks, plus per-client cron jobs in the client portal (always run as the client's own user, with admin limits)
+- **Mail Deliverability Center** — SPF/DKIM/DMARC checks with one-click DNS fixes, blocklist and provider-rejection monitoring with alerts, alternate outbound route, relay clients, and SRS for forwarded mail
+- **Git Deploy** — deploy a repository branch into a site folder by hand or on every push (signed GitHub/GitLab webhooks, per-deployment deploy keys, no `.git` folder in the website)
+- **Offsite Backups** — incremental, encrypted backups to SFTP, S3 or a REST server, with retention and restore to a side folder
+- **Web Application Firewall** — ModSecurity with the OWASP Core Rule Set, detect or block mode per server and per domain, events and rule exceptions for clients (Apache on AlmaLinux/RHEL)
+- **Domain Transfer** — move a domain with its files, mail, DNS, SSL, FTP, cron, Git deployments and databases to another client on the same server, with a verified database copy and automatic undo
 - **AI Agent** *(Pro)* — AI-assisted SSH terminal and system administration from the browser, plus **Autonomous Mode**: continuous background monitoring of system health, support tickets, security activity, and backups, with specific actions (restart a service, reply to a ticket, retry a failed backup, etc.) available for delegation — every action stays off until explicitly enabled, each with its own confirmation
 - **Compromised account lockdown** *(Pro)* — with Autonomous Mode on, a mail account that goes over its daily SMTP limit is locked automatically (SMTP, POP/IMAP and webmail), its live sessions are cut, and the mailbox owner, client and admin are notified
 - **AI Spam Filter** *(Pro)* — AI-powered email spam filtering (Ollama Cloud, OpenAI, Claude, or Gemini providers)
@@ -65,8 +70,16 @@ replacing them, so you keep full control of the underlying system.
 > [ollama.com/settings/keys](https://ollama.com/settings/keys) — the `glm-5.2:cloud`
 > model is a strong default choice.
 
-## Recent Highlights (v8.0.48x)
+## Recent Highlights (v8.1.0)
 
+- **8.1.0 — Client portal hardening** — client-portal actions never build shell commands from text; the file manager works only on the client's own files, as the client's own Linux user; mail forwarders, FTP accounts, protected folders, error pages and redirects are validated.
+- **8.1.0 — New features** — Mail Deliverability Center, per-client cron jobs, domain transfer between clients, Git deploy, offsite backups and a Web Application Firewall (see Features).
+- **8.1.0 — Cleaner client removal** — deleting a client also removes its Linux account when it is clearly a hosting account; site ownership stays with the client even when a single file can't be changed.
+
+## Highlights (v8.0.48x)
+
+- **8.0.487 — Security fixes** — client database passwords are escaped correctly; client-portal restore accepts only backups the server created for that client; remote-server API keys are encrypted at rest.
+- **8.0.486 — Security hardening** — self-signed SSL creation runs without a shell; saved remote SSH passwords are encrypted; the AI Spam Filter defaults to Ollama Cloud.
 - **8.0.485 — Installers keep your database engine** — re-running an installer no longer switches an existing server's database engine; new installs default to crash-safe SQLite (WAL).
 - **8.0.484 — SSL self-healing** — expiry alerts based on stale records are gone; certificates renewed outside the panel are picked up, and missing or mismatched certificates are fixed automatically.
 - **8.0.484 — Spamhaus DQS key in the panel** — enter your free Spamhaus DQS key once and the mail server uses it for RBL checks, with a safe default when no key is set.

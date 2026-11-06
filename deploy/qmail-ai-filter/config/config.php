@@ -38,15 +38,8 @@ return [
     
     // AI Provider Configuration
     'ai_provider' => [
-        // Available: 'github_copilot' (recommended 2026+), 'openai', 'claude_anthropic', 'ollama-cloud'
-        'provider' => env('AI_PROVIDER', 'github_copilot'),
-        
-        // GitHub Copilot (2026+ - RECOMMENDED)
-        'github_copilot' => [
-            'api_url' => 'https://api.github.com/copilot/chat/completions',
-            'api_key' => env('GITHUB_COPILOT_API_KEY'),
-            'model' => env('GITHUB_COPILOT_MODEL', 'gpt-4o'),
-        ],
+        // Available: 'ollama-cloud' (default, same as the panel), 'openai', 'claude_anthropic', 'gemini'
+        'provider' => env('AI_PROVIDER', 'ollama-cloud'),
         
         // OpenAI API
         'openai' => [

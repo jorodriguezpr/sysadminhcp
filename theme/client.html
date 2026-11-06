@@ -322,6 +322,7 @@
             <div class="nav-item" data-page="redirects"><span class="icon">↪️</span> Redirects</div>
             <div class="nav-item" data-page="errorpages"><span class="icon">🚫</span> Error Pages</div>
             <div class="nav-item" data-page="dirprotect"><span class="icon">🔐</span> Directory Protection</div>
+            <div class="nav-item" data-page="waf"><span class="icon">🧱</span> Web Firewall</div>
             <div class="nav-item" data-page="mimetypes"><span class="icon">🧩</span> MIME Types</div>
         </div>
         <div class="nav-section"><div class="nav-section-title">Security</div>
@@ -333,6 +334,8 @@
             <div class="nav-item" data-page="backups"><span class="icon">💾</span> Backups</div>
             <div class="nav-item" data-page="phpversion"><span class="icon">🐘</span> PHP Version</div>
             <div class="nav-item" data-page="phpsettings"><span class="icon">⚙️</span> PHP Settings</div>
+            <div class="nav-item" data-page="cron"><span class="icon">⏰</span> Cron Jobs</div>
+            <div class="nav-item" data-page="gitdeploy"><span class="icon">🔀</span> Git Deploy</div>
             <div class="nav-item" data-page="bandwidth"><span class="icon">📈</span> Bandwidth</div>
             <div class="nav-item" id="navAppInstaller" data-page="appinstaller" style="display:none"><span class="icon">📦</span> App Installer</div>
             <div class="nav-item" id="navEmailMigration" data-page="emailmigration" style="display:none"><span class="icon">✉️</span> Email Migration</div>
@@ -444,6 +447,33 @@ errorpages:{title:'📖 Help — Custom Error Pages',html:`
 <li>Click <strong>Save</strong>.</li>
 </ol>
 <p>See <a href="/theme/client-manual.html#s23-2" target="_blank">Section 23.2 of the User Manual</a> for more.</p>
+`},
+waf:{title:'📖 Help — Web Firewall',html:`
+<p>Your sites are protected by a web application firewall that stops common attacks (SQL injection, cross-site scripting, scanners). <strong>Events</strong> lists what it caught on each domain.</p>
+<p>If a legitimate action on your site is blocked (for example saving a page in your CMS), find the request in the events and click <strong>Allow this rule</strong> — that rule is switched off for that domain only. You can also set a domain to <em>Detect only</em> while you test.</p>
+`},
+gitdeploy:{title:'📖 Help — Git Deploy',html:`
+<p>Deploy a website straight from a Git repository (GitHub, GitLab, Gitea, Bitbucket…). Every deploy fetches the branch and puts its files into the folder you chose.</p>
+<h3>Setting it up</h3>
+<ol>
+<li>Click <strong>+ New Deployment</strong>, choose the domain and folder (usually <code>public_html</code>), the repository URL and the branch.</li>
+<li><strong>Private repository?</strong> Use the SSH URL (<code>git@github.com:you/site.git</code>) and add the <strong>deploy key</strong> shown on the page to the repository (GitHub: Settings › Deploy keys, read-only).</li>
+<li>Click <strong>Deploy now</strong>. To deploy on every push, add the <strong>webhook URL</strong> to the repository (GitHub: Settings › Webhooks, content type <code>application/json</code>, and paste the token as the <em>Secret</em>).</li>
+</ol>
+<div class="help-example">Files the repository doesn't contain (uploads, <code>.env</code>, cache) are left alone. Files you delete from the repository are deleted from the folder on the next deploy. The site never gets a <code>.git</code> folder.</div>
+<p>The optional <strong>post-deploy command</strong> runs in the deployed folder as your account, e.g. <code>composer install --no-dev</code> or <code>php artisan migrate --force</code> (5-minute limit).</p>
+`},
+cron:{title:'📖 Help — Cron Jobs',html:`
+<p>A cron job runs a command on a schedule — for example a WordPress or Laravel scheduler, a nightly import, or a cleanup script.</p>
+<h3>Adding a job</h3>
+<ol>
+<li>Click <strong>+ Add Cron Job</strong>, pick a quick schedule or type your own (<code>minute hour day month weekday</code>).</li>
+<li>Enter the command, e.g. <code>php /home/USER/example.com/artisan schedule:run</code> or <code>curl -s https://example.com/wp-cron.php</code>.</li>
+<li>Optionally link it to a domain — it is then removed with that domain, and moved with it if the domain is transferred to another account.</li>
+</ol>
+<p>Jobs run as <strong>your own account</strong>, starting in your home folder, with <code>bash</code>. <strong>▶ Run now</strong> runs a job once (2-minute limit) and shows its output, so you can test it before it runs on its own.</p>
+<div class="help-example">Output is discarded unless you set <strong>E-mail output to</strong>. To keep a log instead, end the command with <code>&gt;&gt; ~/logs/myjob.log 2&gt;&amp;1</code>.</div>
+<p>The server has limits on how many jobs you can have and how often they can run (shown on the page). Jobs stop while an account is suspended and come back when it is reactivated.</p>
 `},
 dirprotect:{title:'📖 Help — Directory Password Protection',html:`
 <p>Password-protect any folder under your domain with HTTP Basic Auth — a browser login prompt appears before anyone can view that folder's contents.</p>
@@ -573,7 +603,7 @@ async function ntfClickItem(id,alreadyRead){
 }
 document.addEventListener('click',(e)=>{const wrap=document.getElementById('ntfBellWrap');if(wrap&&_ntfDropdownOpen&&!wrap.contains(e.target)){document.getElementById('ntfDropdown').style.display='none';_ntfDropdownOpen=false;}});
 
-async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'sitebuilder':await renderSiteBuilder(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'phpsettings':await renderPhpSettings(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'dav':await renderDav(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;case 'redirects':await renderRedirects(el);break;case 'errorpages':await renderErrorPages(el);break;case 'dirprotect':await renderDirProtect(el);break;case 'mimetypes':await renderMimeTypes(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
+async function renderPage(page){const el=document.getElementById('content');el.innerHTML='<div class="card"><p>Loading...</p></div>';try{switch(page){case 'dashboard':await renderDashboard(el);break;case 'domains':await renderDomains(el);break;case 'sitebuilder':await renderSiteBuilder(el);break;case 'subdomains':await renderSubdomains(el);break;case 'dns':await renderDns(el);break;case 'mail':await renderMail(el);break;case 'ftp':await renderFtp(el);break;case 'databases':await renderDatabases(el);break;case 'phpmyadmin':await renderPhpMyAdmin(el);break;case 'ssl':await renderSsl(el);break;case 'letsencrypt':await renderLetsEncrypt(el);break;case 'files':await renderFiles(el);break;case 'backups':await renderBackups(el);break;case 'phpversion':await renderPhpVersion(el);break;case 'phpsettings':await renderPhpSettings(el);break;case 'bandwidth':await renderBandwidth(el);break;case 'webmail':await renderWebmail(el);break;case 'dav':await renderDav(el);break;case 'account':await renderAccount(el);break;case 'about':await renderAbout(el);break;case 'manual':await renderManual(el);break;case 'spamstats':await renderSpamStats(el);break;case 'tickets':await renderTickets(el);break;case 'appinstaller':await renderAppInstaller(el);break;case 'emailmigration':await renderEmailMigration(el);break;case 'redirects':await renderRedirects(el);break;case 'errorpages':await renderErrorPages(el);break;case 'dirprotect':await renderDirProtect(el);break;case 'mimetypes':await renderMimeTypes(el);break;case 'cron':await renderCron(el);break;case 'gitdeploy':await renderGitDeploy(el);break;case 'waf':await renderWafClient(el);break;default:el.innerHTML='<div class="card"><p>Page not found</p></div>';}}catch(e){el.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;}}
 
 // ═══════════════════════════════════════════════════════════════════════
 // DASHBOARD
@@ -785,6 +815,132 @@ async function delProtectedDirUser(username){
     const {domain,id}=window._dpCurrent;
     if(!confirm(`Remove user "${username}"?`))return;
     try{await api(`/client/protected-dirs/${domain}/${id}/users/${encodeURIComponent(username)}`,{method:'DELETE'});showAlert('User removed','success');showManageProtectedDir(domain,id);}catch(e){showAlert(e.message,'error');}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// WEB FIREWALL (8.1.0)
+// ═══════════════════════════════════════════════════════════════════════
+async function renderWafClient(el){
+    const d=await api('/client/waf');window._cwaf=d;
+    if(!d.available){el.innerHTML='<div class="card"><div class="card-title">Web Firewall</div><p style="color:#888">The web application firewall is not active on this server.</p></div>';return;}
+    const label={inherit:'Server setting',on:'On (block)',detect:'Detect only',off:'Off'};
+    const rows=(d.domains||[]).map((x,i)=>`<tr><td><strong>${escHtml(x.domain)}</strong></td><td>${d.clientsMayChange?`<select onchange="cwafMode(${i},this.value)">${['inherit','on','detect','off'].map(m=>`<option value="${m}" ${x.mode===m?'selected':''}>${label[m]}</option>`).join('')}</select>`:escHtml(label[x.mode])} <span class="status-badge ${x.effective==='on'?'status-on':'status-off'}">${x.effective==='on'?'blocking':x.effective==='detect'?'detect only':'off'}</span></td><td>${(x.removeIds||[]).map(n=>`<code>${Number(n)}</code>`).join(' ')||'<span style="color:#888">none</span>'}</td><td><button class="btn btn-xs btn-secondary" onclick="cwafEvents(${i})">Events</button></td></tr>`).join('');
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Web Firewall <button class="btn btn-sm btn-help" onclick="showModuleHelp('waf')">❓ Help</button></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Blocks common attacks on your sites before they reach your application.</p>${rows?`<table class="data-table"><thead><tr><th>Domain</th><th>Firewall</th><th>Rules allowed</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<p style="color:#888">No domains.</p>'}</div><div class="card" id="cwaf_ev" style="margin-top:16px;display:none"></div>`;
+}
+async function cwafMode(i,m){const x=window._cwaf.domains[i];try{await api(`/client/waf/${encodeURIComponent(x.domain)}`,{method:'PUT',body:JSON.stringify({mode:m})});showAlert('Saved','success');renderPage('waf');}catch(e){showAlert(e.message,'error');renderPage('waf');}}
+async function cwafEvents(i){const x=window._cwaf.domains[i];window._cwafI=i;const box=document.getElementById('cwaf_ev');box.style.display='';box.innerHTML='<p style="color:#888">Loading…</p>';
+    try{const r=await api(`/client/waf/${encodeURIComponent(x.domain)}/events`);window._cwafEv=r.events||[];
+        const can=window._cwaf.clientsMayChange;
+        box.innerHTML=`<div class="card-title">Events — ${escHtml(x.domain)}</div>${window._cwafEv.length?`<table class="data-table"><thead><tr><th>When</th><th>Visitor IP</th><th>Request</th><th>Rule</th><th>Result</th>${can?'<th></th>':''}</tr></thead><tbody>${window._cwafEv.map((e,j)=>`<tr><td style="white-space:nowrap">${escHtml(e.time)}</td><td>${escHtml(e.ip)}</td><td><code style="word-break:break-all">${escHtml(e.uri)}</code></td><td><code>${Number(e.id)}</code> ${escHtml(e.msg)}</td><td>${e.action==='blocked'?'<span class="status-badge status-off">blocked</span>':'<span class="status-badge status-on">detected</span>'}</td>${can?`<td>${(e.id>=911000&&e.id<=944999)||(e.id>=950000&&e.id<=955999)?`<button class="btn btn-xs btn-secondary" onclick="cwafAllow(${j})">Allow this rule</button>`:''}</td>`:''}</tr>`).join('')}</tbody></table>`:'<p style="color:#888">No firewall events in the recent log.</p>'}`;
+    }catch(e){box.innerHTML=`<div class="alert alert-error">${escHtml(e.message)}</div>`;}}
+async function cwafAllow(j){const x=window._cwaf.domains[window._cwafI];const ev=window._cwafEv[j];if(!confirm(`Switch off rule ${Number(ev.id)} for ${x.domain}? Only do this if the blocked request was a legitimate action on your site.`))return;
+    try{await api(`/client/waf/${encodeURIComponent(x.domain)}`,{method:'PUT',body:JSON.stringify({removeIds:[...(x.removeIds||[]),Number(ev.id)]})});showAlert('Rule allowed for '+escHtml(x.domain),'success');renderPage('waf');}catch(e){showAlert(e.message,'error');}}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GIT DEPLOY (8.1.0) - runs as the client's own account
+// ═══════════════════════════════════════════════════════════════════════
+function gitHookUrl(d){return `${location.origin}/api/git-hook/${d.id}/${d.token}`;}
+function gitCopy(id){const e=document.getElementById(id);if(!e)return;navigator.clipboard.writeText(e.value||e.textContent).then(()=>showAlert('Copied','success'),()=>{e.select&&e.select();});}
+async function renderGitDeploy(el){
+    const d=await api('/client/git-deploy');window._git=d;
+    const rows=(d.deployments||[]).map(x=>{
+        const st=x.running?'<span class="status-badge status-on">Deploying…</span>':x.last?(x.last.status==='ok'?`<span class="status-badge status-on">OK</span>`:`<span class="status-badge status-off">Failed</span>`):'<span style="color:#888">never deployed</span>';
+        const when=x.last?`<div style="color:#888;font-size:12px">${escHtml(new Date(x.last.at).toLocaleString())} · ${escHtml(x.last.trigger)}${x.last.commit?` · <code>${escHtml(x.last.commit.slice(0,10))}</code> ${escHtml(x.last.message||'')}`:''}</div>`:'';
+        return `<div class="card" style="margin-top:12px"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>🌐 ${escHtml(x.domain)}/<strong>${escHtml(x.target)}</strong> ${x.enabled?'':'<span class="status-badge status-off">paused</span>'}</span><span><button class="btn btn-sm btn-primary" onclick="gitDeployNow('${x.id}')" ${x.enabled?'':'disabled'}>🚀 Deploy now</button> <button class="btn btn-sm btn-secondary" onclick="gitLog('${x.id}')">Log</button> <button class="btn btn-sm btn-secondary" onclick="gitEdit('${x.id}')">Edit</button> <button class="btn btn-sm btn-danger" onclick="gitDel('${x.id}')">Remove</button></span></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:6px 12px;font-size:13px;align-items:center">
+<div style="color:#888">Repository</div><div><code style="word-break:break-all">${escHtml(x.repo)}</code> · branch <code>${escHtml(x.branch)}</code></div>
+<div style="color:#888">Last deploy</div><div>${st}${when}</div>
+${x.postCommand?`<div style="color:#888">Post-deploy</div><div><code style="word-break:break-all">${escHtml(x.postCommand)}</code></div>`:''}
+<div style="color:#888">Webhook URL</div><div style="display:flex;gap:6px"><input id="gh_${x.id}" readonly value="${escHtml(gitHookUrl(x))}" style="flex:1;font-family:monospace;font-size:12px"><button class="btn btn-xs btn-secondary" onclick="gitCopy('gh_${x.id}')">Copy</button></div>
+<div style="color:#888">Webhook secret</div><div style="display:flex;gap:6px"><input id="gs_${x.id}" readonly value="${escHtml(x.token)}" style="flex:1;font-family:monospace;font-size:12px"><button class="btn btn-xs btn-secondary" onclick="gitCopy('gs_${x.id}')">Copy</button> <button class="btn btn-xs btn-secondary" onclick="gitNewToken('${x.id}')" title="The old webhook URL stops working">New</button></div>
+${x.publicKey?`<div style="color:#888">Deploy key${x.ssh?'':' <span style="font-size:11px">(for SSH URLs)</span>'}</div><div style="display:flex;gap:6px"><input id="gk_${x.id}" readonly value="${escHtml(x.publicKey)}" style="flex:1;font-family:monospace;font-size:12px"><button class="btn btn-xs btn-secondary" onclick="gitCopy('gk_${x.id}')">Copy</button></div>`:''}
+</div></div>`;}).join('');
+    el.innerHTML=`<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Git Deploy <span><button class="btn btn-sm btn-help" onclick="showModuleHelp('gitdeploy')">❓ Help</button> <button class="btn btn-sm btn-primary" onclick="gitEdit('')">+ New Deployment</button></span></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 0">Deploy a site from a Git repository — by hand or on every push (webhook). Up to ${Number((d.limits||{}).maxPerClient)} deployments.</p>${(d.deployments||[]).length?'':'<p style="color:#888;padding:12px 0 0">No deployments yet.</p>'}</div>${rows}`;
+    if((d.deployments||[]).some(x=>x.running))setTimeout(()=>{if(document.querySelector('.nav-item.active')?.dataset.page==='gitdeploy')renderPage('gitdeploy');},4000);
+}
+function gitEdit(id){
+    const d=window._git||{};const x=id?(d.deployments||[]).find(y=>y.id===id):null;
+    const doms=(d.domains||[]).map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+    showModal(x?'Edit Deployment':'New Git Deployment',`${x?'':`<div class="form-row"><div class="form-group"><label>Domain</label><select id="m_gD">${doms}</select></div><div class="form-group"><label>Folder (inside the domain)</label><input id="m_gT" value="public_html"></div></div>`}<div class="form-group"><label>Repository URL</label><input id="m_gR" placeholder="https://github.com/you/site.git  or  git@github.com:you/site.git"></div><div class="form-row"><div class="form-group"><label>Branch</label><input id="m_gB" value="main"></div><div class="form-group"><label>Post-deploy command (optional)</label><input id="m_gC" placeholder="composer install --no-dev"></div></div>${x?`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="m_gE"> Active (uncheck to pause deploys)</label>`:'<p style="color:#888;font-size:12px;margin:0">Files with the same name in the folder are replaced by the repository's; other files are kept.</p>'}`,[{label:x?'Save':'Create',cls:'btn-primary',onclick:`gitSave('${x?x.id:''}')`}]);
+    if(x){document.getElementById('m_gR').value=x.repo;document.getElementById('m_gB').value=x.branch;document.getElementById('m_gC').value=x.postCommand||'';document.getElementById('m_gE').checked=!!x.enabled;}
+}
+async function gitSave(id){
+    const v=i=>{const e=document.getElementById(i);return e?e.value:undefined;};
+    const body={repo:v('m_gR'),branch:v('m_gB'),postCommand:v('m_gC')};
+    if(id)body.enabled=document.getElementById('m_gE').checked;else{body.domain=v('m_gD');body.target=v('m_gT');}
+    try{const r=await api(id?`/client/git-deploy/${id}`:'/client/git-deploy',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModal();showAlert(id?'Saved':'Deployment created — add the deploy key / webhook to your repository, then Deploy now','success');renderPage('gitdeploy');}catch(e){showAlert(e.message,'error');}
+}
+async function gitDeployNow(id){try{const r=await api(`/client/git-deploy/${id}/deploy`,{method:'POST'});showAlert(r.queued?'A deploy is running — another one will follow':'Deploy started','success');setTimeout(()=>renderPage('gitdeploy'),800);}catch(e){showAlert(e.message,'error');}}
+async function gitNewToken(id){if(!confirm('Create a new webhook token? Update the webhook URL and secret in your repository afterwards.'))return;try{await api(`/client/git-deploy/${id}`,{method:'PUT',body:JSON.stringify({newToken:true})});renderPage('gitdeploy');}catch(e){showAlert(e.message,'error');}}
+async function gitDel(id){if(!confirm('Remove this deployment? The deployed files stay; the repository copy and deploy key are deleted.'))return;try{await api(`/client/git-deploy/${id}`,{method:'DELETE'});showAlert('Deployment removed','success');renderPage('gitdeploy');}catch(e){showAlert(e.message,'error');}}
+async function gitLog(id){
+    try{const r=await api(`/client/git-deploy/${id}/log`);
+        const hist=(r.history||[]).map(h=>`<tr><td>${escHtml(new Date(h.at).toLocaleString())}</td><td>${h.status==='ok'?'<span class="status-badge status-on">OK</span>':'<span class="status-badge status-off">Failed</span>'}</td><td>${escHtml(h.trigger)}</td><td><code>${escHtml((h.commit||'').slice(0,10))}</code> ${escHtml(h.message||'')}</td><td>${Number(h.seconds)} s</td></tr>`).join('');
+        showModal('Deploy log',`${r.running?'<div class="alert alert-info">Deploying now…</div>':''}<pre style="max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-size:12px;background:rgba(0,0,0,0.04);padding:10px;border-radius:8px">${escHtml(r.last?r.last.log:'(no deploys yet)')}</pre>${hist?`<table class="data-table" style="margin-top:10px"><thead><tr><th>When</th><th>Result</th><th>Trigger</th><th>Commit</th><th>Time</th></tr></thead><tbody>${hist}</tbody></table>`:''}`,[]);
+    }catch(e){showAlert(e.message,'error');}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CRON JOBS (8.1.0) - run as the client's own account
+// ═══════════════════════════════════════════════════════════════════════
+const CRON_PRESETS=[['Every 5 minutes','*/5 * * * *'],['Every 15 minutes','*/15 * * * *'],['Every hour','0 * * * *'],['Every day at 02:00','0 2 * * *'],['Every Sunday at 03:00','0 3 * * 0'],['1st of the month at 04:00','0 4 1 * *']];
+function cronDescribe(s){
+    const f=String(s||'').split(' ');if(f.length!==5)return'';const [m,h,dom,mon,dow]=f;const pad=x=>String(x).padStart(2,'0');
+    const DN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    let r;
+    if(/^\*\/\d+$/.test(m)&&h==='*'&&dom==='*'&&mon==='*'&&dow==='*')return`Every ${m.slice(2)} minutes`;
+    if(m==='*'&&h==='*'&&dom==='*'&&mon==='*'&&dow==='*')return'Every minute';
+    if(/^\d+$/.test(m)&&h==='*'&&dom==='*'&&mon==='*'&&dow==='*')return`Every hour at :${pad(m)}`;
+    if(/^\d+$/.test(m)&&/^\*\/\d+$/.test(h)&&dom==='*'&&mon==='*'&&dow==='*')return`Every ${h.slice(2)} hours at :${pad(m)}`;
+    if(/^\d+$/.test(m)&&/^\d+$/.test(h)){const t=`${pad(h)}:${pad(m)}`;
+        if(dom==='*'&&mon==='*'&&dow==='*')return`Every day at ${t}`;
+        if(dom==='*'&&mon==='*'&&/^\d$/.test(dow))return`Every ${DN[+dow]} at ${t}`;
+        if(dom==='*'&&mon==='*'&&dow==='1-5')return`Weekdays at ${t}`;
+        if(/^\d+$/.test(dom)&&mon==='*'&&dow==='*')return`Day ${dom} of every month at ${t}`;}
+    return r||'';
+}
+async function renderCron(el){
+    const d=await api('/client/cron');
+    window._cron=d;
+    const jobs=d.jobs||[];const lim=d.limits||{};
+    const row=j=>`<tr><td><strong>${escHtml(j.name||'(no name)')}</strong>${j.domain?`<div style="color:#888;font-size:12px">🌐 ${escHtml(j.domain)}</div>`:''}</td><td><code>${escHtml(j.schedule)}</code><div style="color:#888;font-size:12px">${escHtml(cronDescribe(j.schedule))}</div></td><td><code style="word-break:break-all;white-space:pre-wrap">${escHtml(j.command)}</code></td><td>${j.enabled?'<span class="status-badge status-on">Active</span>':'<span class="status-badge status-off">Paused</span>'}</td><td style="white-space:nowrap"><button class="btn btn-xs btn-secondary" onclick="cronRun('${j.id}')">▶ Run now</button> <button class="btn btn-xs btn-secondary" onclick="cronEdit('${j.id}')">Edit</button> <button class="btn btn-xs btn-secondary" onclick="cronToggle('${j.id}')">${j.enabled?'Pause':'Resume'}</button> <button class="btn btn-xs btn-danger" onclick="cronDel('${j.id}')">Delete</button></td></tr>`;
+    const other=(d.other||[]).length?`<div class="card" style="margin-top:16px"><div class="card-title">Other entries</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 8px">Lines added outside the panel. They are kept exactly as they are.</p><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;margin:0">${escHtml(d.other.join('\n'))}</pre></div>`:'';
+    el.innerHTML=`${d.suspended?'<div class="alert alert-error">This account is suspended — cron jobs are paused and cannot be changed.</div>':''}<div class="card"><div class="card-title" style="display:flex;justify-content:space-between;align-items:center">Cron Jobs <span><button class="btn btn-sm btn-help" onclick="showModuleHelp('cron')">❓ Help</button> <button class="btn btn-sm btn-primary" onclick="cronEdit('')" ${d.suspended?'disabled':''}>+ Add Cron Job</button></span></div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 12px">Run commands on a schedule, as your own account (<code>${escHtml(d.home||'')}</code>). Up to ${lim.maxJobs} jobs, at most every ${lim.minIntervalMinutes} minute(s).</p>${jobs.length?`<table class="data-table"><thead><tr><th>Name</th><th>Schedule</th><th>Command</th><th>Status</th><th>Actions</th></tr></thead><tbody>${jobs.map(row).join('')}</tbody></table>`:'<p style="color:#888;padding:12px">No cron jobs yet.</p>'}</div><div class="card" style="margin-top:16px"><div class="card-title">E-mail output to</div><p style="color:#7f8c8d;font-size:13px;margin:-4px 0 8px">Anything a job prints is e-mailed here. Leave empty to discard it.</p><div style="display:flex;gap:8px;max-width:520px"><input id="cron_mailto" type="email" placeholder="you@example.com" style="flex:1"><button class="btn btn-sm btn-primary" onclick="cronSaveMailto()" ${d.suspended?'disabled':''}>Save</button></div></div>${other}`;
+    document.getElementById('cron_mailto').value=d.mailto||'';
+}
+function cronEdit(id){
+    const d=window._cron||{};const j=id?(d.jobs||[]).find(x=>x.id===id):null;
+    const presets=CRON_PRESETS.map(p=>`<option value="${p[1]}">${p[0]}</option>`).join('');
+    const doms=(d.domains||[]).map(x=>`<option value="${escHtml(x)}">${escHtml(x)}</option>`).join('');
+    showModal(j?'Edit Cron Job':'Add Cron Job',`<div class="form-group"><label>Name (optional)</label><input id="m_crN" maxlength="80" placeholder="Nightly import"></div><div class="form-row"><div class="form-group"><label>Quick schedule</label><select id="m_crP" onchange="if(this.value){document.getElementById('m_crS').value=this.value;cronPreview();}"><option value="">— choose —</option>${presets}</select></div><div class="form-group"><label>Schedule <span style="color:#888;font-size:12px">(min hour day month weekday)</span></label><input id="m_crS" placeholder="0 2 * * *" oninput="cronPreview()"></div></div><div id="m_crD" style="color:#888;font-size:12px;margin:-6px 0 10px"></div><div class="form-group"><label>Command</label><input id="m_crC" maxlength="1000" placeholder="php ${escHtml(d.home||'~')}/example.com/cron.php"></div><div class="form-group"><label>Domain (optional)</label><select id="m_crDom"><option value="">— whole account —</option>${doms}</select></div>`,[{label:j?'Save':'Add',cls:'btn-primary',onclick:`cronSave('${j?j.id:''}')`}]);
+    document.getElementById('m_crN').value=j?j.name:'';
+    document.getElementById('m_crS').value=j?j.schedule:'0 2 * * *';
+    document.getElementById('m_crC').value=j?j.command:'';
+    document.getElementById('m_crDom').value=j?j.domain:'';
+    cronPreview();
+}
+function cronPreview(){const e=document.getElementById('m_crD');if(e)e.textContent=cronDescribe(document.getElementById('m_crS').value.trim().replace(/\s+/g,' '));}
+async function cronSave(id){
+    const body={name:document.getElementById('m_crN').value,schedule:document.getElementById('m_crS').value,command:document.getElementById('m_crC').value,domain:document.getElementById('m_crDom').value};
+    try{await api(id?`/client/cron/${id}`:'/client/cron',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModal();showAlert(id?'Cron job saved':'Cron job added','success');renderPage('cron');}catch(e){showAlert(e.message,'error');}
+}
+async function cronToggle(id){
+    const j=((window._cron||{}).jobs||[]).find(x=>x.id===id);if(!j)return;
+    try{await api(`/client/cron/${id}`,{method:'PUT',body:JSON.stringify({enabled:!j.enabled})});showAlert(j.enabled?'Job paused':'Job resumed','success');renderPage('cron');}catch(e){showAlert(e.message,'error');}
+}
+async function cronDel(id){
+    if(!confirm('Delete this cron job?'))return;
+    try{await api(`/client/cron/${id}`,{method:'DELETE'});showAlert('Cron job deleted','success');renderPage('cron');}catch(e){showAlert(e.message,'error');}
+}
+async function cronRun(id){
+    showModal('Running…','<p style="color:#888">Running the job now (up to 2 minutes)…</p>',[]);
+    try{const r=await api(`/client/cron/${id}/run`,{method:'POST'});
+        const st=r.timedOut?'<span class="status-badge status-off">Stopped after 2 minutes</span>':(r.exitCode===0?'<span class="status-badge status-on">Finished OK</span>':`<span class="status-badge status-off">Exit code ${Number(r.exitCode)}</span>`);
+        showModal('Run result',`<p>${st} <span style="color:#888;font-size:12px">${Number(r.seconds)} s</span></p><pre style="max-height:360px;overflow:auto;white-space:pre-wrap;word-break:break-all;font-size:12px;background:rgba(0,0,0,0.04);padding:10px;border-radius:8px">${escHtml(r.output||'(no output)')}</pre>`,[]);
+    }catch(e){closeModal();showAlert(e.message,'error');}
+}
+async function cronSaveMailto(){
+    try{const r=await api('/client/cron/mailto',{method:'PUT',body:JSON.stringify({mailto:document.getElementById('cron_mailto').value})});showAlert(r.mailto?`Output will be e-mailed to ${r.mailto}`:'Output will be discarded','success');}catch(e){showAlert(e.message,'error');}
 }
 
 // ═══════════════════════════════════════════════════════════════════════
