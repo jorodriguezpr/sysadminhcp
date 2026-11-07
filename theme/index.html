@@ -807,7 +807,7 @@ deliverability:{title:'📖 Help — Mail Deliverability',html:`
 <ul>
 <li><strong>Server identity</strong> — every public IP needs a reverse DNS (PTR) name that resolves back to the IP; the HELO name should match it. The PTR is set at the IP provider (VPS control panel).</li>
 <li><strong>Blocklists</strong> — this server's IPs are checked every 3 hours on Spamhaus (through your DQS key when one is saved under Mail &gt; Spamdyke), SpamCop, Barracuda and others. A new listing sends a Notifications alert (rule <code>mail-blocklist</code>); each list links to its lookup/delisting page.</li>
-<li><strong>Providers rejecting this server</strong> — the qmail send log is scanned for block and reputation rejections (Trend Micro, Microsoft S3150, …). These lists have no public lookup, so this is how you see them. Alert rule <code>mail-provider-block</code>.</li>
+<li><strong>Providers rejecting this server</strong> — the qmail send log is scanned for block and reputation rejections (Trend Micro, Microsoft S3150, …). These lists have no public lookup, so this is how you see them. Alert rule <code>mail-provider-block</code>. Refusals of a single message for its content (for example Gmail <code>552 5.7.0</code> for a risky attachment) are listed apart under <strong>Messages refused for their content</strong>: they never raise the block alert and never turn on the automatic route. If the send log has no timestamps, the card says <em>time unknown</em> and shows when the panel first noticed the rejection.</li>
 <li><strong>Alternate outbound route</strong> — sends mail through another server you control. <em>Manual</em>: always (all mail or chosen destination domains). <em>Automatic</em>: everything while listed on a major blocklist, or only the providers that reject this IP until a direct test (EHLO/MAIL/RCPT, nothing sent) is accepted again. On the relay server, add this server's IP under <strong>Relay for other servers</strong> first, then press <em>Test relay</em> here.</li>
 <li><strong>SRS</strong> — makes forwarded mail pass SPF at the destination. Needs a dedicated host name (A or MX pointing to this server). Turning it off converts forwarders back; bounces to addresses already sent keep working.</li>
 <li><strong>Domain authentication</strong> — SPF (evaluated for this server's IP and the relay's), DKIM (the key in DNS must equal the key qmail signs with) and DMARC, as public resolvers see them. <em>Apply in DNS</em> writes the suggested record when the zone is hosted on this server; otherwise copy it to the domain's DNS provider. Checked daily; a domain that breaks sends a <code>mail-auth</code> alert.</li>
@@ -2413,6 +2413,7 @@ body.theme-dark .mdc-form input,body.theme-dark .mdc-form select,body.theme-dark
 @media(max-width:600px){.mdc-form{grid-template-columns:1fr}.mdc-grid{grid-template-columns:1fr}.mdc-hero{padding:20px}}
 `;document.head.appendChild(s);}
 function mdcPill(kind,text){return `<span class="mdc-pill mdc-${kind}">${escHtml(text)}</span>`;}
+function mdcRejRow(b){const when=b.lastSeen?mdcAgo(b.lastSeen):(b.firstNoticed?'time unknown · first noticed '+mdcAgo(b.firstNoticed):'time unknown');return `<div class="mdc-row" style="align-items:flex-start"><span><b>${escHtml(b.domain)}</b> ${mdcPill(b.kind==='failure'?'bad':'warn',b.kind)} <span class="mdc-muted">${b.count}× · ${when}</span><div class="mdc-muted" style="margin-top:3px">${escHtml(b.sample)}</div></span></div>`;}
 function mdcAgo(iso){if(!iso)return'never';const m=Math.round((Date.now()-new Date(iso).getTime())/60000);return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago';}
 async function renderDeliverability(el){
   mdcStyles();
@@ -2421,7 +2422,7 @@ async function renderDeliverability(el){
   const bl=st.blocklists||{};let listed=[],unknown=0,checked=0;
   Object.entries(bl).forEach(([ip,m])=>Object.entries(m).forEach(([n,v])=>{checked++;if(v.listed)listed.push(ip+' — '+n);if(v.unknown)unknown++;}));
   const doms=Object.values(st.domains||{});const domOk=doms.filter(x=>x.ok).length;
-  const pb=st.providerBlocks||[];const id=st.identity||{};
+  const pb=st.providerBlocks||[];const cr=st.contentRejections||[];const id=st.identity||{};
   const routeOn=st.route&&st.route.active;
   el.innerHTML=`
 <div class="mdc-hero"><div style="position:relative;z-index:1"><h2>📮 Mail Deliverability</h2><p>Keeps this server's mail out of spam folders: authentication (SPF, DKIM, DMARC), blocklist watch with alerts, an alternate route when providers block this IP, and SRS for forwarders.</p></div>
@@ -2444,8 +2445,13 @@ async function renderDeliverability(el){
  </div>
 </div>
 <div class="card" style="margin-bottom:16px"><div class="card-title">📭 Providers rejecting this server (last 24 h)</div>
- ${pb.length?pb.map(b=>`<div class="mdc-row" style="align-items:flex-start"><span><b>${escHtml(b.domain)}</b> ${mdcPill(b.kind==='failure'?'bad':'warn',b.kind)} <span class="mdc-muted">${b.count}× · ${mdcAgo(b.lastSeen)}</span><div class="mdc-muted" style="margin-top:3px">${escHtml(b.sample)}</div></span></div>`).join(''):'<div class="mdc-muted">No block or reputation rejections in the qmail send log. 👍</div>'}
+ ${pb.length?pb.map(mdcRejRow).join(''):'<div class="mdc-muted">No block or reputation rejections in the qmail send log. 👍</div>'}
+ ${pb.concat(cr).some(b=>b.undated)?'<div class="mdc-muted" style="margin-top:8px;font-size:12px">ℹ This server&#39;s qmail send log has no timestamps, so undated counts cover the whole current log, not only the last 24 h.</div>':''}
 </div>
+${cr.length?`<div class="card" style="margin-bottom:16px"><div class="card-title">📎 Messages refused for their content</div>
+ <div class="mdc-muted" style="margin-bottom:6px;font-size:13px">The provider refused these messages because of what they contain (usually an attachment such as an executable, a script, a password-protected archive or an Office file with macros). This is not a block on this server: other mail to the same provider is still delivered. The sender gets a bounce notice and can resend the file as a link or in another format.</div>
+ ${cr.map(mdcRejRow).join('')}
+</div>`:''}
 <div class="mdc-grid">
  <div class="card"><div class="card-title">🔀 Alternate outbound route</div>
   <div class="mdc-muted" style="margin-bottom:8px">Sends mail through another server (for example another SysAdminHCP server where this IP is an <i>allowed relay client</i>) while this IP is blocked. Uses qmail smtproutes; your own smtproutes lines are kept.</div>
