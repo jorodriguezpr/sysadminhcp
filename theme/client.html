@@ -322,7 +322,7 @@
             <div class="nav-item" data-page="redirects"><span class="icon">↪️</span> Redirects</div>
             <div class="nav-item" data-page="errorpages"><span class="icon">🚫</span> Error Pages</div>
             <div class="nav-item" data-page="dirprotect"><span class="icon">🔐</span> Directory Protection</div>
-            <div class="nav-item" data-page="waf"><span class="icon">🧱</span> Web Firewall</div>
+            <div class="nav-item" id="navWaf" data-page="waf" style="display:none"><span class="icon">🧱</span> Web Firewall</div>
             <div class="nav-item" data-page="mimetypes"><span class="icon">🧩</span> MIME Types</div>
         </div>
         <div class="nav-section"><div class="nav-section-title">Security</div>
@@ -335,7 +335,7 @@
             <div class="nav-item" data-page="phpversion"><span class="icon">🐘</span> PHP Version</div>
             <div class="nav-item" data-page="phpsettings"><span class="icon">⚙️</span> PHP Settings</div>
             <div class="nav-item" data-page="cron"><span class="icon">⏰</span> Cron Jobs</div>
-            <div class="nav-item" data-page="gitdeploy"><span class="icon">🔀</span> Git Deploy</div>
+            <div class="nav-item" id="navGitDeploy" data-page="gitdeploy" style="display:none"><span class="icon">🔀</span> Git Deploy</div>
             <div class="nav-item" data-page="bandwidth"><span class="icon">📈</span> Bandwidth</div>
             <div class="nav-item" id="navAppInstaller" data-page="appinstaller" style="display:none"><span class="icon">📦</span> App Installer</div>
             <div class="nav-item" id="navEmailMigration" data-page="emailmigration" style="display:none"><span class="icon">✉️</span> Email Migration</div>
@@ -577,7 +577,7 @@ document.querySelectorAll('.nav-item').forEach(wireNavItem);
 // Show AI Spam Filter nav section if the client has it enabled
 (async()=>{try{const d=await api('/client/spam-stats');if(d&&d.enabled){const sec=document.getElementById('navSpamSection');if(sec){sec.style.display='';sec.querySelectorAll('.nav-item').forEach(wireNavItem);}}}catch(e){}})();
 // Reveal Pro-gated nav sections (Support Tickets, etc.) based on the panel's active license
-(async()=>{try{const d=await api('/client/entitlements');if(d&&d.tickets){const sec=document.getElementById('navSupportSection');if(sec){sec.style.display='';sec.querySelectorAll('.nav-item').forEach(wireNavItem);}}if(d&&d.notifications){document.getElementById('ntfBellWrap').style.display='';ntfPoll();setInterval(ntfPoll,60000);}if(d&&d.appInstaller){const el=document.getElementById('navAppInstaller');if(el)el.style.display='';}if(d&&d.emailMigration){const el2=document.getElementById('navEmailMigration');if(el2)el2.style.display='';}if(d&&d.dav){const el3=document.getElementById('navDav');if(el3)el3.style.display='';}if(d&&d.sitebuilder){const el4=document.getElementById('navSitebuilder');if(el4)el4.style.display='';}}catch(e){}})();
+(async()=>{try{const d=await api('/client/entitlements');if(d&&d.tickets){const sec=document.getElementById('navSupportSection');if(sec){sec.style.display='';sec.querySelectorAll('.nav-item').forEach(wireNavItem);}}if(d&&d.notifications){document.getElementById('ntfBellWrap').style.display='';ntfPoll();setInterval(ntfPoll,60000);}if(d&&d.appInstaller){const el=document.getElementById('navAppInstaller');if(el)el.style.display='';}if(d&&d.emailMigration){const el2=document.getElementById('navEmailMigration');if(el2)el2.style.display='';}if(d&&d.dav){const el3=document.getElementById('navDav');if(el3)el3.style.display='';}if(d&&d.sitebuilder){const el4=document.getElementById('navSitebuilder');if(el4)el4.style.display='';}if(d&&d.gitDeploy){const el5=document.getElementById('navGitDeploy');if(el5)el5.style.display='';}if(d&&d.waf){const el6=document.getElementById('navWaf');if(el6)el6.style.display='';}}catch(e){}})();
 async function ntfPoll(){try{const d=await api('/client/notifications/unread-count');const badge=document.getElementById('ntfBadge');if(d.count>0){badge.style.display='';badge.textContent=d.count>99?'99+':d.count;}else{badge.style.display='none';}}catch(e){}}
 let _ntfDropdownOpen=false;
 async function ntfToggleDropdown(){

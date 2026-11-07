@@ -49,11 +49,11 @@ replacing them, so you keep full control of the underlying system.
 - **Client Management** — multi-client hosting accounts with resource plans
 - **Web Statistics** — GoAccess-powered traffic stats per domain
 - **Cron Jobs** — admin cron manager for the server's scheduled tasks, plus per-client cron jobs in the client portal (always run as the client's own user, with admin limits)
-- **Mail Deliverability Center** — SPF/DKIM/DMARC checks with one-click DNS fixes, blocklist and provider-rejection monitoring with alerts, alternate outbound route, relay clients, and SRS for forwarded mail
-- **Git Deploy** — deploy a repository branch into a site folder by hand or on every push (signed GitHub/GitLab webhooks, per-deployment deploy keys, no `.git` folder in the website)
-- **Offsite Backups** — incremental, encrypted backups to SFTP, S3 or a REST server, with retention and restore to a side folder
-- **Web Application Firewall** — ModSecurity with the OWASP Core Rule Set, detect or block mode per server and per domain, events and rule exceptions for clients (Apache on AlmaLinux/RHEL)
-- **Domain Transfer** — move a domain with its files, mail, DNS, SSL, FTP, cron, Git deployments and databases to another client on the same server, with a verified database copy and automatic undo
+- **Mail Deliverability Center** *(Pro)* — SPF/DKIM/DMARC checks with one-click DNS fixes, blocklist and provider-rejection monitoring with alerts, alternate outbound route, relay clients, and SRS for forwarded mail
+- **Git Deploy** *(Pro)* — deploy a repository branch into a site folder by hand or on every push (signed GitHub/GitLab webhooks, per-deployment deploy keys, no `.git` folder in the website)
+- **Offsite Backups** *(Pro)* — incremental, encrypted backups to SFTP, S3 or a REST server, with retention and restore to a side folder
+- **Web Application Firewall** *(Pro)* — ModSecurity with the OWASP Core Rule Set, detect or block mode per server and per domain, events and rule exceptions for clients (Apache on AlmaLinux/RHEL)
+- **Domain Transfer** *(Pro)* — move a domain with its files, mail, DNS, SSL, FTP, cron, Git deployments and databases to another client on the same server, with a verified database copy and automatic undo
 - **AI Agent** *(Pro)* — AI-assisted SSH terminal and system administration from the browser, plus **Autonomous Mode**: continuous background monitoring of system health, support tickets, security activity, and backups, with specific actions (restart a service, reply to a ticket, retry a failed backup, etc.) available for delegation — every action stays off until explicitly enabled, each with its own confirmation
 - **Compromised account lockdown** *(Pro)* — with Autonomous Mode on, a mail account that goes over its daily SMTP limit is locked automatically (SMTP, POP/IMAP and webmail), its live sessions are cut, and the mailbox owner, client and admin are notified
 - **AI Spam Filter** *(Pro)* — AI-powered email spam filtering (Ollama Cloud, OpenAI, Claude, or Gemini providers)
@@ -70,10 +70,11 @@ replacing them, so you keep full control of the underlying system.
 > [ollama.com/settings/keys](https://ollama.com/settings/keys) — the `glm-5.2:cloud`
 > model is a strong default choice.
 
-## Recent Highlights (v8.1.0)
+## Recent Highlights (v8.1.x)
 
+- **8.1.1 — Clear Pro pages** — Pro pages show a clear Pro notice with a link to the License page on servers without a Pro license, and the client portal lists Git Deploy and Web Firewall only on Pro servers.
 - **8.1.0 — Client portal hardening** — client-portal actions never build shell commands from text; the file manager works only on the client's own files, as the client's own Linux user; mail forwarders, FTP accounts, protected folders, error pages and redirects are validated.
-- **8.1.0 — New features** — Mail Deliverability Center, per-client cron jobs, domain transfer between clients, Git deploy, offsite backups and a Web Application Firewall (see Features).
+- **8.1.0 — New features** — per-client cron jobs (Free and Pro), plus the Pro features Mail Deliverability Center, Domain Transfer, Git Deploy, Offsite Backups and Web Application Firewall (see Features).
 - **8.1.0 — Cleaner client removal** — deleting a client also removes its Linux account when it is clearly a hosting account; site ownership stays with the client even when a single file can't be changed.
 
 ## Highlights (v8.0.48x)
@@ -104,6 +105,15 @@ replacing them, so you keep full control of the underlying system.
 | AI Spam Filter | ❌ | ✅ |
 | Migration Tools (cPanel / KloxoNG / SysAdminHCP) | ❌ | ✅ |
 | DNS Import & Multi-Server Sync | ❌ | ✅ |
+| Per-client cron jobs | ✅ | ✅ |
+| Mail Deliverability Center | ❌ | ✅ |
+| Domain Transfer between clients | ❌ | ✅ |
+| Git Deploy | ❌ | ✅ |
+| Offsite Backups (incremental, encrypted) | ❌ | ✅ |
+| Web Application Firewall (ModSecurity + OWASP CRS) | ❌ | ✅ |
+
+Mail Deliverability Center, Domain Transfer, Git Deploy, Offsite Backups and the Web Application
+Firewall have always been Pro features, since they were introduced in 8.1.0.
 
 Pro's $66/yr is a special price for orders placed by October 31, 2027 — that rate is
 locked for 2 years from the date you order. Pro ordered after October 31, 2027 is $120/yr.
