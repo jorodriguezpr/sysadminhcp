@@ -1443,25 +1443,21 @@ fi
 systemctl daemon-reload
 systemctl enable "$SYSADMINHCP_SERVICE"
 
-# Install logrotate config to persist ACLs across log rotation
-cat > /etc/logrotate.d/sysadminhcp-acl << 'LREOF'
-/var/log/httpd/error_log {
-    postrotate
-        setfacl -R -m u:sysadminhcp:rX /var/log/httpd/ 2>/dev/null || true
-    endscript
-}
-/var/log/mariadb/mariadb.log {
-    postrotate
-        setfacl -R -m u:sysadminhcp:rX /var/log/mariadb/ 2>/dev/null || true
-    endscript
-}
-/var/log/messages {
-    postrotate
-        setfacl -m u:sysadminhcp:r /var/log/messages 2>/dev/null || true
-    endscript
-}
-LREOF
-chmod 644 /etc/logrotate.d/sysadminhcp-acl
+# Log read permissions for the panel user, re-applied hourly so rotated logs stay readable.
+# (Not a logrotate file: these logs are already rotated by httpd/mariadb/rsyslog's own logrotate
+# files, and a second entry for the same log makes logrotate fail every night.)
+rm -f /etc/logrotate.d/sysadminhcp-acl
+cat > /etc/cron.d/sysadminhcp-log-acl << 'ACLCRONEOF'
+# Managed by SysAdminHCP (update step 0004): lets the panel user read the web server, database and
+# system logs. Re-applied every hour, so the new files that log rotation creates are readable too.
+# Replaces /etc/logrotate.d/sysadminhcp-acl, which repeated logs that other logrotate files already
+# rotate - logrotate then reported "duplicate log entry" and failed every night.
+SHELL=/bin/sh
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+17 * * * * root for d in /var/log/httpd /var/log/apache2 /var/log/mariadb /var/log/mysql; do [ -d "$d" ] && setfacl -R -m u:sysadminhcp:rX "$d"; done 2>/dev/null; for f in /var/log/messages /var/log/syslog; do [ -f "$f" ] && setfacl -m u:sysadminhcp:r "$f"; done 2>/dev/null; true
+ACLCRONEOF
+chmod 644 /etc/cron.d/sysadminhcp-log-acl
+( for d in /var/log/httpd /var/log/apache2 /var/log/mariadb /var/log/mysql; do [ -d "$d" ] && setfacl -R -m u:sysadminhcp:rX "$d"; done 2>/dev/null; for f in /var/log/messages /var/log/syslog; do [ -f "$f" ] && setfacl -m u:sysadminhcp:r "$f"; done 2>/dev/null; true ) || true
 
 # ─── Step 12: Configure Firewall ───────────────────────────────────────────
 info "Step 12: Configuring firewall..."
