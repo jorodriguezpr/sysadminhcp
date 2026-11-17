@@ -1976,8 +1976,8 @@ fi
 [[ -d /etc/phpmyadmin && ! -e /etc/phpMyAdmin ]] && ln -s /etc/phpmyadmin /etc/phpMyAdmin
 
 mkdir -p /var/lib/sysadminhcp/pma-tokens
-chown sysadminhcp:sysadminhcp /var/lib/sysadminhcp/pma-tokens
-chmod 755 /var/lib/sysadminhcp/pma-tokens
+chown sysadminhcp:www-data /var/lib/sysadminhcp/pma-tokens   # 8.1.6: token files hold MySQL credentials - web server group only
+chmod 2750 /var/lib/sysadminhcp/pma-tokens
 
 if [[ -d /usr/share/phpmyadmin ]]; then
   mkdir -p /usr/share/phpmyadmin/sysadminhcp-signon

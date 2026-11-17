@@ -190,8 +190,16 @@ userdel postfix 2>/dev/null || true
 # Install QMT repo
 QMT_RPM="qmt-release-1-8.qt.el9.noarch.rpm"
 cd /tmp
+# 8.1.6: the QMT server only offers plain HTTP (its HTTPS certificate is self-signed and expired) and
+# the RPM is not GPG-signed, so the file is pinned by sha256 - a tampered download is refused.
+QMT_RPM_SHA256="5beee164902767be80948a6f67009b99f44ffba50580135b812330d0982db9b3"
 curl -L -o "$QMT_RPM" "http://repo.whitehorsetc.com/9/testing/x86_64/$QMT_RPM"
-rpm -ivh "$QMT_RPM" 2>/dev/null || rpm -Uvh "$QMT_RPM" 2>/dev/null || warn "QMT repo install failed"
+if echo "$QMT_RPM_SHA256  $QMT_RPM" | sha256sum -c - >/dev/null 2>&1; then
+  rpm -ivh "$QMT_RPM" 2>/dev/null || rpm -Uvh "$QMT_RPM" 2>/dev/null || warn "QMT repo install failed"
+else
+  warn "QMT repo RPM checksum mismatch ($(sha256sum "$QMT_RPM" 2>/dev/null | cut -c1-16)...) - NOT installed"
+  rm -f "$QMT_RPM"
+fi
 dnf config-manager --enable qmt-testing 2>/dev/null || yum-config-manager --enable qmt-testing 2>/dev/null || true
 dnf config-manager --disable qmt-current 2>/dev/null || yum-config-manager --disable qmt-current 2>/dev/null || true
 dnf clean all 2>/dev/null || true
@@ -1887,8 +1895,8 @@ fi
 
 # Create PMA SSO token directory
 mkdir -p /var/lib/sysadminhcp/pma-tokens
-chown sysadminhcp:sysadminhcp /var/lib/sysadminhcp/pma-tokens
-chmod 755 /var/lib/sysadminhcp/pma-tokens
+chown sysadminhcp:apache /var/lib/sysadminhcp/pma-tokens   # 8.1.6: token files hold MySQL credentials - web server group only
+chmod 2750 /var/lib/sysadminhcp/pma-tokens
 
 # Deploy SysAdminHCP phpMyAdmin signon script and config
 if [[ -d /usr/share/phpMyAdmin ]]; then

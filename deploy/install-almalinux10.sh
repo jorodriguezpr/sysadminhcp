@@ -2069,8 +2069,8 @@ if ! dnf list installed phpmyadmin &>/dev/null 2>&1; then
 fi
 
 mkdir -p /var/lib/sysadminhcp/pma-tokens
-chown sysadminhcp:sysadminhcp /var/lib/sysadminhcp/pma-tokens
-chmod 755 /var/lib/sysadminhcp/pma-tokens
+chown sysadminhcp:apache /var/lib/sysadminhcp/pma-tokens   # 8.1.6: token files hold MySQL credentials - web server group only
+chmod 2750 /var/lib/sysadminhcp/pma-tokens
 
 # Detect phpMyAdmin install path (EL9: /usr/share/phpMyAdmin, EL10: may be lowercase)
 PMA_DIR=""

@@ -1943,8 +1943,8 @@ fi
 
 # Create PMA SSO token directory
 mkdir -p /var/lib/sysadminhcp/pma-tokens
-chown sysadminhcp:sysadminhcp /var/lib/sysadminhcp/pma-tokens
-chmod 755 /var/lib/sysadminhcp/pma-tokens
+chown sysadminhcp:apache /var/lib/sysadminhcp/pma-tokens   # 8.1.6: token files hold MySQL credentials - web server group only
+chmod 2750 /var/lib/sysadminhcp/pma-tokens
 
 # Deploy SysAdminHCP phpMyAdmin signon script and config
 if [[ -d /usr/share/phpMyAdmin ]]; then
