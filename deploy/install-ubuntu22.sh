@@ -36,7 +36,10 @@ SYSADMINHCP_SERVICE="sysadminhcp"
 NODE_MAJOR=20
 NOTQMAIL_VERSION="1.08"
 VPOPMAIL_VERSION="5.4.33"
+NOTQMAIL_SHA256="7b0d2153eedaa97988444334a24a0553ee25f58a6bb0521bc6d419bfa6bf7d10"   # notqmail-1.08.tar.gz
+VPOPMAIL_SHA256="383c7436dfb18e773336f608f1771fc08559143c4f3938a5807a0cc5994c44f4"   # vpopmail-5.4.33.tar.gz
 SPAMDYKE_VERSION="5.0.1"
+SPAMDYKE_SHA256="9d096921a4efd8d84e2de7b28af4acc6c00d57fd60b47aa4f96fec8813247770"   # spamdyke-5.0.1.tgz
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Colors for output
@@ -48,6 +51,67 @@ NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
+
+# ─── Verified downloads (8.2.0) ─────────────────────────────────────────────
+# Every file this installer downloads is checked against a pinned sha256 (or, for the latest
+# Roundcube release, the sha256 GitHub publishes for that release file) before it is used.
+# A mismatch is refused: the file is deleted and that step is skipped with a warning.
+fetch_verified() {  # fetch_verified <url> <sha256> <output file>
+  local url="$1" sum="$2" out="$3"
+  rm -f "$out"
+  if [[ -z "$sum" ]]; then warn "No checksum known for $url - NOT downloaded"; return 1; fi
+  if ! curl -fsSL --connect-timeout 20 --retry 2 -o "$out" "$url"; then
+    warn "Download failed: $url"; rm -f "$out"; return 1
+  fi
+  if ! echo "$sum  $out" | sha256sum -c - >/dev/null 2>&1; then
+    warn "Checksum mismatch for $url ($(sha256sum "$out" 2>/dev/null | cut -c1-16)...) - NOT used"
+    rm -f "$out"; return 1
+  fi
+  return 0
+}
+
+# sha256 GitHub publishes for one file of a release (release JSON on stdin), or nothing.
+github_asset_sha256() {  # github_asset_sha256 <asset file name>
+  local py; py=$(command -v python3 || echo /usr/libexec/platform-python)
+  "$py" -c 'import json,sys
+n=sys.argv[1]
+for a in json.load(sys.stdin).get("assets",[]):
+    d=str(a.get("digest") or "")
+    if a.get("name")==n and d.startswith("sha256:"):
+        print(d[7:]); break' "$1" 2>/dev/null
+}
+
+RAINLOOP_ZIP_SHA256="782dcabacadab5d7176f7701dd23319a040b2cfbf974fac6df068600cf69c50a"   # rainloop-latest.zip (1.17, final release)
+RC_FALLBACK_VERSION="1.7.6"
+RC_FALLBACK_SHA256="0168085bf0bfeeb5d4eca3b9730effbe610dbdb380a68567d292fec51f09db36"    # roundcubemail-1.7.6-complete.tar.gz
+ACME_SH_VERSION="3.1.6"
+ACME_SH_SHA256="0d3f9000ac44a6331314742a88c475f79134e24fc991997883652adc59efc486"        # acme.sh 3.1.6 release tarball
+
+# acme.sh from its pinned release tarball (was: curl https://get.acme.sh | sh, unverified).
+install_acme_sh() {
+  local d; d=$(mktemp -d)
+  if fetch_verified "https://github.com/acmesh-official/acme.sh/archive/refs/tags/${ACME_SH_VERSION}.tar.gz" \
+       "$ACME_SH_SHA256" "$d/acme.sh.tar.gz" \
+     && tar xzf "$d/acme.sh.tar.gz" -C "$d" \
+     && ( cd "$d/acme.sh-${ACME_SH_VERSION}" && ./acme.sh --install 2>&1 | tail -5 ); then
+    rm -rf "$d"; return 0
+  fi
+  rm -rf "$d"; return 1
+}
+
+# Roundcube: latest release, checked against GitHub's published sha256 (pinned fallback version).
+# Sets RC_VERSION and leaves the verified tarball at /tmp/roundcube.tar.gz (nothing on failure).
+fetch_roundcube() {
+  local json sum
+  json=$(curl -fsSL --connect-timeout 10 "https://api.github.com/repos/roundcube/roundcubemail/releases/latest" 2>/dev/null)
+  RC_VERSION=$(echo "$json" | grep '"tag_name"' | head -1 | cut -d'"' -f4)
+  sum=""
+  [[ -n "$RC_VERSION" ]] && sum=$(echo "$json" | github_asset_sha256 "roundcubemail-${RC_VERSION}-complete.tar.gz")
+  if [[ -z "$RC_VERSION" || -z "$sum" ]]; then RC_VERSION="$RC_FALLBACK_VERSION"; sum="$RC_FALLBACK_SHA256"; fi
+  info "Downloading Roundcube $RC_VERSION..."
+  fetch_verified "https://github.com/roundcube/roundcubemail/releases/download/${RC_VERSION}/roundcubemail-${RC_VERSION}-complete.tar.gz" \
+    "$sum" /tmp/roundcube.tar.gz
+}
 
 # ─── Pre-flight Checks ────────────────────────────────────────────────────
 info "SysAdminHCP Control Panel Installer for Ubuntu 22.04+"
@@ -461,8 +525,8 @@ if [[ ! -x /var/qmail/bin/qmail-smtpd ]]; then
   info "Building notqmail $NOTQMAIL_VERSION from source..."
   cd "$BUILD_DIR"
   rm -rf "notqmail-$NOTQMAIL_VERSION"
-  if curl -fsSL -o notqmail.tar.gz \
-      "https://github.com/notqmail/notqmail/releases/download/notqmail-$NOTQMAIL_VERSION/notqmail-$NOTQMAIL_VERSION.tar.gz"; then
+  if fetch_verified "https://github.com/notqmail/notqmail/releases/download/notqmail-$NOTQMAIL_VERSION/notqmail-$NOTQMAIL_VERSION.tar.gz" \
+      "$NOTQMAIL_SHA256" notqmail.tar.gz; then
     tar xzf notqmail.tar.gz
     cd "notqmail-$NOTQMAIL_VERSION"
     make -j"$(nproc)" 2>&1 | tail -3 || true
@@ -520,8 +584,8 @@ if [[ ! -x /home/vpopmail/bin/vadddomain && -d /var/qmail ]]; then
   info "Building vpopmail $VPOPMAIL_VERSION from source (MySQL auth)..."
   cd "$BUILD_DIR"
   rm -rf "vpopmail-$VPOPMAIL_VERSION"
-  if curl -fsSL -o vpopmail.tar.gz \
-      "https://sourceforge.net/projects/vpopmail/files/vpopmail-stable/$VPOPMAIL_VERSION/vpopmail-$VPOPMAIL_VERSION.tar.gz/download"; then
+  if fetch_verified "https://sourceforge.net/projects/vpopmail/files/vpopmail-stable/$VPOPMAIL_VERSION/vpopmail-$VPOPMAIL_VERSION.tar.gz/download" \
+      "$VPOPMAIL_SHA256" vpopmail.tar.gz; then
     tar xzf vpopmail.tar.gz
     cd "vpopmail-$VPOPMAIL_VERSION"
     # MariaDB headers/libs (libmariadb-dev-compat provides mysql.h shims)
@@ -566,9 +630,8 @@ if [[ ! -x /usr/local/bin/spamdyke ]]; then
   cd "$BUILD_DIR"
   rm -rf "spamdyke-$SPAMDYKE_VERSION"
   SPAMDYKE_OK=0
-  if curl -fsSL -o spamdyke.tgz "https://www.spamdyke.org/releases/spamdyke-$SPAMDYKE_VERSION.tgz" 2>/dev/null; then
-    SPAMDYKE_OK=1
-  elif curl -fsSL -o spamdyke.tgz "https://github.com/spamdyke/spamdyke/archive/refs/tags/RELEASE_5_0_1.tar.gz" 2>/dev/null; then
+  # 8.2.0: verified; the old GitHub fallback URL no longer exists (404).
+  if fetch_verified "https://www.spamdyke.org/releases/spamdyke-$SPAMDYKE_VERSION.tgz" "$SPAMDYKE_SHA256" spamdyke.tgz; then
     SPAMDYKE_OK=1
   fi
   if [[ $SPAMDYKE_OK -eq 1 ]]; then
@@ -2037,7 +2100,7 @@ else
   mkdir -p "$RAINLOOP_DIR/data/_data_/_default_/storage"
 
   info "Downloading RainLoop..."
-  curl -sL https://www.rainloop.net/repository/webmail/rainloop-latest.zip -o /tmp/rainloop.zip
+  fetch_verified "https://www.rainloop.net/repository/webmail/rainloop-latest.zip" "$RAINLOOP_ZIP_SHA256" /tmp/rainloop.zip || true
   if [[ -f /tmp/rainloop.zip && -s /tmp/rainloop.zip ]]; then
     unzip -o /tmp/rainloop.zip -d "$RAINLOOP_DIR" 2>/dev/null || warn "RainLoop unzip failed"
     rm -f /tmp/rainloop.zip
@@ -2164,15 +2227,10 @@ else
   # Ubuntu 22.04 ships PHP 8.1, 24.04 ships 8.3 — both satisfy RC >= 1.6 (needs >= 8.1)
   apt-get install -y php-intl php-mbstring php-xml php-gd php-zip php-ldap 2>/dev/null || true
 
-  RC_VERSION=$(curl -sL --connect-timeout 10 "https://api.github.com/repos/roundcube/roundcubemail/releases/latest" 2>/dev/null \
-    | grep '"tag_name"' | head -1 | cut -d'"' -f4)
-  [[ -z "$RC_VERSION" ]] && RC_VERSION="1.6.9"
-  info "Downloading Roundcube $RC_VERSION..."
 
   mkdir -p "$ROUNDCUBE_DIR" /etc/roundcube /var/log/roundcube /tmp/roundcube
 
-  RC_URL="https://github.com/roundcube/roundcubemail/releases/download/${RC_VERSION}/roundcubemail-${RC_VERSION}-complete.tar.gz"
-  curl -sL --connect-timeout 30 "$RC_URL" -o /tmp/roundcube.tar.gz
+  fetch_roundcube || true  # 8.2.0: verified (GitHub-published sha256, or the pinned fallback version)
   if [[ -f /tmp/roundcube.tar.gz && -s /tmp/roundcube.tar.gz ]]; then
     tar xzf /tmp/roundcube.tar.gz -C "$ROUNDCUBE_DIR" --strip-components=1 2>/dev/null && \
       info "Roundcube $RC_VERSION extracted to $ROUNDCUBE_DIR" || warn "Roundcube extraction failed"
@@ -2246,7 +2304,7 @@ info "Step 14.8: Installing acme.sh (Let's Encrypt client)..."
 if [[ -x /root/.acme.sh/acme.sh ]]; then
   info "acme.sh already installed — skipping"
 else
-  if curl -sSL https://get.acme.sh | sh 2>&1 | tail -5; then
+  if install_acme_sh; then
     [[ -x /root/.acme.sh/acme.sh ]] && info "acme.sh installed successfully" || warn "acme.sh binary not found after install"
   else
     warn "acme.sh installation failed — Let's Encrypt SSL issuance will not work"
